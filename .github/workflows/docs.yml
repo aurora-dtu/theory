@@ -33,12 +33,12 @@ jobs:
       - name: Install elan and build doc-gen4
         uses: leanprover/lean-action@v1
         with:
-          build-args: "--wfail PGCL:docs"
-      # - name: Build documentation
-      #   run: |
-      #     export LEAN_ABORT_ON_PANIC=1
-      #     # lake build DocGen4:docs
-      #     lake -R -Kenv=dev build PGCL:docs
+          build-args: "--wfail"
+      - name: Build documentation
+        run: |
+          export LEAN_ABORT_ON_PANIC=1
+          # lake build DocGen4:docs
+          lake -R -Kenv=dev build PGCL:docs
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload artifact
