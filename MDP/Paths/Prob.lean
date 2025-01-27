@@ -57,3 +57,5 @@ theorem Prob_tail [DecidableEq State] (h : 1 < π.length) (𝒮 : M.Scheduler') 
     π.Prob 𝒮 = M.P π[0] (𝒮 {π[0]}) π[1] * π.tail.Prob (𝒮[π[0] ↦ π[1]]'(by simp)) := by
   nth_rw 1 [←π.tail_prepend h, prepend_Prob]
   simp [h]
+
+end MDP.Path

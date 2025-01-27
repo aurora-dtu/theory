@@ -78,3 +78,5 @@ theorem pick_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y σ ≤ p.pick z 
 @[simp] theorem pick_same : p.pick x x = x := by ext σ; simp [pick, ← add_mul]
 
 @[simp] theorem pick_of : p.val σ * x σ + (1 - p.val σ) * y σ = p.pick x y σ := rfl
+
+end ProbExp

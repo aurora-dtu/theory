@@ -64,3 +64,5 @@ theorem dwp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
   simp only [dwp_loop, dwp_loop_f, Pi.add_apply, Pi.mul_apply]
   rw [← OrderHom.map_lfp]
   rfl
+
+end pGCL

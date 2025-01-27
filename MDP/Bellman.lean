@@ -35,7 +35,7 @@ noncomputable def Φ𝒮 (cost : M.Costs) (𝒮 : M.Scheduler) : (State → ENNR
     gcongr⟩
 
 noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
-  Finset.nonempty_coe_sort.mp (instNonemptySubtypeMemFinsetAct₀ M s)
+  Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
 
 noncomputable def Φ (cost : M.Costs) : (State → ENNReal) →o (State → ENNReal) :=
   ⟨fun v s ↦ cost s + ⨅ α : M.act s, M.Φf s α v, by
@@ -189,3 +189,5 @@ theorem iSup_Φ_step' (cost : M.Costs) (s : State) :
 := by
   rw [←lfp_Φ_eq_iSup_Φ]
   exact M.lfp_Φ_step' cost s
+
+end MDP.FiniteBranching

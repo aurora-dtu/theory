@@ -72,7 +72,8 @@ namespace Path_le
 
 variable {M}
 
-theorem succs_univ_Finite [DecidableEq State] [M.FiniteBranching] (π : M.Path) : π.succs_univ.Finite := by
+theorem succs_univ_Finite [DecidableEq State] [M.FiniteBranching] (π : M.Path) :
+    π.succs_univ.Finite := by
   simp [Path.succs_univ_eq_extend_succs_univ]
   refine Set.Finite.dependent_image ?hs fun x hx ↦ π.extend ⟨x, hx⟩
   exact M.succs_univ_Finite
@@ -144,8 +145,8 @@ theorem wtf_disjoint : Set.univ.PairwiseDisjoint (M.wtf s n) := by
 
 namespace Path_eq
 
-theorem succs_univ_disjoint (s : State) (n : ℕ) : Path[M,s,=n].PairwiseDisjoint Path.succs_univ := by
-  simp [Set.PairwiseDisjoin_iff, iff, and_imp]
+theorem succs_univ_disjoint : Path[M,s,=n].PairwiseDisjoint Path.succs_univ := by
+  simp [Set.PairwiseDisjoint_iff, iff, and_imp]
   intro x a b _ _ _ _ ha hb
   rw [←Path.mem_succs_univ_prev <| ha, ←Path.mem_succs_univ_prev <| hb]
 
@@ -213,7 +214,6 @@ instance instDFunLike : DFunLike (M.BScheduler' s n) M.Path (fun _ ↦ Act) wher
 theorem default_on (ℬ : M.BScheduler' s n) {π : M.Path} (h : ¬π ∈ Path[M,s,≤n]) :
     ℬ π = M.default_act π.last := ℬ.prop.isBounded _ h
 
--- theorem asdf (𝒮 : M.Scheduler') (h : 𝒮.IsBounded s n) : (⟨𝒮, h⟩ : M.BScheduler' s n) π = 𝒮 π := sorry
 @[simp] theorem coe_apply (ℬ : M.BScheduler' s n) : ℬ.val π = ℬ π := rfl
 
 @[simp] theorem mem_act_if (ℬ : M.BScheduler' s n) : ℬ π ∈ M.act π.last := by
@@ -260,8 +260,9 @@ theorem specialize_apply (ℬ : M.BScheduler' s (n + 1)) (s' : M.succs_univ s) (
   simp [specialize, Scheduler'.specialize]
 
 @[simp]
-theorem specialize_apply' (ℬ : M.BScheduler' s (n + 1)) (π : M.Path) (s' : M.succs_univ s) :
-    ℬ[s ↦ s'] π = if h : π ∈ Path[M,s',≤n] then ℬ (π.prepend ⟨s, by simp_all⟩) else M.default_act π.last := by
+theorem specialize_apply' (ℬ : M.BScheduler' s (n + 1)) :
+    ℬ[s ↦ s'] π = if h : π ∈ Path[M,s',≤n] then ℬ (π.prepend ⟨s, by simp_all⟩)
+                                           else M.default_act π.last := by
   split_ifs with h
   · apply ℬ.specialize_apply s' ⟨π, h⟩
   · apply default_on _ h
@@ -304,7 +305,7 @@ instance : Coe M.Scheduler' (M.BScheduler' s n) where
 instance : Inhabited (M.BScheduler' s n) where
   default := ⟨default, ⟨fun π _ ↦ by congr⟩⟩
 
-def FiniteScheduler [M.FiniteBranching] (s : State) (n : ℕ) := (π : Path[M,s,≤n]) → M.act₀ π.val.last
+def FiniteScheduler [M.FiniteBranching] s n := (π : Path[M,s,≤n]) → M.act₀ π.val.last
 
 instance [DecidableEq State] [M.FiniteBranching] : Fintype (FiniteScheduler (M:=M) s n) := by
   unfold FiniteScheduler
@@ -351,3 +352,7 @@ theorem mk'_argmin (s : State) (s' : M.succs_univ s) (f : M.BScheduler' s' n →
     (by simp)
   = elems.argmin (by simp) f
 := by ext π hπ; simp_all [mk']
+
+end
+
+end MDP.BScheduler'

@@ -443,3 +443,5 @@ def succs_univ_equiv : π.succs_univ ≃ M.succs_univ π.last where
     subst_eqs
     simp [h']
   right_inv _ := by simp
+
+end MDP.Path

@@ -431,3 +431,5 @@ theorem dwp_le_dop : dwp (ϖ:=ϖ) ≤ dop := by
   | tick => rw [← step_dop]; simp
 
 theorem dop_eq_dwp : dop (ϖ:=ϖ) = dwp := (dop_isLeast _ step_dwp.le).antisymm dwp_le_dop
+
+end pGCL

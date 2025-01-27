@@ -75,8 +75,9 @@ theorem iInf_scheduler_eq_iInf_act_iInf_scheduler :
   · apply le_iInf_iff.mpr fun α ↦ le_iInf_iff.mpr fun 𝒮 ↦ ?_
     apply iInf_le_of_le ⟨fun π ↦ if π.length = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
       simp only; split_ifs <;> simp_all only [Path.last, Subtype.coe_prop, Scheduler'.mem_act_if]⟩
-    gcongr; simp
-    exact EC_le fun _ _ ↦ by simp [Scheduler'.mk', Scheduler'.specialize]
+    gcongr
+    · simp
+    · exact EC_le fun _ _ ↦ by simp [Scheduler'.mk', Scheduler'.specialize]
   · apply le_iInf_iff.mpr fun 𝒮 ↦ iInf_le_of_le ⟨𝒮 {s}, by simp⟩ ?_
     apply iInf_le_of_le 𝒮 (by rfl)
 
@@ -126,8 +127,8 @@ theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 
 theorem iSup_iInf_EC_eq_lfp_Φ' [M.FiniteBranching] : (⨆ n, ⨅ 𝒮, EC c 𝒮 · n) = M.lfp_Φ c := by
   simp [iSup_iInf_EC_eq_lfp_Φ]
 
-theorem Φ𝒮_step_EC' (cost : M.Costs) (𝒮 : M.Scheduler) :
-    M.EC cost 𝒮 s (n + 1) = M.Φ𝒮 cost 𝒮 (M.EC cost 𝒮 · n) s := by
+theorem Φ𝒮_step_EC' (c : M.Costs) (𝒮 : M.Scheduler) :
+    M.EC c 𝒮 s (n + 1) = M.Φ𝒮 c 𝒮 (M.EC c 𝒮 · n) s := by
   induction n generalizing s with
   | zero => simp [EC_succ']; rfl
   | succ n ih =>
@@ -138,9 +139,10 @@ theorem Φ𝒮_step_EC' (cost : M.Costs) (𝒮 : M.Scheduler) :
       Scheduler'.toFun_coe', EC, Path.ECost, Path.Cost, Path.Prob, Fin.getElem_fin, Fin.val_succ,
       Φ𝒮, Φf, OrderHom.coe_mk, Scheduler'.Markovian_path_take''']
     congr! 13
-    · split_ifs with h; rfl
-      simp only [getElem] at h
-      simp at h
+    · split_ifs with h
+      · rfl
+      · simp only [getElem] at h
+        simp at h
     · simp [Scheduler'.specialize]; rfl
 
 attribute [-simp] Function.iterate_succ in
@@ -152,15 +154,15 @@ theorem iSup_n_EC'_eq_lfp_Φ𝒮 (𝒮 : M.Scheduler) [M.FiniteBranching] :
   | zero => simp [Φ𝒮, Φf]
   | succ n ih => simp [Φ𝒮_step_EC', ih, Function.iterate_succ']
 
-noncomputable def 𝒮' [M.FiniteBranching] (cost : M.Costs) : M.Scheduler :=
+noncomputable def 𝒮' [M.FiniteBranching] (c : M.Costs) : M.Scheduler :=
   ⟨Scheduler'.mk' fun π ↦ ⟨
-    (M.act π.last).toFinset.argmin (M.act₀_nonempty π.last) (M.Φf π.last · (M.lfp_Φ cost)), by simp⟩,
+    (M.act π.last).toFinset.argmin (M.act₀_nonempty π.last) (M.Φf π.last · (M.lfp_Φ c)), by simp⟩,
     by constructor; simp⟩
 
-noncomputable def 𝒮'_spec [M.FiniteBranching] (cost : M.Costs) (s : State) :
-  ⨅ α : M.act s, M.Φf s α (M.lfp_Φ cost) = (M.Φf s · (M.lfp_Φ cost)) (M.𝒮' cost {s})
+noncomputable def 𝒮'_spec [M.FiniteBranching] (c : M.Costs) (s : State) :
+  ⨅ α : M.act s, M.Φf s α (M.lfp_Φ c) = (M.Φf s · (M.lfp_Φ c)) (M.𝒮' c {s})
 := by
-  convert Finset.argmin_spec (M.act s).toFinset (act₀_nonempty M s) (M.Φf s · (M.lfp_Φ cost)) |>.right
+  convert Finset.argmin_spec (M.act s).toFinset (act₀_nonempty M s) (M.Φf s · (M.lfp_Φ c)) |>.right
   simp [Finset.inf'_eq_inf, Finset.inf_eq_iInf]
   exact Eq.symm iInf_subtype'
 
@@ -188,12 +190,12 @@ theorem iSup_iInf_EC_eq_iInf_iSup_EC [M.FiniteBranching] :
   simp [iSup_n_EC'_eq_lfp_Φ𝒮, iSup_iInf_EC_eq_lfp_Φ, lfp_Φ𝒮_eq_lfp_Φ]
 
 theorem iInf_iSup_EC_eq_iInf_iSup_EC' [M.FiniteBranching] :
-    ⨅ 𝒮 : M.Scheduler', ⨆ n, M.EC cost 𝒮 s n = ⨅ 𝒮 : M.Scheduler, ⨆ n, M.EC cost 𝒮 s n := by
+    ⨅ 𝒮 : M.Scheduler', ⨆ n, M.EC c 𝒮 s n = ⨅ 𝒮 : M.Scheduler, ⨆ n, M.EC c 𝒮 s n := by
   rw [← iSup_iInf_EC_eq_iInf_iSup_EC, iSup_iInf_EC_eq_lfp_Φ]
   simp [iSup_n_EC'_eq_lfp_Φ𝒮]
   apply le_antisymm
   · refine le_iInf fun 𝒮 ↦ ?_
-    suffices M.lfp_Φ cost ≤ M.lfp_Φ𝒮 cost 𝒮 by exact this s
+    suffices M.lfp_Φ c ≤ M.lfp_Φ𝒮 c 𝒮 by exact this s
     apply OrderHom.lfp_le
     nth_rw 2 [← lfp_Φ𝒮_step]
     apply Φ_le_Φ𝒮
@@ -202,7 +204,7 @@ theorem iInf_iSup_EC_eq_iInf_iSup_EC' [M.FiniteBranching] :
 
 omit [DecidableEq State] in
 theorem iSup_iInf_EC_le_iSup_iInf_EC' :
-    ⨆ n, ⨅ 𝒮 : M.Scheduler', M.EC cost 𝒮 s n ≤ ⨆ n, ⨅ 𝒮 : M.Scheduler, M.EC cost 𝒮 s n :=
+    ⨆ n, ⨅ 𝒮 : M.Scheduler', M.EC c 𝒮 s n ≤ ⨆ n, ⨅ 𝒮 : M.Scheduler, M.EC c 𝒮 s n :=
   iSup_mono fun _ ↦ le_iInf_comp _ _
 
 theorem iSup_iInf_EC'_eq_iInf_iSup_EC' [M.FiniteBranching] :
@@ -212,14 +214,16 @@ theorem iSup_iInf_EC'_eq_iInf_iSup_EC' [M.FiniteBranching] :
 
 theorem Complete [M.FiniteBranching] :
   let S: Set ENNReal := {
-    ⨆ n, ⨅ 𝒮 : M.Scheduler', M.EC cost 𝒮 s n,
-    ⨆ n, ⨅ 𝒮 : M.Scheduler, M.EC cost 𝒮 s n,
-    ⨅ 𝒮 : M.Scheduler', ⨆ n, M.EC cost 𝒮 s n,
-    ⨅ 𝒮 : M.Scheduler, ⨆ n, M.EC cost 𝒮 s n,
-    M.lfp_Φ cost s
+    ⨆ n, ⨅ 𝒮 : M.Scheduler', M.EC c 𝒮 s n,
+    ⨆ n, ⨅ 𝒮 : M.Scheduler, M.EC c 𝒮 s n,
+    ⨅ 𝒮 : M.Scheduler', ⨆ n, M.EC c 𝒮 s n,
+    ⨅ 𝒮 : M.Scheduler, ⨆ n, M.EC c 𝒮 s n,
+    M.lfp_Φ c s
   }
   ∀ v₁ v₂ : S, v₁ = v₂
 := by
   simp
   simp only [iSup_iInf_EC_eq_iInf_iSup_EC, iInf_iSup_EC_eq_iInf_iSup_EC',
     iSup_iInf_EC'_eq_iInf_iSup_EC', ← iSup_iInf_EC_eq_lfp_Φ, and_self]
+
+end MDP

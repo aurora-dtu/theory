@@ -1,4 +1,4 @@
-import Mathlib.Algebra.BigOperators.Group.List
+import Mathlib.Algebra.BigOperators.Group.List.Defs
 import Mathlib.Algebra.Field.Rat
 
 namespace Ex
@@ -15,7 +15,7 @@ inductive State where
 deriving Inhabited, Repr
 
 def State.complete (n : Nat) : List State :=
-  List.range n |>.map (fun i ↦ [.s i, .s' i, .st i, .sL i, .sR i]) |>.join
+  List.range n |>.map (fun i ↦ [.s i, .s' i, .st i, .sL i, .sR i]) |>.flatten
 
 def act : State → List Act
 | .s' _ => [.L, .R]
@@ -44,9 +44,11 @@ def cost : State → Rat
 -- | .sR _ => 1.3
 | _ => 0
 
-def φ (v : State → Rat) (s : State) : Rat := cost s + ((act s).map fun (α : Act) ↦ (succs s).map (P s α * v) |>.sum).min?.getD 0
+def φ (v : State → Rat) (s : State) : Rat :=
+  cost s + ((act s).map fun (α : Act) ↦ (succs s).map (P s α * v) |>.sum).min?.getD 0
 
-def φ' (S : State → Act) (v : State → Rat) (s : State) : Rat := cost s + ((succs s).map (P s (S s) * v) |>.sum)
+def φ' (S : State → Act) (v : State → Rat) (s : State) : Rat :=
+  cost s + ((succs s).map (P s (S s) * v) |>.sum)
 
 -- n=0 => 1
 -- n=1 => 5.25
@@ -76,11 +78,12 @@ def S : State → Act
 def Paths (n : Nat) (s : State) : List (List State) :=
   match n with
   | 0 => [[s]]
-  | n+1 => Paths n s |>.map (fun p ↦ succs p.getLast! |>.map (p ++ [·])) |>.join
+  | n+1 => Paths n s |>.map (fun p ↦ succs p.getLast! |>.map (p ++ [·])) |>.flatten
 
-def Prob (S : State → Act) (p : List State) : Rat := List.range (p.length - 1) |>.map (fun i ↦ P p[i]! (S p[i]!) p[i + 1]!) |>.prod
-def Prob' (S : List State → Act) (p : List State) : Rat := List.range (p.length - 1) |>.map (fun i ↦ P p[i]! (S (p.take (i + 1))) p[i + 1]!) |>.prod
--- def Prob' (S : State → Act) (p : List State) := List.range (p.length - 1) |>.map (fun i ↦ (p[i]!, (S p[i]!), p[i+1]!, P p[i]! (S p[i]!) p[i + 1]!))
+def Prob (S : State → Act) (p : List State) : Rat :=
+  List.range (p.length - 1) |>.map (fun i ↦ P p[i]! (S p[i]!) p[i + 1]!) |>.prod
+def Prob' (S : List State → Act) (p : List State) : Rat :=
+  List.range (p.length - 1) |>.map (fun i ↦ P p[i]! (S (p.take (i + 1))) p[i + 1]!) |>.prod
 def Cost (p : List State) : Rat := List.range p.length |>.map (fun i ↦ cost p[i]!) |>.sum
 def EC (S : State → Act) (p : List State) : Rat := Prob S p * Cost p
 def EC' (S : List State → Act) (p : List State) : Rat := Prob' S p * Cost p

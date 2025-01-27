@@ -40,4 +40,4 @@ theorem prepend_ECost [DecidableEq State] (𝒮 : M.Scheduler') (c : M.Costs) :
   simp [ECost, π.prepend_Prob, π.prepend_Cost]
   ring
 
-end Path
+end MDP.Path

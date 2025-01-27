@@ -82,7 +82,7 @@ end Scheduler'
 def Scheduler (M : MDP State Act) := { 𝒮 : M.Scheduler' // 𝒮.Markovian }
 
 noncomputable instance (M : MDP State Act) : Inhabited M.Scheduler' :=
-  ⟨fun l ↦ (M.progress_act l.last).choose, fun l ↦ (M.progress_act l.last).choose_spec⟩
+  ⟨fun _ ↦ M.progress_act.choose, fun _ ↦ M.progress_act.choose_spec⟩
 
 noncomputable instance (M : MDP State Act) : Inhabited M.Scheduler :=
   ⟨default, ⟨fun _ ↦ rfl⟩⟩
@@ -143,23 +143,25 @@ theorem P_sum_one_iff_Scheduler (M : MDP State Act) [i : M.FiniteBranching] (�
 @[simp]
 theorem P_tsum_one_iff_Scheduler (M : MDP State Act) (𝒮 : M.Scheduler') (s : State) :
     ∑' (s' : (M.P s (𝒮 {s})).support), M.P s (𝒮 {s}) s' = 1 :=
-  (P_tsum_support_one_iff M s (𝒮 {s})).mpr (Scheduler'.singleton_mem_act 𝒮)
+  M.P_tsum_support_one_iff.mpr (Scheduler'.singleton_mem_act 𝒮)
 
 @[simp]
 theorem Path.P_tsum_one_iff_Scheduler (M : MDP State Act) (𝒮 : M.Scheduler') (π : M.Path) :
     ∑' (s' : (M.P π.last (𝒮 π)).support), M.P π.last (𝒮 π) s' = 1 :=
-  (P_tsum_support_one_iff M π.last (𝒮 π)).mpr (Scheduler'.mem_act 𝒮)
+  M.P_tsum_support_one_iff.mpr (Scheduler'.mem_act 𝒮)
 
-noncomputable def default_act (M : MDP State Act) (s : State) : Act := (M.progress_act s).choose
+noncomputable def default_act (M : MDP State Act) (s : State) : Act :=
+  (M.progress_act (s:=s)).choose
 @[simp]
 theorem default_act_spec (M : MDP State Act) (s : State) : M.default_act s ∈ M.act s :=
-  (M.progress_act s).choose_spec
+  M.progress_act.choose_spec
 
 variable {M : MDP State Act}
 
 noncomputable def Scheduler'.specialize [DecidableEq State] (𝒮 : M.Scheduler')
     (s₀ : State) (s₀' : M.succs_univ s₀) : M.Scheduler' :=
-  Scheduler'.mk' fun π ↦ if h : π[0] = s₀' then ⟨𝒮 (π.prepend ⟨s₀, by simp_all⟩), by simp⟩ else default
+  Scheduler'.mk' fun π ↦ if h : π[0] = s₀' then ⟨𝒮 (π.prepend ⟨s₀, by simp_all⟩), by simp⟩
+                         else default
 
 syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]" : term
 macro_rules | `($x[$i ↦ $j]) => `(($x).specialize $i $j)
@@ -192,48 +194,4 @@ theorem Scheduler.toScheduler'_specialize [DecidableEq State] (𝒮 : M.Schedule
   · apply prepend
   · rfl
 
-
--- -- set_option trace.Elab.definition true in
--- -- set_option pp.all true in
--- theorem Path.Prob'_eq_tail_Prob'_specialize {M : MDP State Act} (𝒮 : M.Scheduler') (π : M.Path) (h : 1 < ∎|π|) :
---   π.Prob' 𝒮 = M.P π[0] (𝒮 (π.take 0)) π[1] * π.tail.Prob' (𝒮.specialize π[0] ⟨π[1], by simp⟩)
--- := by
---   simp [Prob']
---   conv => right; right; arg 2; ext i; rw [Scheduler'.asdf 𝒮 π h]
---   simp
---   have : Fin (π.states.length - 1) = Fin ((π.states.length - 2) + 1) := by
---     congr
---     omega
---   have : ∏ x : Fin (π.states.length - 1), M.P π[x] (𝒮 (π.take x)) π[↑x + 1] = ∏ x : Fin (π.states.length - 2).succ, M.P π[x] (𝒮 (π.take x)) π[↑x + 1] := by
---     simp
---     congr
---     · omega
---     · apply (Fin.heq_fun_iff (by omega)).mpr
---       simp
---   simp only [Fin.getElem_fin] at this
---   rw [this]
---   rw [Fin.prod_univ_succ]
---   simp
---   congr! 2
---   · congr! 1
---     simp
---     omega
---   · congr!
---   · congr! 2 with ⟨i, hi⟩ ⟨j, hj⟩ heq
---     · have := π.tail_getElem_of_nonempty (by omega)
---       simp at this
---       simp [tail_length] at hj
---       rw [π.tail_getElem_of_nonempty (by omega)]
---       · congr! 1
---         simp
---         exact (Fin.heq_ext_iff (by simp ; omega)).mp heq
---       · simp_all
---         omega
---     · have : i = j := (Fin.heq_ext_iff (by simp ; omega)).mp heq
---       subst_eqs
---       simp_all
---     · have : i = j := by exact (Fin.heq_ext_iff (by simp ; omega)).mp heq
---       subst_eqs
---       simp
---       rw [π.tail_get_nat]
---       omega
+end MDP

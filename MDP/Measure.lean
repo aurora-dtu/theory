@@ -39,7 +39,7 @@ variable {M : MDP State Act}
 
 @[simp]
 theorem tsum_succs_univ_P_eq_one (h : α ∈ M.act s) : ∑' s' : M.succs_univ s, M.P s α s' = 1 := by
-  rw [← (M.P_sum_support_one_iff s α).mpr h]
+  rw [← M.P_sum_support_one_iff.mpr h]
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨s, _⟩ ↦ ⟨s.val, by simp_all⟩) <;> simp_all
   intro ⟨⟨_, _⟩, _⟩ ⟨⟨_, _⟩, _⟩ h
   simp_all
@@ -84,4 +84,6 @@ theorem tsum_Prob_eq_one (𝒮 : M.Scheduler') (n : ℕ) : ∑' π : Path[M,s,=n
     rw [Path_eq.eq_biUnion_succs_univ _]
     rw [ENNReal.tsum_biUnion (f:=(·.Prob 𝒮)) (t:=fun (π : Path[M,s,=n]) ↦ π.val.succs_univ)]
     · simpa
-    · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint (M:=M) s n <;> simp_all
+    · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n) <;> simp_all
+
+end MDP
