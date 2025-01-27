@@ -33,7 +33,7 @@ jobs:
       - name: Install elan and build doc-gen4
         uses: leanprover/lean-action@v1
         with:
-          build-args: "--wfail"
+          build-args: "--wfail -Kenv=dev"
       - name: Build documentation
         run: |
           export LEAN_ABORT_ON_PANIC=1
