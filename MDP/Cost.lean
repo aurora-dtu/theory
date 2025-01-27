@@ -212,6 +212,10 @@ theorem iSup_iInf_EC'_eq_iInf_iSup_EC' [M.FiniteBranching] :
   apply le_antisymm (iSup_iInf_le_iInf_iSup _) (le_of_eq_of_le _ iSup_iInf_EC_le_iSup_iInf_EC')
   simp [iInf_iSup_EC_eq_iInf_iSup_EC', iSup_iInf_EC_eq_iInf_iSup_EC]
 
+theorem iInf_iSup_EC_eq_lfp_Φ [M.FiniteBranching] :
+    ⨅ 𝒮 : M.Scheduler', ⨆ n, M.EC c 𝒮 s n = M.lfp_Φ c s := by
+  simp [← iSup_iInf_EC_eq_lfp_Φ, iSup_iInf_EC_eq_iInf_iSup_EC]
+
 theorem Complete [M.FiniteBranching] :
   let S: Set ENNReal := {
     ⨆ n, ⨅ 𝒮 : M.Scheduler', M.EC c 𝒮 s n,
