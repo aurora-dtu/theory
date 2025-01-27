@@ -72,12 +72,12 @@ namespace Path_le
 
 variable {M}
 
-instance [DecidableEq State] [M.FiniteBranching] (π : M.Path) : π.succs_univ.Finite := by
+theorem succs_univ_Finite [DecidableEq State] [M.FiniteBranching] (π : M.Path) : π.succs_univ.Finite := by
   simp [Path.succs_univ_eq_extend_succs_univ]
   refine Set.Finite.dependent_image ?hs fun x hx ↦ π.extend ⟨x, hx⟩
-  exact M.instFiniteSuccs_univOfFiniteBranching
+  exact M.succs_univ_Finite
 noncomputable instance [DecidableEq State] [M.FiniteBranching] (π : M.Path) : Fintype π.succs_univ
-  := (instFinitePathSuccs_univOfDecidableEqOfFiniteBranching π).fintype
+  := (succs_univ_Finite π).fintype
 
 variable {n} {s}
 
@@ -100,7 +100,7 @@ instance : Subsingleton Path[M,s,≤0] where
       subst_eqs
       exact h.symm
 
-instance instFinite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite := by
+theorem finite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite := by
   induction n with
   | zero => exact Set.toFinite Path[M,s,≤0]
   | succ n ih =>
@@ -128,7 +128,7 @@ instance instFinite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Fin
         simp_all [π.mem_prev_succs_univ (by omega)]
 
 noncomputable instance [DecidableEq State] [M.FiniteBranching] : Fintype Path[M,s,≤n] :=
-  instFinite.fintype
+  finite.fintype
 
 end Path_le
 

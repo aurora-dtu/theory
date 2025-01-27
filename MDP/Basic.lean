@@ -101,7 +101,7 @@ noncomputable instance (M : MDP State Act) (s : State) : Nonempty (M.act s) := b
   simp_all
 
 instance (M : MDP State Act) [i : M.FiniteBranching] (s : State) : Finite (M.act s) := i.act_fin s
-instance (M : MDP State Act) [i : M.FiniteBranching] (s : State) : (M.act s).Finite := i.act_fin s
+theorem actFinite (M : MDP State Act) [i : M.FiniteBranching] (s : State) : (M.act s).Finite := i.act_fin s
 noncomputable instance (M : MDP State Act) [M.FiniteBranching] (s : State) : Fintype (M.act s) := Fintype.ofFinite (M.act s)
 
 @[simp]
@@ -210,7 +210,7 @@ theorem succs₀_mem_eq_succs_mem [M.FiniteBranching] (s s' : State) :
 instance [M.FiniteBranching] : Finite (M.succs α s) := by
   apply Set.Finite.ofFinset (M.succs₀ α s)
   simp
-instance [M.FiniteBranching] : (M.succs α s).Finite := Set.toFinite (M.succs α s)
+theorem succs_finite [M.FiniteBranching] : (M.succs α s).Finite := Set.toFinite (M.succs α s)
 noncomputable instance [M.FiniteBranching] : Fintype (M.succs α s) := Fintype.ofFinite ↑(M.succs α s)
 
 instance instNonemptySuccs (α : M.act s) : Nonempty (M.succs α s) := by
@@ -273,10 +273,11 @@ theorem succs_univ₀_mem_eq_succs_univ_mem (s s' : State) :
   s' ∈ M.succs_univ₀ s ↔ s' ∈ M.succs_univ s
 := by simp [succs_univ, succs_univ₀, succs, succs₀]
 
-instance : (M.succs s a).Finite := by
+omit [DecidableEq State] in
+theorem succs_Finite : (M.succs s a).Finite := by
   rw [←succs₀_eq_succs]
   apply Finset.finite_toSet
-instance : (M.succs_univ s).Finite := by
+theorem succs_univ_Finite : (M.succs_univ s).Finite := by
   rw [←succs_univ₀_eq_succs_univ]
   apply Finset.finite_toSet
 
@@ -287,7 +288,6 @@ instance instNonemptySuccsUniv₀ : Nonempty (M.succs_univ₀ s) := by
 instance [M.FiniteBranching] : Finite (M.succs_univ s) := by
   apply Set.Finite.ofFinset (M.succs_univ₀ s)
   simp
-instance [M.FiniteBranching] : (M.succs_univ s).Finite := Set.toFinite (M.succs_univ s)
 noncomputable instance [M.FiniteBranching] : Fintype (M.succs_univ s) := Fintype.ofFinite ↑(M.succs_univ s)
 
 end Succs
