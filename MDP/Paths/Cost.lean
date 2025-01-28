@@ -6,7 +6,7 @@ namespace MDP
 variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
 
-def Costs (_ : MDP State Act) := State → ENNReal
+abbrev Costs (_ : MDP State Act) := State → ENNReal
 
 noncomputable def Path.Cost (c : M.Costs) (π : M.Path) := (π.states.map c).sum
 noncomputable def Path.ECost (c : M.Costs) (𝒮 : M.Scheduler') (π : M.Path) := π.Cost c * π.Prob 𝒮

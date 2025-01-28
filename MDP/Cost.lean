@@ -114,7 +114,7 @@ theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s n = (M.Φ c)^[
     simp [Path.instSingleton, Φ, Φf]
   | succ n ih =>
     rw [Function.iterate_succ']
-    simp [(by simp_all : (M.Φ c)^[n + 1] ⊥ = (⨅ 𝒮, EC c 𝒮 · n))]
+    simp [(by simp [ih] : (M.Φ c)^[n + 1] ⊥ = (⨅ 𝒮, EC c 𝒮 · n))]
     simp [EC_succ', Φ, Φf, ← ENNReal.add_iInf, iInf_EC_eq_specialized, ENNReal.mul_iInf,
       tsum_iInf_EC_comm, iInf_scheduler_eq_iInf_act_iInf_scheduler]
 
