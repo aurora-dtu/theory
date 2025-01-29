@@ -9,10 +9,14 @@ namespace MDP
 variable {State : Type*} {Act : Type*}
 variable (M : MDP State Act)
 
+/-- Paths starting in `s` with length `n + 1` -/
 def Path_eq (n : ℕ) (s : State) := { π : M.Path | ∎|π| = n + 1 ∧ π[0] = s }
+/-- Paths starting in `s` with length at most `n + 1` -/
 def Path_le (n : ℕ) (s : State) := { π : M.Path | ∎|π| ≤ n + 1 ∧ π[0] = s }
 
+@[inherit_doc]
 notation "Path[" M "," s "," "=" n "]" => MDP.Path_eq M n s
+@[inherit_doc]
 notation "Path[" M "," s "," "≤" n "]" => MDP.Path_le M n s
 
 instance [DecidableEq State] : Decidable (π ∈ Path[M,s,=n]) := instDecidableAnd
@@ -180,8 +184,10 @@ class IsBounded (𝒮 : 𝔖[M]) (s : State) (n : ℕ) : Prop where
 
 end Scheduler
 
+/-- A (potentially) history dependent scheduler, bounded to paths in `Path[M,s,≤n]`. -/
 def BScheduler (M : MDP State Act) (s : State) (n : ℕ) := {𝒮 : 𝔖[M] // 𝒮.IsBounded s n}
 
+@[inherit_doc]
 notation "𝔖[" M "," s "," "≤" n "]" => BScheduler M s n
 
 namespace BScheduler
@@ -258,10 +264,6 @@ noncomputable def Scheduler.bound (𝒮 : 𝔖[M]) {s : State} {n : ℕ} : 𝔖[
 theorem Scheduler.bound_coe_apply (𝒮 : 𝔖[M]) (s : State) (n : ℕ) (π : M.Path) :
     (𝒮.bound (n:=n) (s:=s)) π = if π ∈ Path[M,s,≤n] then 𝒮 π else M.default_act π.last := rfl
 
-omit [DecidableEq State] in
-theorem Prob_eq_if (π : M.Path) (h : ∀ π' : Path[M,π[0],≤∎|π|], 𝒮 π' = 𝒮' π') :
-    π.Prob 𝒮 = π.Prob 𝒮' := by simp_all [Path.Prob]
-
 namespace BScheduler
 
 noncomputable section
@@ -320,10 +322,7 @@ theorem mk'_specialize (f : Path[M,s,≤n+1] → Act) (h : ∀π, f π ∈ M.act
 
 variable [M.FiniteBranching] in
 theorem mk'_argmin (s : State) (s' : M.succs_univ s) (f : 𝔖[M,s',≤n] → ENNReal) :
-  mk' (M:=M) s' (n:=n)
-    (fun π ↦ elems.argmin (by simp) f π)
-    (by simp)
-  = elems.argmin (by simp) f
+  mk' (M:=M) s' (n:=n) (fun π ↦ elems.argmin (by simp) f π) (by simp) = elems.argmin (by simp) f
 := by ext π hπ; simp_all [mk']
 
 end

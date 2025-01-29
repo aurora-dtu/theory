@@ -4,10 +4,12 @@ namespace MDP
 
 variable {State : Type*} {Act : Type*}
 
+/-- A (potentially) history dependent scheduler. -/
 structure Scheduler (M : MDP State Act) where
   toFun : M.Path → Act
   property' : ∀ π : M.Path, toFun π ∈ M.act π.last
 
+@[inherit_doc]
 notation "𝔖[" M "]" => Scheduler M
 
 namespace Scheduler
@@ -79,8 +81,10 @@ theorem Markovian_path_take''' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (
 
 end Scheduler
 
+/-- A `Markovian` (historyless) scheduler. -/
 def MScheduler (M : MDP State Act) := { 𝒮 : 𝔖[M] // 𝒮.Markovian }
 
+@[inherit_doc]
 notation "𝔏[" M "]" => MScheduler M
 
 namespace MScheduler
@@ -163,6 +167,7 @@ syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]"
 @[inherit_doc Scheduler.specialize]
 macro_rules | `($x[$i ↦ $j]) => `(($x).specialize $i $j)
 syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]'" term:max : term
+@[inherit_doc Scheduler.specialize]
 macro_rules | `($x[$i ↦ $j]'$p) => `(($x).specialize $i ⟨$j, $p⟩)
 
 variable [DecidableEq State] {𝒮 : 𝔖[M]}
@@ -185,7 +190,7 @@ theorem Scheduler.specialize_default_on {π : M.Path}
   simp [h]
 
 theorem MScheduler.toScheduler_specialize (ℒ : 𝔏[M]) :
-      (ℒ.toScheduler.specialize s s')
+      ℒ.toScheduler[s ↦ s']
     = ⟨fun π ↦ if π[0] = ↑s' then ℒ π else M.default_act π.last,
        fun π ↦ by simp; split_ifs <;> simp⟩ := by
   ext π; simp
