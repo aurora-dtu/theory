@@ -54,7 +54,6 @@ def IsMarkovian {M : MDP State Act} (𝒮 : M.Scheduler') : Prop := ∀ π, 𝒮
 class Markovian {M : MDP State Act} (𝒮 : M.Scheduler') : Prop where
   intro : (∀ π, 𝒮 π = 𝒮 {π.last})
 
--- @[simp]
 theorem MarkovianOn (𝒮 : M.Scheduler') [inst : Markovian 𝒮] (π : M.Path) :
     𝒮 π = 𝒮 {π.last} := inst.intro π
 
@@ -62,7 +61,6 @@ theorem MarkovianOn (𝒮 : M.Scheduler') [inst : Markovian 𝒮] (π : M.Path) 
 theorem Markovian_path_take (𝒮 : M.Scheduler') [𝒮.Markovian] (π : M.Path) (i : Fin ∎|π|) :
     𝒮 (π.take i) = 𝒮 {π[i]} := by simp [MarkovianOn]
 
--- @[simp]
 theorem singleton_last (s : State) : ({s} : M.Path).last = s := by simp
 
 @[simp]
@@ -81,20 +79,19 @@ end Scheduler'
 
 def Scheduler (M : MDP State Act) := { 𝒮 : M.Scheduler' // 𝒮.Markovian }
 
-noncomputable instance (M : MDP State Act) : Inhabited M.Scheduler' :=
-  ⟨fun _ ↦ M.progress_act.choose, fun _ ↦ M.progress_act.choose_spec⟩
-
-noncomputable instance (M : MDP State Act) : Inhabited M.Scheduler :=
-  ⟨default, ⟨fun _ ↦ rfl⟩⟩
-
 namespace Scheduler
 
 variable {M : MDP State Act}
 
+noncomputable instance : Inhabited M.Scheduler' :=
+  ⟨fun _ ↦ M.default_act _, fun _ ↦ M.default_act_spec _⟩
+
+noncomputable instance : Inhabited M.Scheduler := ⟨default, ⟨fun _ ↦ rfl⟩⟩
+
 @[coe]
 def toScheduler' : M.Scheduler → M.Scheduler' := Subtype.val
 
-instance : Coe M.Scheduler M.Scheduler' := { coe := toScheduler' }
+instance : Coe M.Scheduler M.Scheduler' := ⟨toScheduler'⟩
 
 instance (𝒮 : M.Scheduler) : Scheduler'.Markovian (𝒮 : M.Scheduler') := 𝒮.prop
 
@@ -108,90 +105,89 @@ theorem toScheduler'_injective : Function.Injective ((↑) : M.Scheduler → M.S
 
 instance instFunLike : FunLike M.Scheduler M.Path Act where
   coe 𝒮 π := (𝒮 : M.Scheduler') π
-  coe_injective' _ _ h := toScheduler'_injective <| Scheduler'.ext <| congrFun h
+  coe_injective' _ _ h := toScheduler'_injective (Scheduler'.ext <| congrFun h)
 
 def mk' (f : (s : State) → Act) (hf : ∀s, f s ∈ M.act s) : M.Scheduler
   := ⟨⟨fun π ↦ f π.last, fun π ↦ hf π.last⟩, (Scheduler'.markovian_iff _).mpr fun _ ↦ rfl⟩
 
--- @[simp]
-theorem markovian (𝒮 : M.Scheduler) (π : M.Path) : 𝒮 π = 𝒮 {π.last} :=
+variable {𝒮 : M.Scheduler}
+
+theorem markovian (π : M.Path) : 𝒮 π = 𝒮 {π.last} :=
   𝒮.prop.intro π
 
-@[simp] theorem mem_act' (𝒮 : M.Scheduler) (π : M.Path) :
+@[simp] theorem mem_act' (π : M.Path) :
     𝒮 π ∈ M.act π.last := by
   obtain ⟨𝒮, h𝒮⟩ := 𝒮
   simp only [DFunLike.coe]
   simp
 
 @[simp]
-theorem prepend (𝒮 : M.Scheduler) (π : M.Path) (s : M.prev_univ π[0]) : 𝒮 (π.prepend s) = 𝒮 π := by
+theorem prepend {π : M.Path} (s : M.prev_univ π[0]) : 𝒮 (π.prepend s) = 𝒮 π := by
   have := 𝒮.markovian π |>.symm
   have := 𝒮.markovian (π.prepend ⟨s, by simp_all⟩)
   simp_all
 
+@[simp]
+theorem toScheduler'_apply : 𝒮.toScheduler' π = 𝒮 π := rfl
+
+-- @[simp]
+-- theorem toScheduler'_prepend : 𝒮.toScheduler' (({s} : M.Path).prepend s') = 𝒮 {s} :=
+--   by simp
+
 end Scheduler
 
-theorem P_Markovian {M : MDP State Act} (π : M.Path) (𝒮 : M.Scheduler') (h : 𝒮.Markovian)
-    (i : Fin (∎|π| - 1)) : M.P π[i] (𝒮 (π.take i)) π[i.succ] = M.P π[i] (𝒮 {π[i]}) π[i.succ] := by
-  simp
+variable {M : MDP State Act}
 
 @[simp]
-theorem P_sum_one_iff_Scheduler (M : MDP State Act) [i : M.FiniteBranching] (𝒮 : M.Scheduler')
-    (s : State) : ∑ (s' ∈ (i.succs_fin s (𝒮 {s})).toFinset), M.P s (𝒮 {s}) s' = 1
-:= by simp [P_sum_support₀_one_iff]
-
-@[simp]
-theorem P_tsum_one_iff_Scheduler (M : MDP State Act) (𝒮 : M.Scheduler') (s : State) :
+theorem P_tsum_one_iff_Scheduler (𝒮 : M.Scheduler') :
     ∑' (s' : (M.P s (𝒮 {s})).support), M.P s (𝒮 {s}) s' = 1 :=
   M.P_tsum_support_one_iff.mpr (Scheduler'.singleton_mem_act 𝒮)
 
 @[simp]
-theorem Path.P_tsum_one_iff_Scheduler (M : MDP State Act) (𝒮 : M.Scheduler') (π : M.Path) :
+theorem Path.P_tsum_one_iff_Scheduler (𝒮 : M.Scheduler') :
     ∑' (s' : (M.P π.last (𝒮 π)).support), M.P π.last (𝒮 π) s' = 1 :=
   M.P_tsum_support_one_iff.mpr (Scheduler'.mem_act 𝒮)
 
-noncomputable def default_act (M : MDP State Act) (s : State) : Act :=
-  (M.progress_act (s:=s)).choose
 @[simp]
-theorem default_act_spec (M : MDP State Act) (s : State) : M.default_act s ∈ M.act s :=
-  M.progress_act.choose_spec
+theorem Scheduler'.mk'_coe {𝒮 : (π : M.Path) → M.act π.last} (π : M.Path) :
+    (Scheduler'.mk' 𝒮) π = (𝒮 π).val := by simp [mk']
 
-variable {M : MDP State Act}
-
+/-- Specialize a scheduler such that all scheduled paths are considered with a given state as the
+    immediately predecessor. -/
 noncomputable def Scheduler'.specialize [DecidableEq State] (𝒮 : M.Scheduler')
     (s₀ : State) (s₀' : M.succs_univ s₀) : M.Scheduler' :=
   Scheduler'.mk' fun π ↦ if h : π[0] = s₀' then ⟨𝒮 (π.prepend ⟨s₀, by simp_all⟩), by simp⟩
                          else default
 
 syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]" : term
+@[inherit_doc Scheduler'.specialize]
 macro_rules | `($x[$i ↦ $j]) => `(($x).specialize $i $j)
 syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]'" term:max : term
 macro_rules | `($x[$i ↦ $j]'$p) => `(($x).specialize $i ⟨$j, $p⟩)
 
-@[simp]
-theorem Scheduler'.mk'_coe {𝒮 : (π : M.Path) → M.act π.last} (π : M.Path) :
-    (Scheduler'.mk' 𝒮) π = (𝒮 π).val := by simp [mk']
+variable [DecidableEq State] {𝒮 : M.Scheduler'}
 
 @[simp]
-theorem Scheduler'.specialize_tail_take [DecidableEq State] (𝒮 : M.Scheduler') (π : M.Path)
+theorem Scheduler'.specialize_apply :
+    𝒮[s ↦ s'] π = if h : π[0] = s' then 𝒮 (π.prepend ⟨s, by simp_all⟩) else M.default_act π.last
+:= by
+  simp [specialize]; apply apply_dite
+
+@[simp]
+theorem Scheduler'.specialize_tail_take (π : M.Path)
   (h : 1 < ∎|π|) :
     𝒮[π[0] ↦ ⟨π[1], by simp⟩] (π.tail.take i) = 𝒮 (π.take (i + 1)) := by
-  simp [specialize, Nat.ne_of_lt' h, Path.take_prepend, π.tail_prepend h]
+  simp [Nat.ne_of_lt' h, Path.take_prepend, π.tail_prepend h]
 
 @[simp]
-theorem Scheduler'.specialize_default_on [DecidableEq State] (𝒮 : M.Scheduler') {π : M.Path}
+theorem Scheduler'.specialize_default_on {π : M.Path}
     {s' : M.succs_univ s} (h : ¬π[0] = ↑s') : 𝒮[s ↦ s'] π = M.default_act π.last := by
-  simp [specialize, h]
-  congr
+  simp [h]
 
-theorem Scheduler.toScheduler'_specialize [DecidableEq State] (𝒮 : M.Scheduler) :
+theorem Scheduler.toScheduler'_specialize (𝒮 : M.Scheduler) :
       (𝒮.toScheduler'.specialize s s')
     = ⟨fun π ↦ if π[0] = ↑s' then 𝒮 π else M.default_act π.last,
        fun π ↦ by simp; split_ifs <;> simp⟩ := by
-  ext π
-  simp [Scheduler'.specialize]
-  split_ifs
-  · apply prepend
-  · rfl
+  ext π; simp
 
 end MDP

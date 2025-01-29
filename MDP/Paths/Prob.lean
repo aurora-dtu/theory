@@ -43,9 +43,9 @@ theorem extend_Prob (s : M.succs_univ π.last) (𝒮 : M.Scheduler') :
 theorem prepend_Prob [DecidableEq State] (𝒮 : M.Scheduler') (s : M.prev_univ π[0]) :
     (π.prepend s).Prob 𝒮 = M.P s (𝒮 {s.val}) π[0] * π.Prob (𝒮[s ↦ π[0]]'(by simp)) := by
   simp [Prob, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ]
-  have h₂ : ∀ f : Fin ((π.prepend s).length - 1) → ENNReal,
-      ∏ i : Fin ((π.prepend s).length - 1), f i
-    = ∏ i : Fin (π.length - 1 + 1), f ⟨i, by obtain ⟨i, hi⟩ := i; have := π.length_pos; simp; omega⟩
+  have h₂ : ∀ f : Fin (∎|π.prepend s| - 1) → ENNReal,
+      ∏ i : Fin (∎|π.prepend s| - 1), f i
+    = ∏ i : Fin (∎|π| - 1 + 1), f ⟨i, by obtain ⟨i, hi⟩ := i; have := π.length_pos; simp; omega⟩
   := by
     intro f
     congr <;> try simp
@@ -53,7 +53,7 @@ theorem prepend_Prob [DecidableEq State] (𝒮 : M.Scheduler') (s : M.prev_univ 
   simp [h₂, Fin.prod_univ_succ, Scheduler'.specialize]
   congr! 2 with ⟨i, hi⟩
 
-theorem Prob_tail [DecidableEq State] (h : 1 < π.length) (𝒮 : M.Scheduler') :
+theorem Prob_tail [DecidableEq State] (h : 1 < ∎|π|) (𝒮 : M.Scheduler') :
     π.Prob 𝒮 = M.P π[0] (𝒮 {π[0]}) π[1] * π.tail.Prob (𝒮[π[0] ↦ π[1]]'(by simp)) := by
   nth_rw 1 [←π.tail_prepend h, prepend_Prob]
   simp [h]

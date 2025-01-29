@@ -21,12 +21,12 @@ variable {State : Type*} {Act : Type*}
 
 variable (M : MDP State Act)
 
-def P(s : State) (a : Act) (s' : State) :=
+def P (s : State) (a : Act) (s' : State) :=
   match M.P' s a with
   | some pmf => pmf s'
   | none => 0
 
-theorem progress'(s : State) : ∃ (a : Act), (M.P s a).support.Nonempty := by
+theorem progress' (s : State) : ∃ (a : Act), (M.P s a).support.Nonempty := by
   have ⟨a, h⟩ := M.progress s
   have ⟨pmf, s'⟩ := Option.isSome_iff_exists.mp h
   simp_all [P]
@@ -35,13 +35,13 @@ theorem progress'(s : State) : ∃ (a : Act), (M.P s a).support.Nonempty := by
   simp [s']
   exact Function.support_nonempty_iff.mp pmf.support_nonempty
 
-@[simp] lemma P_le_one(s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
+@[simp] lemma P_le_one (s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
   unfold P
   split
   · apply PMF.coe_le_one
   · simp only [zero_le]
 
-@[simp] lemma P_ne_top(s : State) (a : Act) (s' : State) : M.P s a s' ≠ ⊤ :=
+@[simp] lemma P_ne_top (s : State) (a : Act) (s' : State) : M.P s a s' ≠ ⊤ :=
   M.P_le_one s a s' |>.trans_lt ENNReal.one_lt_top |>.ne
 
 theorem P_pos_iff_sum_eq_one : (M.P s a).support.Nonempty ↔ ∑' s', M.P s a s' = 1 := by
@@ -65,11 +65,17 @@ noncomputable def act₀ [i : M.FiniteBranching] (s : State) : Finset Act := (i.
 
 noncomputable instance [Fintype Act] : Finite (M.act s) := Subtype.finite
 noncomputable instance [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite ↑(M.act s)
-noncomputable instance : Nonempty (M.act s) := by
+noncomputable instance act.instNonEmpty : Nonempty (M.act s) := by
   simp only [act, ← P_pos_iff_sum_eq_one, Set.coe_setOf, nonempty_subtype]
   have ⟨α, hα⟩ := M.progress' s
   use α
   simp_all
+
+noncomputable def default_act (s : State) : Act :=
+  (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose
+@[simp]
+theorem default_act_spec (s : State) : M.default_act s ∈ M.act s :=
+  (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose_spec
 
 instance [i : M.FiniteBranching] : Finite (M.act s) := i.act_fin s
 theorem actFinite [i : M.FiniteBranching] : (M.act s).Finite := i.act_fin s
@@ -86,7 +92,7 @@ theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.P s a).suppo
 
 noncomputable instance [M.FiniteBranching] : Nonempty (M.act₀ s) := by
   simp [act₀]
-  have : Nonempty (M.act s) := instNonemptyElemAct M
+  have : Nonempty (M.act s) := act.instNonEmpty M
   simp at this
   exact this
 
@@ -106,12 +112,6 @@ noncomputable instance act.instDefault : Inhabited (M.act s) := Classical.inhabi
 
 noncomputable instance act₀.instDefault [M.FiniteBranching] : Inhabited (M.act₀ s) :=
   Classical.inhabited_of_nonempty'
-
-theorem progress_act : ∃ a, a ∈ M.act s := by
-  obtain ⟨a, s', h⟩ := M.progress' s
-  use a
-  rw [← M.P_nonempty_iff_act]
-  use s'
 
 theorem P_sum_one_iff : ∑' s', M.P s a s' = 1 ↔ a ∈ M.act s := by
   simp [act, Set.mem_setOf_eq, P]
@@ -218,9 +218,9 @@ theorem prev_univ_iff_succs_univ : s' ∈ M.prev_univ s ↔ s ∈ M.succs_univ s
 
 instance instNonemptySuccsUniv : Nonempty (M.succs_univ s) := by
   simp [succs_univ]
-  have ⟨α, hα⟩ : Nonempty (M.act s) := M.instNonemptyElemAct
-  have ⟨s', hs⟩ : Nonempty (M.succs α s) := M.instNonemptySuccs ⟨α, hα⟩
-  use s', α, hα
+  let α := M.default_act s
+  have ⟨s', _⟩ : Nonempty (M.succs α s) := M.instNonemptySuccs ⟨α, by simp [α]⟩
+  use s', α, by simp [α]
 
 variable [DecidableEq State] [M.FiniteBranching]
 
