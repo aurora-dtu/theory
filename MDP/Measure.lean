@@ -45,7 +45,7 @@ theorem tsum_succs_univ_P_eq_one (h : α ∈ M.act s) : ∑' s' : M.succs_univ s
   simp_all
 
 @[simp]
-theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : M.Scheduler') (π : M.Path) :
+theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
     ∑' π' : π.succs_univ, π'.val.Prob 𝒮 = π.Prob 𝒮 := by
   rw [Equiv.tsum_eq_tsum_of_support (g:=fun s' ↦ (π.extend s').Prob 𝒮)]
   · simp [Path.extend_Prob, ENNReal.tsum_mul_right]
@@ -77,7 +77,7 @@ theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : M.Scheduler') (π : M.Path) :
     subst_eqs
     simp [Set.BijOn.equiv]
 
-theorem tsum_Prob_eq_one (𝒮 : M.Scheduler') (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
+theorem tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
   induction n with
   | zero => simp
   | succ n ih =>

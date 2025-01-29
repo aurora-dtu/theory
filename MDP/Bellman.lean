@@ -22,8 +22,8 @@ variable (M : MDP State Act)
 noncomputable def Φf (s : State) (a : Act) : (State → ENNReal) →o ENNReal :=
   ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s a s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
 
-noncomputable def Φ𝒮 (c : M.Costs) (𝒮 : M.Scheduler) : (State → ENNReal) →o (State → ENNReal) :=
-  ⟨fun v s ↦ c s + M.Φf s (𝒮 {s}) v, by intro v v' h s; simp only; gcongr⟩
+noncomputable def Φℒ (c : M.Costs) (ℒ : 𝔏[M]) : (State → ENNReal) →o (State → ENNReal) :=
+  ⟨fun v s ↦ c s + M.Φf s (ℒ {s}) v, by intro v v' h s; simp only; gcongr⟩
 
 noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
   Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
@@ -35,11 +35,11 @@ theorem Φ.monotone' : Monotone M.Φ := by
   intro v v' h s
   apply add_le_add h; simp_all
 
-theorem Φ_le_Φ𝒮 : M.Φ c ≤ M.Φ𝒮 c 𝒮 := by
+theorem Φ_le_Φℒ : M.Φ c ≤ M.Φℒ c ℒ := by
   intro f s
-  simp [Φ, Φ𝒮]
+  simp [Φ, Φℒ]
   gcongr
-  apply iInf_le_of_le ⟨𝒮 {s}, 𝒮.val.property' {s}⟩ (by rfl)
+  apply iInf_le_of_le ⟨ℒ {s}, ℒ.val.property' {s}⟩ (by rfl)
 
 noncomputable def lfp_Φ (c : M.Costs) : State → ENNReal := OrderHom.lfp (M.Φ c)
 
@@ -51,10 +51,10 @@ theorem iSup_Φ_eq_iSup'_Φ : M.iSup_Φ = M.iSup'_Φ := by
 
 theorem lfp_Φ_step : M.Φ c (M.lfp_Φ c) = M.lfp_Φ c := OrderHom.map_lfp (M.Φ c)
 
-noncomputable def lfp_Φ𝒮 (c : M.Costs) (𝒮 : M.Scheduler) : State → ENNReal :=
-  OrderHom.lfp (M.Φ𝒮 c 𝒮)
+noncomputable def lfp_Φℒ (c : M.Costs) (ℒ : 𝔏[M]) : State → ENNReal :=
+  OrderHom.lfp (M.Φℒ c ℒ)
 
-theorem lfp_Φ𝒮_step : M.Φ𝒮 c 𝒮 (M.lfp_Φ𝒮 c 𝒮) = M.lfp_Φ𝒮 c 𝒮 := OrderHom.map_lfp (M.Φ𝒮 c 𝒮)
+theorem lfp_Φℒ_step : M.Φℒ c 𝒮 (M.lfp_Φℒ c 𝒮) = M.lfp_Φℒ c 𝒮 := OrderHom.map_lfp (M.Φℒ c 𝒮)
 
 theorem lfp_Φ.mono (s : State) : Monotone (M.lfp_Φ · s) :=
   fun _ _ h ↦ OrderHomClass.GCongr.mono OrderHom.lfp (Φ.monotone' M h) s
@@ -79,23 +79,23 @@ theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ h ↦ (M.Φf s α).mono (by gcongr))
 
-theorem Φ𝒮_ωScottContinuous : ωScottContinuous (M.Φ𝒮 c 𝒮) := by
+theorem Φℒ_ωScottContinuous : ωScottContinuous (M.Φℒ c ℒ) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ ?_
   ext s
-  simp [Φ𝒮, M.Φf_ωScottContinuous.map_ωSup]
+  simp [Φℒ, M.Φf_ωScottContinuous.map_ωSup]
   simp [ωSup, ← ENNReal.add_iSup]
 
 theorem lfp_Φ_eq_iSup'_Φ : M.lfp_Φ = M.iSup'_Φ := by
   funext c
   exact fixedPoints.lfp_eq_sSup_iterate _ M.Φ_ωScottContinuous
 
-theorem lfp_Φ𝒮_eq_iSup_Φ𝒮 : M.lfp_Φ𝒮 = fun c 𝒮 ↦ ⨆ n, (M.Φ𝒮 c 𝒮)^[n] ⊥ := by
-  funext c 𝒮
-  exact fixedPoints.lfp_eq_sSup_iterate _ M.Φ𝒮_ωScottContinuous
+theorem lfp_Φℒ_eq_iSup_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (M.Φℒ c ℒ)^[n] ⊥ := by
+  funext c ℒ
+  exact fixedPoints.lfp_eq_sSup_iterate _ M.Φℒ_ωScottContinuous
 
-theorem lfp_Φ𝒮_eq_iSup_succ_Φ𝒮 : M.lfp_Φ𝒮 = fun c 𝒮 ↦ ⨆ n, (M.Φ𝒮 c 𝒮)^[n + 1] ⊥ := by
-  funext c 𝒮
-  rw [lfp_Φ𝒮_eq_iSup_Φ𝒮, iSup_iterate_succ]
+theorem lfp_Φℒ_eq_iSup_succ_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (M.Φℒ c ℒ)^[n + 1] ⊥ := by
+  funext c ℒ
+  rw [lfp_Φℒ_eq_iSup_Φℒ, iSup_iterate_succ]
 
 theorem lfp_Φ_eq_iSup_Φ : M.lfp_Φ = M.iSup_Φ := M.lfp_Φ_eq_iSup'_Φ.trans M.iSup_Φ_eq_iSup'_Φ.symm
 
