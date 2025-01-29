@@ -53,7 +53,7 @@ noncomputable def dwp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | tick e => apply add_le_add_left h
 
 noncomputable def dwp_loop_f (B : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun Y => B.probOf * C'.dwp Y + B.not.probOf * X,
+  ⟨fun Y ↦ B.probOf * C'.dwp Y + B.not.probOf * X,
    fun _ _ h σ ↦ by simp [add_le_add, mul_le_mul, dwp.monotone C' h σ]⟩
 theorem dwp_loop : (loop (ϖ:=ϖ) B C').dwp = fun X ↦ OrderHom.lfp (C'.dwp_loop_f B X) := rfl
 

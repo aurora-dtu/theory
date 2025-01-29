@@ -15,33 +15,31 @@ import PGCL.WeakestPre
   `MDP.Φ`.
 * `pGCL.dop_eq_dwp`: The proof connecting the fixed point characteristic of the operational
   semantics to the weakest preexpectation formalization of `pGCL`.
-
 -/
 
 namespace pGCL
 
-variable {ϖ : Type*}
-variable [DecidableEq ϖ]
+variable {ϖ : Type*} [DecidableEq ϖ]
 
 /-- Probobalistic small step operational semantics for `pGCL` -/
-@[mk_iff]
+@[aesop safe [constructors, cases]]
 inductive SmallStep : Conf ϖ → Act → ENNReal → Conf ϖ → Prop where
   | bot      : SmallStep none .N 1 none
   | skip     : SmallStep (·⟨skip, σ⟩)          .N 1 (·⟨⇓ ϖ, σ⟩)
   | sink     : SmallStep (·⟨⇓ ϖ, σ⟩)           .N 1 none
   | assign   : SmallStep (·⟨x ::= e, σ⟩)       .N 1 (·⟨.skip, σ[x ↦ e σ]⟩)
-  | prob     : SmallStep (·⟨.prob C p C, σ⟩)   .N 1 (some (C, σ))
+  | prob     : SmallStep (·⟨.prob C p C, σ⟩)   .N 1 (·⟨C, σ⟩)
   | prob_L   : (h : ¬C₁ = C₂) → (h' : 0 < p.val σ) →
-    SmallStep (·⟨.prob C₁ p C₂, σ⟩) .N (p.val σ)     (some (C₁, σ))
+    SmallStep (·⟨.prob C₁ p C₂, σ⟩) .N (p.val σ)     (·⟨C₁, σ⟩)
   | prob_R   : (h : ¬C₁ = C₂) → (h' : p.val σ < 1) →
-    SmallStep (·⟨.prob C₁ p C₂, σ⟩) .N (1 - p.val σ) (some (C₂, σ))
+    SmallStep (·⟨.prob C₁ p C₂, σ⟩) .N (1 - p.val σ) (·⟨C₂, σ⟩)
   | nonDet_L : SmallStep (·⟨C₁ [] C₂, σ⟩)      .L 1 (·⟨C₁, σ⟩)
   | nonDet_R : SmallStep (·⟨C₁ [] C₂, σ⟩)      .R 1 (·⟨C₂, σ⟩)
   | tick     : SmallStep (·⟨.tick r, σ⟩)       .N 1 (·⟨.skip, σ⟩)
   | seq_L    : SmallStep (·⟨.skip ; C₂, σ⟩) .N 1 (·⟨C₂, σ⟩)
   | seq_R    : SmallStep (·⟨C₁, σ⟩) α p (·⟨C₁', τ⟩) → SmallStep (·⟨C₁ ; C₂, σ⟩) α p (·⟨C₁' ; C₂, τ⟩)
   | loop     : ¬b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨.skip, σ⟩)
-  | loop'    : b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨C.seq (.loop b C), σ⟩)
+  | loop'    : b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨C ; .loop b C, σ⟩)
 
 @[inherit_doc]
 local notation c " ⤳[" α "," p "] " c' => SmallStep c α p c'
@@ -56,35 +54,35 @@ variable {c : Conf ϖ} {σ : States ϖ}
 @[simp] theorem p_le_one (h : c ⤳[α,p] c') : p ≤ 1 := by
   induction h <;> simp_all
 
-@[simp] theorem skip_iff : (·⟨skip, σ⟩ ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = ·⟨⇓ ϖ, σ⟩
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem sink_iff : (·⟨⇓ ϖ, σ⟩ ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = none
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem none_iff : (none ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = none
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem to_bot : (c ⤳[α,p] none) ↔ ∃ σ, p = 1 ∧ α = .N ∧ (c = (·⟨⇓ ϖ, σ⟩) ∨ c = none)
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem to_sink : (c ⤳[α,p] ·⟨⇓ ϖ, σ⟩) ↔ p = 1 ∧ α = .N ∧ c = ·⟨.skip, σ⟩
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem assign_iff : (·⟨x ::= e, σ⟩ ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = ·⟨.skip, σ[x ↦ e σ]⟩
-  := by rw [smallStep_iff]; aesop
+@[simp] theorem skip_iff : (·⟨skip, σ⟩ ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = ·⟨⇓ ϖ, σ⟩ := by aesop
+@[simp] theorem sink_iff : (·⟨⇓ ϖ, σ⟩ ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = none := by aesop
+@[simp] theorem none_iff : (none ⤳[α,p] c) ↔ p = 1 ∧ α = .N ∧ c = none := by aesop
+@[simp] theorem to_bot : (c ⤳[α,p] none) ↔ ∃ σ, p = 1 ∧ α = .N ∧ (c = ·⟨⇓ ϖ, σ⟩ ∨ c = none)
+  := by aesop
+@[simp] theorem to_sink : (c ⤳[α,p] ·⟨⇓ ϖ, σ⟩) ↔ p = 1 ∧ α = .N ∧ c = ·⟨.skip, σ⟩ := by aesop
+@[simp] theorem assign_iff :
+    (·⟨x ::= e, σ⟩ ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = ·⟨.skip, σ[x ↦ e σ]⟩ := by aesop
 @[simp] theorem prob_iff :
     (·⟨.prob C₁ p C₂, σ⟩ ⤳[α,p'] c') ↔ α = .N ∧ (if C₁ = C₂ then p' = 1 ∧ c' = ·⟨C₁, σ⟩ else
       (p' = p.val σ ∧ 0 < p' ∧ c' = ·⟨C₁, σ⟩) ∨ (p' = 1 - p.val σ ∧ 0 < p' ∧ c' = ·⟨C₂, σ⟩))
-  := by rw [smallStep_iff]; aesop
+  := by aesop
 @[simp] theorem nonDet_iff :
     (·⟨C₁ [] C₂, σ⟩ ⤳[α,p'] c') ↔ p' = 1 ∧ ((α = .L ∧ c' = ·⟨C₁, σ⟩) ∨ (α = .R ∧ c' = ·⟨C₂, σ⟩))
-  := by rw [smallStep_iff]; aesop
-@[simp] theorem tick_iff : (·⟨.tick r, σ⟩ ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = ·⟨.skip, σ⟩
-  := by rw [smallStep_iff]; aesop
+  := by aesop
+@[simp] theorem tick_iff : (·⟨.tick r, σ⟩ ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = ·⟨skip, σ⟩
+  := by aesop
 @[simp] theorem seq_iff :
       (·⟨C₁ ; C₂, σ⟩ ⤳[α,p] c')
     ↔ if C₁ = .skip then p = 1 ∧ α = .N ∧ c' = ·⟨C₂, σ⟩
-      else (∃ C' σ', (·⟨C₁, σ⟩ ⤳[α,p] ·⟨C', σ'⟩) ∧ c' = (·⟨.seq C' C₂, σ'⟩))
-  := by rw [smallStep_iff]; aesop
+      else (∃ C' σ', (·⟨C₁, σ⟩ ⤳[α,p] ·⟨C', σ'⟩) ∧ c' = (·⟨C' ; C₂, σ'⟩))
+  := by
+    constructor
+    · rintro ⟨_⟩ <;> simp_all; intro; simp_all
+    · split_ifs <;> simp_all
+      · intros; constructor
+      · intros; constructor; assumption
 @[simp] theorem loop_iff : (·⟨.loop b C, σ⟩ ⤳[α,p] c')
-    ↔ p = 1 ∧ α = .N ∧ c' = if b σ then ·⟨C.seq (.loop b C), σ⟩ else ·⟨.skip, σ⟩
-  := by rw [smallStep_iff]; aesop
+    ↔ p = 1 ∧ α = .N ∧ c' = if b σ then ·⟨C ; .loop b C, σ⟩ else ·⟨skip, σ⟩ := by aesop
 def act (c : Conf ϖ) : Set Act := {α | ∃ p c', c ⤳[α,p] c'}
 
 noncomputable instance : Decidable (α ∈ act c) := Classical.propDecidable _
@@ -96,20 +94,20 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
 theorem exists_succ_iff {C : pGCL ϖ} (h : ¬C = .skip) :
     (∃ c', ·⟨C,σ⟩ ⤳[α,p] c') ↔ ∃ C' σ', ·⟨C,σ⟩ ⤳[α,p] ·⟨C',σ'⟩ := by
   constructor
-  · rintro (_ | ⟨σ' | c', σ'⟩) <;> (try simp_all); use c', σ'
-  · rintro ⟨c', σ', _⟩; use ·⟨c', σ'⟩
+  · rintro (_ | ⟨σ' | C', σ'⟩) <;> (try simp_all); use C', σ'
+  · rintro ⟨C', σ', _⟩; use ·⟨C', σ'⟩
 
 @[simp] theorem act_bot : act (ϖ:=ϖ) none = {.N} := by simp [act]
 @[simp] theorem act_sink : act (·⟨⇓ ϖ, σ⟩) = {.N} := by simp [act]
-@[simp] theorem act_skip : act (·⟨.skip, σ⟩) = {.N} := by simp [act]
-@[simp] theorem act_assign : act (·⟨.assign x e, σ⟩) = {.N} := by simp [act]
-@[simp] theorem act_seq : act (·⟨.seq C₁ C₂, σ⟩) = act (·⟨C₁, σ⟩) := by
+@[simp] theorem act_skip : act (·⟨skip, σ⟩) = {.N} := by simp [act]
+@[simp] theorem act_assign : act (·⟨x ::= e, σ⟩) = {.N} := by simp [act]
+@[simp] theorem act_seq : act (·⟨C₁ ; C₂, σ⟩) = act (·⟨C₁, σ⟩) := by
   ext
   simp_all [act]
   split_ifs
   · simp_all
   · conv in ∃ c' : Conf ϖ, _ => rw [exists_comm]; arg 1; ext; rw [exists_comm]
-    simp_all only [exists_eq_right, not_false_eq_true, exists_succ_iff]
+    simp_all
 @[simp] theorem act_prob : act (·⟨.prob C₁ p C₂, σ⟩) = {.N} := by
   ext
   simp_all [act]
@@ -117,7 +115,7 @@ theorem exists_succ_iff {C : pGCL ϖ} (h : ¬C = .skip) :
   split_ifs
   · simp
   · if 0 < p.val σ then (use p.val σ); simp_all else (use 1 - p.val σ); simp_all
-@[simp] theorem act_nonDet : act (·⟨.nonDet C₁ C₂, σ⟩) = {.L, .R} := by
+@[simp] theorem act_nonDet : act (·⟨C₁ [] C₂, σ⟩) = {.L, .R} := by
   ext; simp [act]; aesop
 @[simp] theorem act_loop : act (·⟨.loop b C, σ⟩) = {.N} := by simp [act]
 @[simp] theorem act_tick : act (·⟨.tick r, σ⟩) = {.N} := by simp [act]
@@ -138,9 +136,9 @@ noncomputable instance : Decidable (∃ α p, c ⤳[α,p] c') := Classical.propD
 
 @[simp]
 theorem tsum_p :
-    (∑' (p : { p // c ⤳[α,p] c' }), p.val) = (∑' p, if c ⤳[α,p] c' then p else 0) := by
+    (∑' (p : { p // c ⤳[α,p] c' }), ↑p) = (∑' p, if c ⤳[α,p] c' then p else 0) := by
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩) <;> simp_all
-  exact StrictMono.injective fun ⦃a b⦄ a ↦ a
+  exact StrictMono.injective fun _ _ a ↦ a
 
 def succs (c : Conf ϖ) (α : Act) : Set (Conf ϖ) := {c' | ∃ p, c ⤳[α, p] c'}
 noncomputable def succs_fin (c : Conf ϖ) (α : Act) : Finset (Conf ϖ) :=
@@ -159,8 +157,7 @@ noncomputable def succs_fin (c : Conf ϖ) (α : Act) : Finset (Conf ϖ) :=
   | ·⟨.seq C₁ C₂, σ⟩, α => succs_fin (·⟨C₁, σ⟩) α |>.map ⟨C₂.after, C₂.after_inj⟩
   | _, _ => {}
 
-theorem succs_eq_succs_fin :
-    succs (ϖ:=ϖ) c α = (succs_fin c α).toSet := by
+theorem succs_eq_succs_fin : succs (ϖ:=ϖ) c α = (succs_fin c α).toSet := by
   ext s'
   simp [succs]
   constructor
@@ -245,7 +242,7 @@ noncomputable instance : Decidable (s' ∈ (OMDP (ϖ:=ϖ)).succs_univ s) := Clas
 theorem tsum_succs_univ' (f : (OMDP (ϖ:=ϖ)).succs_univ c → ENNReal) :
     (∑' s', f s') = ∑' s', if h : _ then f ⟨s', h⟩ else 0 := by
   symm
-  apply tsum_eq_tsum_of_ne_zero_bij (·.val.val) _ _ (by simp_all)
+  apply tsum_eq_tsum_of_ne_zero_bij (↑↑·) _ _ (by simp_all)
   · intro ⟨_, _⟩ ⟨_, _⟩; simp; apply SetCoe.ext
   · simp_all; intro _ α p _ _; use α, p
 
@@ -285,8 +282,8 @@ variable {f : pGCL ϖ → Exp ϖ → Exp ϖ}
   by_cases C₁ = C₂ <;> simp_all [eq_comm, ite_and]
 @[simp] theorem step.nonDet : step f (.nonDet C₁ C₂) = f C₁ ⊓ f C₂ := by
   ext X σ
-  simp [step, MDP.Φ, MDP.Φf]
-  simp_all [ite_and, OMDP.tsum_succs_univ']
+  simp [step, MDP.Φ, MDP.Φf, OMDP.tsum_succs_univ']
+  simp_all [ite_and]
   apply le_antisymm <;> simp
   · constructor
     · apply iInf_le_of_le ⟨.L, by simp⟩

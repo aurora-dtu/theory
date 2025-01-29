@@ -9,7 +9,7 @@ noncomputable def ofRelation (r : S → A → ENNReal → S → Prop)
     MDP S A where
   P' := fun c α ↦
     have : Decidable (∃ p c', 0 < p ∧ r c α p c') := Classical.propDecidable _
-    if h : ∃ p c', 0 < p ∧ r c α p c' then some ⟨fun c' ↦ ∑' x : {x // r c α x c'}, x.val, by
+    if h : ∃ p c', 0 < p ∧ r c α p c' then some ⟨fun c' ↦ ∑' x : {x // r c α x c'}, ↑x, by
       rw [Summable.hasSum_iff (by simp)]
       obtain ⟨p₀, c₀, h, h'⟩ := h
       exact h₁ h'

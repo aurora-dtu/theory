@@ -239,12 +239,6 @@ def mk' (s) (n) (f : Path[M,s,≤n] → Act) (h : ∀π, f π ∈ M.act π.val.l
   ⟨⟨fun π ↦ if h : π ∈ Path[M,s,≤n] then f ⟨π, h⟩ else M.default_act π.last,
     fun π ↦ by simp; split <;> simp_all⟩, ⟨by simp_all⟩⟩
 
--- @[simp] theorem asdf : (¬π ∈ Path[M,s,≤n]) ↔ (¬π[0] = s) ∨ ¬π.length ≤ n + 1 := by
---   simp
---   constructor
---   · contrapose; simp_all
---   · intro h; cases h <;> simp_all
-
 def specialize (ℬ : M.BScheduler' s (n + 1))  (_ : State) (s' : M.succs_univ s) : M.BScheduler' s' n
   := ⟨ℬ.val[s ↦ s'], ⟨fun π hπ ↦ by
     simp [Scheduler'.specialize]

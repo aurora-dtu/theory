@@ -4,18 +4,18 @@ import Mathlib.Data.ENNReal.Operations
 variable {ϖ : Type*}
 def States (ϖ : Type*) := ϖ → ENNReal
 
-instance : Nonempty (States ϖ) := ⟨fun _ => Inhabited.default⟩
+instance : Nonempty (States ϖ) := ⟨fun _ ↦ Inhabited.default⟩
 
 abbrev Exp (ϖ : Type*) := States ϖ → ENNReal
 abbrev BExpr (ϖ : Type*) := States ϖ → Bool
 def ProbExp (ϖ : Type*) := {e : Exp ϖ // e ≤ 1}
 
 def States.subst [DecidableEq ϖ] (σ : States ϖ) (x : ϖ) (v : ENNReal) : States ϖ :=
-  fun α => if x = α then v else σ α
+  fun α ↦ if x = α then v else σ α
 
 notation σ "[" x " ↦ " v "]" => States.subst σ x v
 
-def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : Exp ϖ) : Exp ϖ := fun σ => e (σ[x ↦ A σ])
+def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : Exp ϖ) : Exp ϖ := fun σ ↦ e (σ[x ↦ A σ])
 
 @[simp]
 theorem Exp.subst_lift [DecidableEq ϖ] (e : Exp ϖ) : e.subst x A σ = e (σ[x ↦ A σ]) := rfl
