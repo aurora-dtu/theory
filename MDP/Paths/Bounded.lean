@@ -172,19 +172,19 @@ end Path_eq
 
 variable {M}
 
-namespace Scheduler'
+namespace Scheduler
 
 @[mk_iff]
 class IsBounded (𝒮 : 𝔖[M]) (s : State) (n : ℕ) : Prop where
   isBounded : ∀ π, ¬π ∈ Path[M,s,≤n] → 𝒮 π = M.default_act π.last
 
-end Scheduler'
+end Scheduler
 
-def BScheduler' (M : MDP State Act) (s : State) (n : ℕ) := {𝒮 : 𝔖[M] // 𝒮.IsBounded s n}
+def BScheduler (M : MDP State Act) (s : State) (n : ℕ) := {𝒮 : 𝔖[M] // 𝒮.IsBounded s n}
 
-notation "𝔖[" M "," s "," "≤" n "]" => BScheduler' M s n
+notation "𝔖[" M "," s "," "≤" n "]" => BScheduler M s n
 
-namespace BScheduler'
+namespace BScheduler
 
 noncomputable section
 
@@ -193,7 +193,7 @@ instance instDFunLike : DFunLike 𝔖[M,s,≤n] M.Path (fun _ ↦ Act) where
   coe_injective' := by intro ⟨ℬ, _⟩ ⟨ℬ', _⟩ _; simp_all
 
 @[simp] theorem mk_coe_apply (𝒮 : 𝔖[M]) (h : 𝒮.IsBounded s n) (π : M.Path) :
-  BScheduler'.instDFunLike.coe (⟨𝒮, h⟩) π = 𝒮 π := rfl
+  BScheduler.instDFunLike.coe (⟨𝒮, h⟩) π = 𝒮 π := rfl
 
 theorem default_on (ℬ : 𝔖[M,s,≤n]) {π : M.Path} (h : ¬π ∈ Path[M,s,≤n]) :
     ℬ π = M.default_act π.last := ℬ.prop.isBounded _ h
@@ -211,7 +211,7 @@ theorem ext {ℬ ℬ' : 𝔖[M,s,≤n]} (h : ∀ π ∈ Path[M,s,≤n], ℬ π =
   congr with π
   simp_all
   simp only [DFunLike.coe] at h
-  simp only [Scheduler'.toFun_coe] at h
+  simp only [Scheduler.toFun_coe] at h
   if h' : π ∈ Path[M,s,≤n] then
     apply h <;> simp_all
   else
@@ -225,7 +225,7 @@ def mk' (s) (n) (f : Path[M,s,≤n] → Act) (h : ∀π, f π ∈ M.act π.val.l
 
 def specialize (ℬ : 𝔖[M,s,≤n+1])  (_ : State) (s' : M.succs_univ s) : 𝔖[M,s',≤n]
   := ⟨ℬ.val[s ↦ s'], ⟨fun π hπ ↦ by
-    simp [Scheduler'.specialize]
+    simp [Scheduler.specialize]
     simp at hπ
     split_ifs
     · have := ℬ.default_on (π:=π.prepend ⟨s, by simp_all⟩) (by contrapose hπ; simp_all)
@@ -235,7 +235,7 @@ def specialize (ℬ : 𝔖[M,s,≤n+1])  (_ : State) (s' : M.succs_univ s) : �
 @[simp]
 theorem specialize_apply (ℬ : 𝔖[M,s,≤n+1]) (s' : M.succs_univ s) (π : Path[M,s',≤n]) :
     ℬ[s ↦ s'] π = ℬ (π.val.prepend ⟨s, by simp_all⟩) := by
-  simp [specialize, Scheduler'.specialize]
+  simp [specialize, Scheduler.specialize]
 
 @[simp]
 theorem specialize_apply' (ℬ : 𝔖[M,s,≤n+1]) :
@@ -245,30 +245,30 @@ theorem specialize_apply' (ℬ : 𝔖[M,s,≤n+1]) :
   · apply ℬ.specialize_apply s' ⟨π, h⟩
   · apply default_on _ h
 
-end end BScheduler'
+end end BScheduler
 
 variable [DecidableEq State]
 
-noncomputable def Scheduler'.bound (𝒮 : 𝔖[M]) {s : State} {n : ℕ} : 𝔖[M,s,≤n] :=
+noncomputable def Scheduler.bound (𝒮 : 𝔖[M]) {s : State} {n : ℕ} : 𝔖[M,s,≤n] :=
   ⟨⟨fun π ↦ if π ∈ Path[M,s,≤n] then 𝒮 π else M.default_act π.last,
     fun π ↦ by simp; split_ifs <;> simp⟩,
-    by simp [Scheduler'.isBounded_iff]; intros; simp_all⟩
+    by simp [Scheduler.isBounded_iff]; intros; simp_all⟩
 
 @[simp]
-theorem Scheduler'.bound_coe_apply (𝒮 : 𝔖[M]) (s : State) (n : ℕ) (π : M.Path) :
+theorem Scheduler.bound_coe_apply (𝒮 : 𝔖[M]) (s : State) (n : ℕ) (π : M.Path) :
     (𝒮.bound (n:=n) (s:=s)) π = if π ∈ Path[M,s,≤n] then 𝒮 π else M.default_act π.last := rfl
 
 omit [DecidableEq State] in
 theorem Prob_eq_if (π : M.Path) (h : ∀ π' : Path[M,π[0],≤∎|π|], 𝒮 π' = 𝒮' π') :
     π.Prob 𝒮 = π.Prob 𝒮' := by simp_all [Path.Prob]
 
-namespace BScheduler'
+namespace BScheduler
 
 noncomputable section
 
 def cast_arb (ℬ : 𝔖[M,s,≤n]) : 𝔖[M,s',≤m] := ℬ.val.bound
 def cast_arb_tail (ℬ : 𝔖[M,s,≤n]) : 𝔖[M,s',≤n+1] :=
-  Scheduler'.mk' (fun π ↦ ⟨ℬ π.tail, by have := ℬ.val.property' π.tail; simp_all⟩) |>.bound
+  Scheduler.mk' (fun π ↦ ⟨ℬ π.tail, by have := ℬ.val.property' π.tail; simp_all⟩) |>.bound
 
 @[simp]
 theorem cast_arb_tail_specialize (s' : M.succs_univ s) (ℬ : 𝔖[M,s',≤n]) :
@@ -283,18 +283,18 @@ instance : Coe 𝔖[M] 𝔖[M,s,≤n] where
 instance : Inhabited 𝔖[M,s,≤n] where
   default := ⟨default, ⟨fun π _ ↦ by congr⟩⟩
 
-def FiniteScheduler [M.FiniteBranching] s n := (π : Path[M,s,≤n]) → M.act₀ π.val.last
+def FiniteMScheduler [M.FiniteBranching] s n := (π : Path[M,s,≤n]) → M.act₀ π.val.last
 
-instance [DecidableEq State] [M.FiniteBranching] : Fintype (FiniteScheduler (M:=M) s n) := by
-  unfold FiniteScheduler
+instance [DecidableEq State] [M.FiniteBranching] : Fintype (FiniteMScheduler (M:=M) s n) := by
+  unfold FiniteMScheduler
   apply Pi.instFintype
 
 instance [M.FiniteBranching] : Finite 𝔖[M,s,≤n] := by
-  refine (Equiv.finite_iff (β:=BScheduler'.FiniteScheduler (M:=M) s n) ?_).mpr (Finite.of_fintype _)
+  refine (Equiv.finite_iff (β:=BScheduler.FiniteMScheduler (M:=M) s n) ?_).mpr (Finite.of_fintype _)
   refine Equiv.ofBijective (fun 𝒮 ↦ fun π ↦ ⟨𝒮 π, by simp⟩) ⟨fun a b h ↦ ?_, fun a ↦ ?_⟩
   · ext π hπ; have := congrFun h ⟨π, hπ⟩; simp_all
   · simp_all
-    use Scheduler'.mk' fun π ↦ if h : π ∈ Path[M,s,≤n] then ⟨a ⟨π, h⟩, by
+    use Scheduler.mk' fun π ↦ if h : π ∈ Path[M,s,≤n] then ⟨a ⟨π, h⟩, by
       have := (a ⟨π, h⟩).prop
       simp_all [-Finset.coe_mem]⟩ else default
     simp
@@ -328,4 +328,4 @@ theorem mk'_argmin (s : State) (s' : M.succs_univ s) (f : 𝔖[M,s',≤n] → EN
 
 end
 
-end MDP.BScheduler'
+end MDP.BScheduler

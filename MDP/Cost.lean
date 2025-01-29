@@ -48,7 +48,7 @@ variable [DecidableEq State]
 theorem EC_eq_bound (s : State) (s' : M.succs_univ s) :
     ⨅ 𝒮, EC c 𝒮 s' n = ⨅ 𝒮 : 𝔖[M], EC c (𝒮.bound (s:=s') (n:=n)).val s' n := by
   congr with 𝒮
-  apply EC_eq fun _ _ ↦ by simp_all [Scheduler'.bound]
+  apply EC_eq fun _ _ ↦ by simp_all [Scheduler.bound]
 theorem EC_bound_eq_bound_EC (s : State) (s' : M.succs_univ s) :
     ⨅ 𝒮 : 𝔖[M], EC c (𝒮.bound (s:=s') (n:=n)).val s' n
   = ⨅ ℬ : 𝔖[M,s',≤n], EC c ℬ.val s' n
@@ -74,7 +74,7 @@ theorem iInf_scheduler_eq_iInf_act_iInf_scheduler :
   apply le_antisymm
   · apply le_iInf_iff.mpr fun α ↦ le_iInf_iff.mpr fun 𝒮 ↦ ?_
     apply iInf_le_of_le ⟨fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
-      simp only; split_ifs <;> simp_all only [Path.last, Subtype.coe_prop, Scheduler'.mem_act_if]⟩
+      simp only; split_ifs <;> simp_all only [Path.last, Subtype.coe_prop, Scheduler.mem_act_if]⟩
     simp
     gcongr
     exact EC_le fun _ _ ↦ by simp
@@ -87,15 +87,15 @@ theorem tsum_iInf_bounded_comm (f : (s' : M.succs_univ s) → 𝔖[M,s',≤n] �
   = ⨅ ℬ : 𝔖[M,s,≤n+1], ∑' s' : M.succs_univ s, f s' ℬ[s ↦ s']
 := by
   apply le_antisymm (le_iInf_iff.mpr fun ℬ ↦ ENNReal.tsum_le_tsum (iInf_le_of_le ℬ[s ↦ ·] (by rfl)))
-  apply iInf_le_of_le <| BScheduler'.mk' (M:=M) s (n+1) (fun ⟨π, hπ⟩ ↦
+  apply iInf_le_of_le <| BScheduler.mk' (M:=M) s (n+1) (fun ⟨π, hπ⟩ ↦
       if h : ∎|π| ≤ 1 then M.default_act π.last
-      else BScheduler'.elems.argmin (by simp) (f ⟨π[1], by simp [← hπ.right]⟩) π.tail)
+      else BScheduler.elems.argmin (by simp) (f ⟨π[1], by simp [← hπ.right]⟩) π.tail)
     (fun _ ↦ by simp_all; split <;> simp)
   gcongr with s'
   simp
-  convert fun ℬ ↦ (le_of_eq_of_le (c:=f s' ℬ) <| congrArg _ <| BScheduler'.mk'_argmin s s' (f s')) _
+  convert fun ℬ ↦ (le_of_eq_of_le (c:=f s' ℬ) <| congrArg _ <| BScheduler.mk'_argmin s s' (f s')) _
   all_goals try simp_all only [implies_true, Path_le.first_le]
-  simp [← BScheduler'.elems.argmin_spec (by simp) (f s') |>.right]; use ℬ
+  simp [← BScheduler.elems.argmin_spec (by simp) (f s') |>.right]; use ℬ
 
 variable [M.FiniteBranching] in
 theorem tsum_iInf_EC_comm :
@@ -104,7 +104,7 @@ theorem tsum_iInf_EC_comm :
 := by
   convert tsum_iInf_bounded_comm fun s' ℬ ↦ M.P s α s' * EC c ℬ.val s' n
   · simp [← ENNReal.mul_iInf, iInf_EC_specialized_eq_bounded, bound_EC_succ_eq_bound_EC]; rfl
-  · apply Function.Surjective.iInf_congr (·.bound) (by use ·.val; ext; simp_all [Scheduler'.bound])
+  · apply Function.Surjective.iInf_congr (·.bound) (by use ·.val; ext; simp_all [Scheduler.bound])
     congr! 3; exact EC_eq fun _ _ ↦ by simp_all
 
 theorem iInf_EC_succ_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s (n + 1) = M.Φ c (⨅ 𝒮, EC c 𝒮 · n) s :=
@@ -135,8 +135,8 @@ theorem Φℒ_step_EC' (c : M.Costs) (ℒ : 𝔏[M]) :
   | zero => simp [EC_succ]; rfl
   | succ n ih =>
     simp [ih, EC_succ]; clear ih
-    simp [EC, Path.ECost, Path.Cost, Path.Prob, Scheduler.markovian, Φℒ, Φf,
-      Scheduler'.Markovian_path_take''']
+    simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf,
+      Scheduler.Markovian_path_take''']
 
 attribute [-simp] Function.iterate_succ in
 theorem iSup_n_EC'_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
@@ -148,7 +148,7 @@ theorem iSup_n_EC'_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
   | succ n ih => simp [Φℒ_step_EC', ih, Function.iterate_succ']
 
 noncomputable def ℒ' [M.FiniteBranching] (c : M.Costs) : 𝔏[M] :=
-  ⟨Scheduler'.mk' fun π ↦ ⟨
+  ⟨Scheduler.mk' fun π ↦ ⟨
     (M.act π.last).toFinset.argmin (M.act₀_nonempty π.last) (M.Φf π.last · (M.lfp_Φ c)), by simp⟩,
     by constructor; simp⟩
 

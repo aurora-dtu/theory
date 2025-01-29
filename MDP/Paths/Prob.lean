@@ -50,7 +50,7 @@ theorem prepend_Prob [DecidableEq State] (𝒮 : 𝔖[M]) (s : M.prev_univ π[0]
     intro f
     congr <;> try simp
     exact (Fin.heq_fun_iff (by simp)).mpr (congrFun rfl)
-  simp [h₂, Fin.prod_univ_succ, Scheduler'.specialize]
+  simp [h₂, Fin.prod_univ_succ, Scheduler.specialize]
   congr! 2 with ⟨i, hi⟩
 
 theorem Prob_tail [DecidableEq State] (h : 1 < ∎|π|) (𝒮 : 𝔖[M]) :
