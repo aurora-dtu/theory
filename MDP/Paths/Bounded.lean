@@ -163,7 +163,7 @@ theorem eq_biUnion_succs_univ : Path[M,s,=n+1] = ⋃ π : Path[M,s,=n], π.val.s
     have : ¬∎|π| = 1 := by omega
     simp_all
 
-theorem eq_succs_univ_biUnion' : Path[M,s,=n+1] = ⋃ s', Path[M,s─s',=n] := by
+theorem eq_succs_univ_biUnion : Path[M,s,=n+1] = ⋃ s', Path[M,s─s',=n] := by
   ext π
   simp
   constructor

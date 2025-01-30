@@ -61,12 +61,21 @@ theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
     have := congrArg Path.last h
     simpa
 
-theorem tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
+@[simp]
+theorem Path.tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
   induction n with
   | zero => simp
   | succ n ih =>
     rw [Path_eq.eq_biUnion_succs_univ _, ENNReal.tsum_biUnion]
     · simpa
     · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n) <;> simp_all
+
+theorem Path_eq.tsum_add_left (𝒮 : 𝔖[M]) (f : Path[M,s',=n] → ENNReal) :
+    ∑' π : Path[M,s',=n], (π.val.Prob 𝒮 * a + f π) = a + ∑' π : Path[M,s',=n], f π
+:= by simp [ENNReal.tsum_add, ENNReal.tsum_mul_right]
+
+theorem succs_tsum_add_left (𝒮 : 𝔖[M]) (f : M.succs_univ s → ENNReal) :
+    ∑' s' : M.succs_univ s, (M.P s (𝒮 {s}) s' * a + f s') = a + ∑' s' : M.succs_univ s, f s'
+:= by simp [ENNReal.tsum_add, ENNReal.tsum_mul_right]
 
 end MDP
