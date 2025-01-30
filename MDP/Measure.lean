@@ -38,51 +38,34 @@ variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
 
 @[simp]
-theorem tsum_succs_univ_P_eq_one (h : α ∈ M.act s) : ∑' s' : M.succs_univ s, M.P s α s' = 1 := by
-  rw [← M.P_sum_support_one_iff.mpr h]
-  apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨s, _⟩ ↦ ⟨s.val, by simp_all⟩) <;> simp_all
-  intro ⟨⟨_, _⟩, _⟩ ⟨⟨_, _⟩, _⟩ h
-  simp_all
+theorem tsum_succs_univ_P_eq_tsum_succs_P :
+    (∑' s' : M.succs_univ s, M.P s α s') = ∑' s' : M.succs α s, M.P s α s' := by
+  apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨s, _⟩ ↦ ⟨s.val, by simp_all⟩) <;> simp_all [succs]
+  intro ⟨_, _⟩ ⟨_, _⟩; simp; exact SetCoe.ext
+
+@[simp]
+theorem tsum_succs_P_eq_tsum_P : ∑' s' : M.succs α s, M.P s α s' = ∑' s', M.P s α s' :=
+  tsum_subtype_eq_of_support_subset fun _ a ↦ a
+
+@[simp]
+theorem tsum_succs_P_eq_one : α ∈ M.act s → ∑' s', M.P s α s' = 1 := M.P_sum_one_iff.mpr
 
 @[simp]
 theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
     ∑' π' : π.succs_univ, π'.val.Prob 𝒮 = π.Prob 𝒮 := by
-  rw [Equiv.tsum_eq_tsum_of_support (g:=fun s' ↦ (π.extend s').Prob 𝒮)]
-  · simp [Path.extend_Prob, ENNReal.tsum_mul_right]
-  · apply Set.BijOn.equiv (fun x ↦ ⟨x.val.last, by simp⟩)
-    constructor
-    · intro ⟨π', h⟩ h'
-      simp [Path.succs_univ_eq_extend_succs_univ] at h
-      obtain ⟨s', h'', h'''⟩ := h
-      subst_eqs
-      simp_all
-    · constructor
-      · intro ⟨π₁, h₁⟩ h₁' ⟨π₂, h₂⟩ h₂' h
-        simp [Path.succs_univ_eq_extend_succs_univ] at h h₁ h₂ h₁' h₂' ⊢
-        obtain ⟨_, _, _⟩ := h₁
-        obtain ⟨_, _, _⟩ := h₂
-        subst_eqs
-        simp_all
-      · intro s h
-        simp_all
-        use π.extend s
-        simp_all
-        constructor
-        · simp
-        · simp
-  · simp
-    intro π' h h'
-    simp [Path.succs_univ_eq_extend_succs_univ] at h
-    obtain ⟨s', h'', h'''⟩ := h
-    subst_eqs
-    simp [Set.BijOn.equiv]
+  rw [succs_univ_eq_extend_range, Set.range_eq_iUnion, ENNReal.tsum_biUnion]
+  · simp [extend_Prob, ENNReal.tsum_mul_right]
+  · intro ⟨a, _⟩ _ ⟨b, _⟩ _ h
+    contrapose h
+    simp_all
+    have := congrArg Path.last h
+    simpa
 
 theorem tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
   induction n with
   | zero => simp
   | succ n ih =>
-    rw [Path_eq.eq_biUnion_succs_univ _]
-    rw [ENNReal.tsum_biUnion (f:=(·.Prob 𝒮)) (t:=fun (π : Path[M,s,=n]) ↦ π.val.succs_univ)]
+    rw [Path_eq.eq_biUnion_succs_univ _, ENNReal.tsum_biUnion]
     · simpa
     · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n) <;> simp_all
 

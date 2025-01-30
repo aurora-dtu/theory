@@ -218,8 +218,7 @@ theorem Complete [M.FiniteBranching] :
   }
   ∀ v₁ v₂ : S, v₁ = v₂
 := by
-  simp
-  simp only [iSup_iInf_EC_eq_iInf_iSup_EC, iInf_iSup_EC_eq_iInf_iSup_EC',
-    iSup_iInf_EC'_eq_iInf_iSup_EC', ← iSup_iInf_EC_eq_lfp_Φ, and_self]
+  simp [iSup_iInf_EC_eq_iInf_iSup_EC, iInf_iSup_EC_eq_iInf_iSup_EC', iSup_iInf_EC'_eq_iInf_iSup_EC',
+    ← iSup_iInf_EC_eq_lfp_Φ, and_self]
 
 end MDP

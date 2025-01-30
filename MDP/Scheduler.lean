@@ -143,16 +143,6 @@ end MScheduler
 variable {M : MDP State Act}
 
 @[simp]
-theorem P_tsum_one_iff_MScheduler (𝒮 : 𝔖[M]) :
-    ∑' (s' : (M.P s (𝒮 {s})).support), M.P s (𝒮 {s}) s' = 1 :=
-  M.P_tsum_support_one_iff.mpr (Scheduler.singleton_mem_act 𝒮)
-
-@[simp]
-theorem Path.P_tsum_one_iff_MScheduler (𝒮 : 𝔖[M]) :
-    ∑' (s' : (M.P π.last (𝒮 π)).support), M.P π.last (𝒮 π) s' = 1 :=
-  M.P_tsum_support_one_iff.mpr (Scheduler.mem_act 𝒮)
-
-@[simp]
 theorem Scheduler.mk'_coe {𝒮 : (π : M.Path) → M.act π.last} (π : M.Path) :
     (Scheduler.mk' 𝒮) π = (𝒮 π).val := by simp [mk']
 

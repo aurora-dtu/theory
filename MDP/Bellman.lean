@@ -23,17 +23,15 @@ noncomputable def Φf (s : State) (a : Act) : (State → ENNReal) →o ENNReal :
   ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s a s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
 
 noncomputable def Φℒ (c : M.Costs) (ℒ : 𝔏[M]) : (State → ENNReal) →o (State → ENNReal) :=
-  ⟨fun v s ↦ c s + M.Φf s (ℒ {s}) v, by intro v v' h s; simp only; gcongr⟩
+  ⟨fun v s ↦ c s + M.Φf s (ℒ {s}) v, by intro _ _ _ _; simp; gcongr⟩
 
 noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
   Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
 
 noncomputable def Φ (c : M.Costs) : (State → ENNReal) →o (State → ENNReal) :=
-  ⟨fun v s ↦ c s + ⨅ α : M.act s, M.Φf s α v, by intro v v' h s; simp only; gcongr⟩
+  ⟨fun v s ↦ c s + ⨅ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
-theorem Φ.monotone' : Monotone M.Φ := by
-  intro v v' h s
-  apply add_le_add h; simp_all
+theorem Φ.monotone' : Monotone M.Φ := fun _ _ h _ ↦ add_le_add h (by rfl)
 
 theorem Φ_le_Φℒ : M.Φ c ≤ M.Φℒ c ℒ := by
   intro f s
@@ -77,7 +75,7 @@ theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
   simp [Φ, M.Φf_ωScottContinuous.map_ωSup]
   simp [ωSup, ← ENNReal.add_iSup]
   congr
-  exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ h ↦ (M.Φf s α).mono (by gcongr))
+  exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
 
 theorem Φℒ_ωScottContinuous : ωScottContinuous (M.Φℒ c ℒ) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ ?_

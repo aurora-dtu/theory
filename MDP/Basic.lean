@@ -61,10 +61,8 @@ class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite
   succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
 
-noncomputable def act₀ [i : M.FiniteBranching] (s : State) : Finset Act := (i.act_fin s).toFinset
-
 noncomputable instance [Fintype Act] : Finite (M.act s) := Subtype.finite
-noncomputable instance [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite ↑(M.act s)
+noncomputable instance act.instFintype [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
 noncomputable instance act.instNonEmpty : Nonempty (M.act s) := by
   simp only [act, ← P_pos_iff_sum_eq_one, Set.coe_setOf, nonempty_subtype]
   have ⟨α, hα⟩ := M.progress' s
@@ -78,15 +76,17 @@ theorem default_act_spec (s : State) : M.default_act s ∈ M.act s :=
   (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose_spec
 
 instance [i : M.FiniteBranching] : Finite (M.act s) := i.act_fin s
-theorem actFinite [i : M.FiniteBranching] : (M.act s).Finite := i.act_fin s
 noncomputable instance [M.FiniteBranching] : Fintype (M.act s) := Fintype.ofFinite (M.act s)
+theorem actFinite [i : M.FiniteBranching] : (M.act s).Finite := i.act_fin s
+
+noncomputable def act₀ [M.FiniteBranching] (s : State) : Finset Act := (M.act s).toFinset
 
 @[simp]
-theorem act₀_iff_act [i : M.FiniteBranching] : M.act₀ s = M.act s := by simp [act₀]
+theorem act₀_eq_act [i : M.FiniteBranching] : M.act₀ s = M.act s := by simp [act₀]
 
 @[simp]
 theorem act₀_mem_iff_act_mem [M.FiniteBranching] : a ∈ M.act₀ s ↔ a ∈ M.act s := by
-  simp only [← act₀_iff_act, Finset.mem_coe]
+  simp only [← act₀_eq_act, Finset.mem_coe]
 theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.P s a).support.Nonempty := by
   simp_all [act₀_mem_iff_act_mem, act]
 
@@ -122,48 +122,6 @@ theorem P_sum_one_iff : ∑' s', M.P s a s' = 1 ↔ a ∈ M.act s := by
   · simp_all
     rfl
 
-theorem P_sum_support_one_iff : ∑' s' : (M.P s a).support, M.P s a s' = 1 ↔ a ∈ M.act s := by
-  simp only [tsum_subtype_support (M.P s a), ← P_sum_one_iff]
-
-theorem P_sum_support₀_one_iff [i : M.FiniteBranching] :
-    ∑ (s' ∈ (i.succs_fin s a).toFinset), M.P s a s' = 1 ↔ a ∈ M.act s := by
-  simp only [Finset.univ_eq_attach, ← P_sum_one_iff]
-  symm
-  apply Eq.congr _ rfl
-  apply tsum_eq_sum
-  simp
-
-theorem P_tsum_support_one_iff : ∑' (s' : (M.P s a).support), M.P s a s' = 1 ↔ a ∈ M.act s := by
-  unfold P
-  split
-  · rename_i pmf _
-    simp [tsum_subtype, pmf.tsum_coe, act]
-    unfold P
-    simp_all
-    simp [pmf.coe_ne_zero]
-  · simp [act]
-    unfold P
-    simp_all
-    rfl
-
-theorem act_eq_sum_one : M.act s = {a | ∑' s', M.P s a s' = 1} := by
-  ext a
-  have := M.P_sum_one_iff (s:=s) (a:=a)
-  simp_all only [eq_comm, Set.mem_setOf_eq]
-
-theorem act_eq_sum_ne_zero (s : State) : M.act s = {a | ¬∑' s', M.P s a s' = 0} := by
-  ext α
-  simp only [act_eq_sum_one, ← P_pos_iff_sum_eq_one, Function.support_nonempty_iff, ne_eq,
-    Set.mem_setOf_eq, ENNReal.tsum_eq_zero, not_forall]
-  unfold P
-  split
-  · exact Function.ne_iff
-  · simp
-    rfl
-
-def Post (s : State) (a : Act) : Set State := {s' | ¬M.P s a s' = 0}
-def Pre (s' : State) : Set (State × Act) := {(s, a) | ¬M.P s a s' = 0}
-
 section Succs
 
 def succs (α : Act) (s : State) : Set State := (M.P s α).support
@@ -193,34 +151,24 @@ instance instNonemptySuccs₀ [M.FiniteBranching] (α : M.act s) : Nonempty (M.s
   simp only [succs₀_mem_eq_succs_mem]
   exact instNonemptySuccs M α
 
--- NOTE: Perhaps this should be universally unioned
-def succs_univ (s : State) : Set State := ⋃ α ∈ M.act s, M.succs α s
+def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
 def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
 
 theorem prev_iff_succs : s' ∈ M.prev α s ↔ s ∈ M.succs α s' := by simp [prev]
 @[simp]
 theorem prev_univ_iff_succs_univ : s' ∈ M.prev_univ s ↔ s ∈ M.succs_univ s' := by
   simp [prev_univ, prev_iff_succs, succs_univ, succs, act]
-  constructor
-  · simp
-    intro α h
-    use α, (h <| congrFun · s), h
-  · simp
-    intro α _ _
-    use α
 
 @[simp] theorem succs_implies_succs_univ (s' : M.succs α s) : ↑s' ∈ M.succs_univ s := by
   obtain ⟨s', h⟩ := s'
   simp [succs_univ]
   use α
-  simp_all [act, succs]
-  exact fun a ↦ h (congrFun a s')
 
 instance instNonemptySuccsUniv : Nonempty (M.succs_univ s) := by
   simp [succs_univ]
   let α := M.default_act s
   have ⟨s', _⟩ : Nonempty (M.succs α s) := M.instNonemptySuccs ⟨α, by simp [α]⟩
-  use s', α, by simp [α]
+  use s', α
 
 variable [DecidableEq State] [M.FiniteBranching]
 
@@ -236,12 +184,17 @@ theorem succs_univ₀_spec (s s' : State) : s' ∈ M.succs_univ₀ s → ∃α, 
 @[simp]
 theorem succs_univ₀_eq_succs_univ (s : State) :
   M.succs_univ₀ s = M.succs_univ s
-:= by simp [succs_univ, succs_univ₀, act₀_mem_iff_act_mem, succs, succs₀]
+:= by
+  ext s'
+  simp [succs_univ, succs_univ₀, succs, act]
+  constructor
+  · intro ⟨α, h₁, h₂⟩; use α
+  · intro ⟨α, h⟩; exact Exists.intro α ⟨fun a ↦ h (congrFun a s'), h⟩
 
 @[simp]
 theorem succs_univ₀_mem_eq_succs_univ_mem (s s' : State) :
   s' ∈ M.succs_univ₀ s ↔ s' ∈ M.succs_univ s
-:= by simp [succs_univ, succs_univ₀, succs, succs₀]
+:= by simp [← succs_univ₀_eq_succs_univ]
 
 omit [DecidableEq State] in
 theorem succs_Finite : (M.succs s a).Finite := by

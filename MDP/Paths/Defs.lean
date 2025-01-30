@@ -377,8 +377,7 @@ theorem prev_extend (h : 1 < ∎|π|) :
     congr
     omega
 
-theorem succs_univ_eq_extend_succs_univ :
-    π.succs_univ = {π.extend s' | s'} := by
+theorem succs_univ_eq_extend_range : π.succs_univ = Set.range π.extend := by
   ext π'
   simp [succs_univ]
   constructor

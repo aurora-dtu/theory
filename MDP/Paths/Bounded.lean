@@ -76,9 +76,7 @@ variable {M}
 
 theorem succs_univ_Finite [DecidableEq State] [M.FiniteBranching] (π : M.Path) :
     π.succs_univ.Finite := by
-  simp [Path.succs_univ_eq_extend_succs_univ]
-  refine Set.Finite.dependent_image ?hs fun x hx ↦ π.extend ⟨x, hx⟩
-  exact M.succs_univ_Finite
+  simp [Path.succs_univ_eq_extend_range, Set.finite_range π.extend]
 noncomputable instance [DecidableEq State] [M.FiniteBranching] (π : M.Path) : Fintype π.succs_univ
   := (succs_univ_Finite π).fintype
 
