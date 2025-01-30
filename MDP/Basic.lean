@@ -96,6 +96,9 @@ noncomputable instance [M.FiniteBranching] : Nonempty (M.act₀ s) := by
   simp at this
   exact this
 
+noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
+  Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
+
 lemma P_ne_zero_sum_eq_one (h : ¬M.P s a s' = 0) : ∑' s'', M.P s a s'' = 1 := by
   simp [P] at h ⊢
   split

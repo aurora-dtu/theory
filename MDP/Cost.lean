@@ -121,10 +121,10 @@ theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s n = (M.Φ c)^[
     simp [ih, iInf_EC_succ_eq_Φ]
 
 theorem iSup_iInf_EC_eq_iSup_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 s n = ⨆ n, (M.Φ c)^[n] ⊥ s :=
-  by simp [iInf_EC_eq_Φ, iSup_iterate_succ', -Function.iterate_succ]
+  by have := congrFun (iSup_iterate_succ' (f:=M.Φ c)) s; simp_all [iInf_EC_eq_Φ]
 
 theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 s n = M.lfp_Φ c s := by
-  simp [lfp_Φ_eq_iSup_Φ, iSup_Φ, iInf_EC_eq_Φ]
+  simp [lfp_Φ_eq_iSup_succ_Φ, iInf_EC_eq_Φ]
 
 theorem iSup_iInf_EC_eq_lfp_Φ' [M.FiniteBranching] : (⨆ n, ⨅ 𝒮, EC c 𝒮 · n) = M.lfp_Φ c := by
   simp [iSup_iInf_EC_eq_lfp_Φ]

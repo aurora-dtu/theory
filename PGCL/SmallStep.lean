@@ -253,7 +253,7 @@ theorem sink_eq : (OMDP.Φ (cost X))^[i] ⊥ (some (none, σ)) = if i = 0 then 0
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', OMDP.tsum_succs_univ']
 
 @[simp]
-theorem lfp_Φ_bot : OMDP.lfp_Φ (cost X) none = 0 := by simp [MDP.lfp_Φ_eq_iSup'_Φ, MDP.iSup'_Φ]
+theorem lfp_Φ_bot : OMDP.lfp_Φ (cost X) none = 0 := by simp [MDP.lfp_Φ_eq_iSup_Φ, MDP.iSup_Φ]
 
 @[simp]
 theorem lfp_Φ_sink : OMDP.lfp_Φ (cost X) (some (none, σ)) = X σ := by
@@ -305,11 +305,11 @@ open OMDP
 
 noncomputable def dop (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := (OMDP.lfp_Φ (cost X) <| ·⟨C, ·⟩)
 
-theorem dop_eq_iSup_Φ : dop (ϖ:=ϖ) = ⨆ n, fun C X σ ↦ (OMDP.Φ (cost X))^[n] ⊥ (·⟨C,σ⟩) := by
-  ext C X σ; rw [dop, MDP.lfp_Φ_eq_iSup'_Φ, MDP.iSup'_Φ]; apply le_antisymm <;> simp
+theorem dop_eq_iSup_succ_Φ : dop (ϖ:=ϖ) = ⨆ n, fun C X σ ↦ (OMDP.Φ (cost X))^[n] ⊥ (·⟨C,σ⟩) := by
+  ext C X σ; rw [dop, MDP.lfp_Φ_eq_iSup_Φ, MDP.iSup_Φ]; apply le_antisymm <;> simp
 theorem dop_eq_iSup_succ_Φ :
     dop (ϖ:=ϖ) = ⨆ n, fun C X σ ↦ (OMDP.Φ (cost X))^[n + 1] ⊥ (·⟨C,σ⟩) := by
-  ext C X σ; rw [dop, MDP.lfp_Φ_eq_iSup_Φ, MDP.iSup_Φ]; apply le_antisymm <;> simp
+  ext C X σ; rw [dop, MDP.lfp_Φ_eq_iSup_succ_Φ, MDP.iSup_succ_Φ]; apply le_antisymm <;> simp
 
 theorem step_dop : step (ϖ:=ϖ) dop = dop := by
   funext C X σ
@@ -321,7 +321,7 @@ theorem step_dop : step (ϖ:=ϖ) dop = dop := by
 @[simp] theorem dop_skip : dop (ϖ:=ϖ) .skip = (· ·) := by rw [← step_dop]; simp
 
 theorem dop_isLeast (b : pGCL ϖ → Exp ϖ → Exp ϖ) (h : step b ≤ b) : dop ≤ b := by
-  rw [dop_eq_iSup_Φ, iSup_le_iff]
+  rw [dop_eq_iSup_succ_Φ, iSup_le_iff]
   intro n
   induction n with
   | zero => intros _ _ _; simp

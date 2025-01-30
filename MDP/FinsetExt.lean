@@ -3,11 +3,6 @@ import Mathlib.Topology.Algebra.InfiniteSum.Defs
 
 namespace Finset
 
-variable {α ι : Type*}
-variable [DecidableEq α] [DecidableEq ι]
-
-section argmin
-
 variable {α β : Type*}
 variable (S : Finset α) (hS : S.Nonempty) (f : α → β)
 variable [LinearOrder β]
@@ -27,4 +22,4 @@ theorem argmin_mem : S.argmin hS f ∈ S := (S.argmin_spec hS f).left
 theorem toFinset_argmin_mem (S : Set α) [Fintype S] (hS : S.toFinset.Nonempty) :
   S.toFinset.argmin hS f ∈ S := Set.mem_toFinset.mp (S.toFinset.argmin_spec hS f).left
 
-end Finset.argmin
+end Finset
