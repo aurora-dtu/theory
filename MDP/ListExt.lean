@@ -1,8 +1,6 @@
--- import Mathlib.Algebra.BigOperators.Group.List
-import Mathlib.Data.ENNReal.Basic
-import Mathlib.Data.Fintype.Basic
-import Mathlib.Data.Fintype.Pi
-import Mathlib.Data.List.Indexes
+import Mathlib.Algebra.Order.Ring.Nat
+import Mathlib.Algebra.Order.Sub.Basic
+import Mathlib.Data.List.OfFn
 
 namespace List
 

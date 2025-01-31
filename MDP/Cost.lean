@@ -1,5 +1,5 @@
 import MDP.Bellman
-import MDP.Paths.Prob
+import MDP.BScheduler
 
 open OrderHom
 

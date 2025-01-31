@@ -1,6 +1,5 @@
-import Mathlib.Data.Finset.Image
-import Mathlib.Topology.Algebra.InfiniteSum.Defs
-
+import Mathlib.Data.Finset.Lattice.Fold
+import Mathlib.Data.Fintype.Basic
 namespace Finset
 
 variable {α β : Type*}

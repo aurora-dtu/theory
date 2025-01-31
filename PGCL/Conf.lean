@@ -1,4 +1,3 @@
-import Mathlib.Topology.Algebra.InfiniteSum.Order
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 import PGCL.pGCL
 

@@ -1,4 +1,3 @@
-import Mathlib.Data.ENNReal.Basic
 import Mathlib.Data.ENNReal.Operations
 
 variable {ϖ : Type*}
