@@ -176,12 +176,12 @@ theorem Scheduler.specialize_tail_take (π : M.Path)
 
 @[simp]
 theorem Scheduler.specialize_default_on {π : M.Path}
-    {s' : M.succs_univ s} (h : ¬π[0] = ↑s') : 𝒮[s ↦ s'] π = M.default_act π.last := by
+    {s' : M.succs_univ s} (h : ¬π[0] = s') : 𝒮[s ↦ s'] π = M.default_act π.last := by
   simp [h]
 
 theorem MScheduler.toScheduler_specialize (ℒ : 𝔏[M]) :
       ℒ.toScheduler[s ↦ s']
-    = ⟨fun π ↦ if π[0] = ↑s' then ℒ π else M.default_act π.last,
+    = ⟨fun π ↦ if π[0] = s' then ℒ π else M.default_act π.last,
        fun π ↦ by simp; split_ifs <;> simp⟩ := by
   ext π; simp
 

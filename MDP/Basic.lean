@@ -1,13 +1,4 @@
-import Mathlib.Control.Fix
-import Mathlib.Data.ENNReal.Basic
-import Mathlib.Data.Real.EReal
-import Mathlib.Dynamics.FixedPoints.Basic
 import Mathlib.Probability.ProbabilityMassFunction.Basic
-import Mathlib.Probability.ProbabilityMassFunction.Constructions
-import Mathlib.Tactic.Use
-import Mathlib.Topology.Algebra.InfiniteSum.Basic
-import Mathlib.Topology.Algebra.Module.Basic
-import Mathlib.Topology.Instances.Rat
 
 abbrev PReal := { p : ENNReal // 0 < p ∧ p ≤ 1 }
 
@@ -217,5 +208,22 @@ instance [M.FiniteBranching] : Finite (M.succs_univ s) := by
 noncomputable instance [M.FiniteBranching] : Fintype (M.succs_univ s) := Fintype.ofFinite _
 
 end Succs
+
+@[simp]
+theorem tsum_succs_univ_P_eq_tsum_succs_P :
+    (∑' s' : M.succs_univ s, M.P s α s') = ∑' s' : M.succs α s, M.P s α s' := by
+  apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨s, _⟩ ↦ ⟨s.val, by simp_all⟩) <;> simp_all [succs]
+  intro ⟨_, _⟩ ⟨_, _⟩; simp; exact SetCoe.ext
+
+@[simp]
+theorem tsum_succs_P_eq_tsum_P : ∑' s' : M.succs α s, M.P s α s' = ∑' s', M.P s α s' :=
+  tsum_subtype_eq_of_support_subset fun _ a ↦ a
+
+@[simp]
+theorem tsum_succs_P_eq_one : α ∈ M.act s → ∑' s', M.P s α s' = 1 := M.P_sum_one_iff.mpr
+
+theorem succs_tsum_add_left (h : α ∈ M.act s) (f : M.succs_univ s → ENNReal) :
+    ∑' s' : M.succs_univ s, (M.P s α s' * a + f s') = a + ∑' s' : M.succs_univ s, f s'
+:= by simp [ENNReal.tsum_add, ENNReal.tsum_mul_right, h]
 
 end MDP

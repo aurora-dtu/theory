@@ -1,7 +1,5 @@
-import MDP.Paths.Cost
-import MDP.Measure
 import MDP.Bellman
-import MDP.FinsetExt
+import MDP.Paths.Prob
 
 open OrderHom
 
@@ -9,6 +7,9 @@ namespace MDP
 
 variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
+
+noncomputable def EC (c : M.Costs) (𝒮 : 𝔖[M]) s n :=
+  ∑' π : Path[M,s,=n], π.val.ECost c 𝒮
 
 @[simp]
 theorem EC_zero : EC c 𝒮 s 0 = c s := by
@@ -18,7 +19,7 @@ theorem EC_zero : EC c 𝒮 s 0 = c s := by
 
 theorem EC_succ [DecidableEq State] (𝒮 : 𝔖[M]) :
     EC c 𝒮 s (n + 1) = c s + ∑' s' : M.succs_univ s, M.P s (𝒮 {s}) s' * EC c 𝒮[s ↦ s'] s' n := by
-  simp [← succs_tsum_add_left 𝒮, EC]
+  simp [← M.succs_tsum_add_left (s:=s) (α:=𝒮 {s}) (by simp), EC]
   rw [Path_eq.eq_succs_univ_biUnion, ENNReal.tsum_biUnion M.Path_eq_follows_disjoint]
   congr! 2 with s'
   simp [← Path_eq.tsum_add_left 𝒮[s ↦ s'], ← ENNReal.tsum_mul_left]
