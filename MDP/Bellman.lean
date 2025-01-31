@@ -36,7 +36,7 @@ noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
 theorem Φ.monotone' : Monotone M.Φ := fun _ _ h _ ↦ add_le_add h (by rfl)
 
 theorem Φ_le_Φℒ : Φ ≤ Φℒ ℒ :=
-  fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property' {s}⟩ (by rfl)
+  fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property {s}⟩ (by rfl)
 
 noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.Φ
 

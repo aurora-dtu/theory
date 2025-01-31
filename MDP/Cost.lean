@@ -134,7 +134,7 @@ theorem iSup_n_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
 
 noncomputable def ℒ' [M.FiniteBranching] (c : M.Costs) : 𝔏[M] :=
   ⟨⟨fun π ↦ (M.act π.last).toFinset.argmin (M.act₀_nonempty _) (M.Φf π.last · (lfp_Φ c)), by simp⟩,
-    by constructor; simp⟩
+    by constructor; simp [Scheduler.IsMarkovian]⟩
 
 noncomputable def ℒ'_spec [M.FiniteBranching] (c : M.Costs) (s : State) :
   ⨅ α : M.act s, M.Φf s α (lfp_Φ c) = (Φf s · (lfp_Φ c)) (ℒ' c {s})

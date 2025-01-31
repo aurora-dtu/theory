@@ -3,18 +3,17 @@ import MDP.Paths.Defs
 namespace MDP
 
 variable {State : Type*} {Act : Type*}
+variable {M : MDP State Act}
 
 /-- A (potentially) history dependent scheduler. -/
 structure Scheduler (M : MDP State Act) where
   toFun : M.Path → Act
-  property' : ∀ π : M.Path, toFun π ∈ M.act π.last
+  property : ∀ π : M.Path, toFun π ∈ M.act π.last
 
 @[inherit_doc]
 notation "𝔖[" M "]" => Scheduler M
 
 namespace Scheduler
-
-variable {M : MDP State Act}
 
 def mk' (𝒮 : (π : M.Path) → M.act π.last) : 𝔖[M] := ⟨fun π ↦ 𝒮 π, by simp⟩
 
@@ -33,7 +32,7 @@ theorem toFun_coe' (π : M.Path) : (⟨f, h⟩ : 𝔖[M]) π = f π := by simp o
 
 @[simp]
 theorem mem_act_if (𝒮 : 𝔖[M]) (h : π.last = s) : 𝒮 π ∈ M.act s := by
-  simp only [𝒮.property' π, h.symm, DFunLike.coe]
+  simp only [𝒮.property π, h.symm, DFunLike.coe]
 
 @[simp]
 theorem singleton_mem_act (𝒮 : 𝔖[M]) : 𝒮 {s} ∈ M.act s := by
@@ -52,13 +51,13 @@ theorem ext {𝒮 𝒮' : 𝔖[M]} (h : ∀ π, 𝒮 π = 𝒮' π) : 𝒮 = �
   simp_all [DFunLike.coe]
   apply (Set.eqOn_univ _ _).mp fun ⦃x⦄ _ ↦ h x
 
-def IsMarkovian {M : MDP State Act} (𝒮 : 𝔖[M]) : Prop := ∀ π, 𝒮 π = 𝒮 {π.last}
+def IsMarkovian (𝒮 : 𝔖[M]) : Prop := ∀ π, 𝒮 π = 𝒮 {π.last}
 
 @[mk_iff]
-class Markovian {M : MDP State Act} (𝒮 : 𝔖[M]) : Prop where
-  intro : (∀ π, 𝒮 π = 𝒮 {π.last})
+class Markovian (𝒮 : 𝔖[M]) : Prop where
+  intro : 𝒮.IsMarkovian
 
-theorem MarkovianOn (𝒮 : 𝔖[M]) [inst : Markovian 𝒮] (π : M.Path) :
+theorem MarkovianOn (𝒮 : 𝔖[M]) [inst : 𝒮.Markovian] (π : M.Path) :
     𝒮 π = 𝒮 {π.last} := inst.intro π
 
 @[simp]
@@ -106,10 +105,9 @@ instance (ℒ : 𝔏[M]) : Scheduler.Markovian (ℒ : 𝔖[M]) := ℒ.prop
 @[simp, norm_cast] lemma coe_mk (𝒮 : 𝔖[M]) (h𝒮) : toScheduler ⟨𝒮, h𝒮⟩ = 𝒮 := rfl
 
 @[simp]
-theorem val_eq_to_scheduler' (ℒ : 𝔏[M]) : ℒ.val = (ℒ : 𝔖[M]) := rfl
+theorem val_eq_toScheduler (ℒ : 𝔏[M]) : ℒ.val = (ℒ : 𝔖[M]) := rfl
 
-theorem toScheduler_injective : Function.Injective ((↑) : 𝔏[M] → 𝔖[M]) :=
-  Subtype.coe_injective
+theorem toScheduler_injective : Function.Injective ((↑) : 𝔏[M] → 𝔖[M]) := Subtype.coe_injective
 
 instance instFunLike : FunLike 𝔏[M] M.Path Act where
   coe ℒ π := (ℒ : 𝔖[M]) π
@@ -140,8 +138,6 @@ theorem toScheduler_apply : ℒ.toScheduler π = ℒ π := rfl
 
 end MScheduler
 
-variable {M : MDP State Act}
-
 @[simp]
 theorem Scheduler.mk'_coe {𝒮 : (π : M.Path) → M.act π.last} (π : M.Path) :
     (Scheduler.mk' 𝒮) π = (𝒮 π).val := by simp [mk']
@@ -149,9 +145,8 @@ theorem Scheduler.mk'_coe {𝒮 : (π : M.Path) → M.act π.last} (π : M.Path)
 /-- Specialize a scheduler such that all scheduled paths are considered with a given state as the
     immediately predecessor. -/
 noncomputable def Scheduler.specialize [DecidableEq State] (𝒮 : 𝔖[M])
-    (s₀ : State) (s₀' : M.succs_univ s₀) : 𝔖[M] :=
-  Scheduler.mk' fun π ↦ if h : π[0] = s₀' then ⟨𝒮 (π.prepend ⟨s₀, by simp_all⟩), by simp⟩
-                         else default
+    (s : State) (s' : M.succs_univ s) : 𝔖[M] :=
+  Scheduler.mk' fun π ↦ if h : π[0] = s' then ⟨𝒮 (π.prepend ⟨s, by simp_all⟩), by simp⟩ else default
 
 syntax:max term noWs "[" withoutPosition(term) " ↦ " withoutPosition(term) "]" : term
 @[inherit_doc Scheduler.specialize]

@@ -99,7 +99,7 @@ noncomputable section
 
 def cast_arb (ℬ : 𝔖[M,s,≤n]) : 𝔖[M,s',≤m] := ℬ.val.bound
 def cast_arb_tail (ℬ : 𝔖[M,s,≤n]) : 𝔖[M,s',≤n+1] :=
-  Scheduler.mk' (fun π ↦ ⟨ℬ π.tail, by have := ℬ.val.property' π.tail; simp_all⟩) |>.bound
+  Scheduler.mk' (fun π ↦ ⟨ℬ π.tail, by have := ℬ.val.property π.tail; simp_all⟩) |>.bound
 
 @[simp]
 theorem cast_arb_tail_specialize (s' : M.succs_univ s) (ℬ : 𝔖[M,s',≤n]) :
