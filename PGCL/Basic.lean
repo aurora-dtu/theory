@@ -1,5 +1,5 @@
 import MDP.Cost
-import PGCL.SmallStep
+import PGCL.OMDP
 
 theorem pGCL.iSup_iInf_EC_eq_dwp [DecidableEq ϖ] :
   ⨅ 𝒮, ⨆ n, (OMDP (ϖ:=ϖ)).EC (OMDP.cost X) 𝒮 (·⟨C,σ⟩) n = C.dwp X σ
