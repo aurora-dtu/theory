@@ -43,11 +43,11 @@ noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.Φ
 theorem iSup_succ_Φ_eq_iSup_Φ (c) : ⨆ (n : ℕ), (M.Φ c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.Φ c)^[n] ⊥ := by
   ext; rw [iSup_iterate_succ]
 
-theorem lfp_Φ_step : Φ c (lfp_Φ c) = lfp_Φ c := map_lfp (Φ c)
+theorem map_lfp_Φ : Φ c (lfp_Φ c) = lfp_Φ c := map_lfp (Φ c)
 
 noncomputable def lfp_Φℒ (ℒ : 𝔏[M]) : M.Costs → M.Costs := lfp ∘ M.Φℒ ℒ
 
-theorem lfp_Φℒ_step : Φℒ c 𝒮 (lfp_Φℒ c 𝒮) = lfp_Φℒ c 𝒮 := map_lfp _
+theorem map_lfp_Φℒ : Φℒ c 𝒮 (lfp_Φℒ c 𝒮) = lfp_Φℒ c 𝒮 := map_lfp _
 
 section FiniteBranching
 

@@ -10,10 +10,10 @@ import PGCL.WeakestPre
 
 * `pGCL.SmallStep`: The inductive definition of the probobalistic small step semantics of `pGCL`.
 * `pGCL.OMDP`: The derived `MDP` from the small step semantics.
-* `pGCL.OMDP.step`: The characteristic function of doing one step in the `OMDP`.
+* `pGCL.OMDP.Ψ`: The characteristic function of doing one step in the `OMDP`.
 * `pGCL.dop`: The demonic expected cost given by the least fixed point of the Bellman-operator
   `MDP.Φ`.
-* `pGCL.dop_eq_dwp`: The proof connecting the fixed point characteristic of the operational
+* `pGCL.dop_eq_wp`: The proof connecting the fixed point characteristic of the operational
   semantics to the weakest preexpectation formalization of `pGCL`.
 -/
 

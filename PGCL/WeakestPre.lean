@@ -28,40 +28,40 @@ theorem monotone : Monotone (lfp (α:=α)) := by
 
 end lfp
 
-noncomputable def dwp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
+noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | .skip => X
   | .assign x A => fun σ ↦ X (σ[x ↦ A σ])
-  | .seq C₁ C₂ => C₁.dwp (C₂.dwp X)
-  | .prob C₁ p C₂ => p.pick (C₁.dwp X) (C₂.dwp X)
-  | .nonDet C₁ C₂ => C₁.dwp X ⊓ C₂.dwp X
-  | .loop B C' => lfp (B.probOf * C'.dwp · + B.not.probOf * X)
+  | .seq C₁ C₂ => C₁.wp (C₂.wp X)
+  | .prob C₁ p C₂ => p.pick (C₁.wp X) (C₂.wp X)
+  | .nonDet C₁ C₂ => C₁.wp X ⊓ C₂.wp X
+  | .loop B C' => lfp (B.probOf * C'.wp · + B.not.probOf * X)
   | .tick e => e + X
 
-@[simp] theorem dwp.skip : dwp (ϖ:=ϖ) skip = (·) := rfl
-@[simp] theorem dwp.assign : dwp (ϖ:=ϖ) (assign x A) = fun X σ ↦ X (σ[x ↦ A σ]) := rfl
-@[simp] theorem dwp.seq : dwp (ϖ:=ϖ) (seq C₁ C₂) = C₁.dwp ∘ C₂.dwp := rfl
-@[simp] theorem dwp.prob : dwp (ϖ:=ϖ) (prob C₁ p C₂) = fun X ↦ p.pick (C₁.dwp X) (C₂.dwp X) := rfl
-@[simp] theorem dwp.nonDet : dwp (ϖ:=ϖ) (nonDet C₁ C₂) = C₁.dwp ⊓ C₂.dwp := rfl
-@[simp] theorem dwp.tick : dwp (ϖ:=ϖ) (tick e) = fun X ↦ e + X := rfl
+@[simp] theorem wp.skip : wp (ϖ:=ϖ) skip = (·) := rfl
+@[simp] theorem wp.assign : wp (ϖ:=ϖ) (assign x A) = fun X σ ↦ X (σ[x ↦ A σ]) := rfl
+@[simp] theorem wp.seq : wp (ϖ:=ϖ) (seq C₁ C₂) = C₁.wp ∘ C₂.wp := rfl
+@[simp] theorem wp.prob : wp (ϖ:=ϖ) (prob C₁ p C₂) = fun X ↦ p.pick (C₁.wp X) (C₂.wp X) := rfl
+@[simp] theorem wp.nonDet : wp (ϖ:=ϖ) (nonDet C₁ C₂) = C₁.wp ⊓ C₂.wp := rfl
+@[simp] theorem wp.tick : wp (ϖ:=ϖ) (tick e) = fun X ↦ e + X := rfl
 
-@[simp] theorem dwp.monotone (C : pGCL ϖ) : Monotone (C.dwp) := by
+@[simp] theorem wp.monotone (C : pGCL ϖ) : Monotone (C.wp) := by
   intro X₁ X₂ h
-  induction C generalizing X₁ X₂ with simp_all [dwp]
+  induction C generalizing X₁ X₂ with simp_all [wp]
   | assign x e => intro σ; exact h _
   | nonDet C₁ C₂ ih₁ ih₂ => simp [inf_le_of_left_le (ih₁ h), inf_le_of_right_le (ih₂ h)]
   | loop B C' => exact lfp.monotone fun Y σ ↦ by by_cases h' : B σ <;> simp_all [h σ]
   | tick e => apply add_le_add_left h
 
-noncomputable def dwp_loop_f (B : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun Y ↦ B.probOf * C'.dwp Y + B.not.probOf * X,
-   fun _ _ h σ ↦ by simp [add_le_add, mul_le_mul, dwp.monotone C' h σ]⟩
-theorem dwp_loop : (loop (ϖ:=ϖ) B C').dwp = fun X ↦ OrderHom.lfp (C'.dwp_loop_f B X) := rfl
+noncomputable def wp_loop_f (B : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
+  ⟨fun Y ↦ B.probOf * C'.wp Y + B.not.probOf * X,
+   fun _ _ h σ ↦ by simp [add_le_add, mul_le_mul, wp.monotone C' h σ]⟩
+theorem wp_loop : (loop (ϖ:=ϖ) B C').wp = fun X ↦ OrderHom.lfp (C'.wp_loop_f B X) := rfl
 
-theorem dwp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
-  (pGCL.loop b C).dwp = fun X ↦ b.probOf * (C ; pGCL.loop b C).dwp X + b.not.probOf * X
+theorem wp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
+  (pGCL.loop b C).wp = fun X ↦ b.probOf * (C ; pGCL.loop b C).wp X + b.not.probOf * X
 := by
   ext
-  simp only [dwp_loop, dwp_loop_f, Pi.add_apply, Pi.mul_apply]
+  simp only [wp_loop, wp_loop_f, Pi.add_apply, Pi.mul_apply]
   rw [← OrderHom.map_lfp]
   rfl
 

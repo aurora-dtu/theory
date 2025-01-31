@@ -146,12 +146,12 @@ omit [DecidableEq State] in
 theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp_Φ c := by
   apply le_antisymm
   · apply lfp_le
-    nth_rw 2 [← lfp_Φ_step]
+    nth_rw 2 [← map_lfp_Φ]
     simp [Φℒ, Φ]
     congr! 2 with s
     exact M.ℒ'_spec c s |>.symm
   · refine lfp_le _ fun s ↦ ?_
-    nth_rw 2 [← lfp_Φℒ_step]
+    nth_rw 2 [← map_lfp_Φℒ]
     apply M.Φ_le_Φℒ
 
 attribute [-simp] Function.iterate_succ in
@@ -171,7 +171,7 @@ theorem iInf_iSup_EC_eq_iInf_iSup_ECℒ [M.FiniteBranching] :
   · refine le_iInf fun ℒ ↦ ?_
     suffices lfp_Φ c ≤ lfp_Φℒ ℒ c by exact this s
     apply lfp_le
-    nth_rw 2 [← lfp_Φℒ_step]
+    nth_rw 2 [← map_lfp_Φℒ]
     apply Φ_le_Φℒ
   · rw [← M.lfp_Φℒ_eq_lfp_Φ]
     apply iInf_le
