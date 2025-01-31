@@ -1,4 +1,4 @@
-import MDP.Cost
+import MDP.Basic
 
 namespace MDP
 
@@ -57,6 +57,5 @@ theorem ofRelation_succs_univ :
     (ofRelation r h₀ h₁ h₂).succs_univ = fun c ↦ {c' | ∃ α p, r c α p c'} := by
   ext c c'
   simp [succs_univ]
-  constructor <;> aesop
 
 end MDP

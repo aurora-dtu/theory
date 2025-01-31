@@ -1,8 +1,3 @@
-import Mathlib.Topology.Algebra.Module.Basic
-import Mathlib.Topology.Instances.Rat
-import Mathlib.Control.Fix
-import Mathlib.Dynamics.FixedPoints.Basic
-import Mathlib.Tactic.Use
 import PGCL.Exp
 
 variable {ϖ : Type*}
