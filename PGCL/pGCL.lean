@@ -8,7 +8,6 @@ inductive pGCL (ϖ : Type*) where
   | seq : pGCL ϖ → pGCL ϖ → pGCL ϖ
   | prob : pGCL ϖ → ProbExp ϖ → pGCL ϖ → pGCL ϖ
   | nonDet : pGCL ϖ → pGCL ϖ → pGCL ϖ
-  -- | ite : BExpr ϖ → pGCL ϖ → pGCL ϖ → pGCL ϖ
   | loop : BExpr ϖ → pGCL ϖ → pGCL ϖ
   | tick : Exp ϖ → pGCL ϖ
 deriving Inhabited

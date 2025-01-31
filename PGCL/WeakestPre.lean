@@ -1,32 +1,28 @@
 import Mathlib.Order.FixedPoints
-import Mathlib.Tactic.Use
-import Mathlib.Topology.Algebra.Module.Basic
-import Mathlib.Topology.Instances.Rat
-import PGCL.Exp
 import PGCL.pGCL
 
 namespace pGCL
 
-variable {ϖ : Type*}
-variable [DecidableEq ϖ]
+variable {ϖ : Type*} [DecidableEq ϖ]
 
-def lfp {α} [CompleteLattice α] (f : α → α) : α := sInf {a | f a ≤ a}
+/-- A version of `OrderHom.lfp` that does not require `f` the `Monotone` upfront. -/
+protected def wp.lfp {α} [CompleteLattice α] (f : α → α) : α := sInf {a | f a ≤ a}
 
-namespace lfp
+namespace wp.lfp
 
 variable [CompleteLattice α]
 
-theorem monotone : Monotone (lfp (α:=α)) := by
+theorem monotone : Monotone (wp.lfp (α:=α)) := by
   intro f g h
-  simp_all [lfp]
+  simp_all [wp.lfp]
   intro x h'
   apply sInf_le
   simp [le_trans (h x) h']
 
-@[simp] theorem eq_OrderHom_lfp (f : α → α) (h : Monotone f) : lfp f = OrderHom.lfp ⟨f, h⟩ := rfl
-@[simp] theorem eq_OrderHom_lfp' (f : α →o α) : lfp f = OrderHom.lfp f := rfl
+@[simp] theorem wp_lfp_eq_lfp (f : α → α) (h : Monotone f) : wp.lfp f = OrderHom.lfp ⟨f, h⟩ := rfl
+@[simp] theorem wp_lfp_eq_lfp_OrderHom (f : α →o α) : wp.lfp f = OrderHom.lfp f := rfl
 
-end lfp
+end wp.lfp
 
 noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | .skip => X
@@ -34,7 +30,7 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | .seq C₁ C₂ => C₁.wp (C₂.wp X)
   | .prob C₁ p C₂ => p.pick (C₁.wp X) (C₂.wp X)
   | .nonDet C₁ C₂ => C₁.wp X ⊓ C₂.wp X
-  | .loop B C' => lfp (B.probOf * C'.wp · + B.not.probOf * X)
+  | .loop b C' => wp.lfp (b.probOf * C'.wp · + b.not.probOf * X)
   | .tick e => e + X
 
 @[simp] theorem wp.skip : wp (ϖ:=ϖ) skip = (·) := rfl
@@ -49,13 +45,13 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   induction C generalizing X₁ X₂ with simp_all [wp]
   | assign x e => intro σ; exact h _
   | nonDet C₁ C₂ ih₁ ih₂ => simp [inf_le_of_left_le (ih₁ h), inf_le_of_right_le (ih₂ h)]
-  | loop B C' => exact lfp.monotone fun Y σ ↦ by by_cases h' : B σ <;> simp_all [h σ]
+  | loop b C' => exact lfp.monotone fun Y σ ↦ by by_cases h' : b σ <;> simp_all [h σ]
   | tick e => apply add_le_add_left h
 
-noncomputable def wp_loop_f (B : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun Y ↦ B.probOf * C'.wp Y + B.not.probOf * X,
+noncomputable def wp_loop_f (b : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
+  ⟨fun Y ↦ b.probOf * C'.wp Y + b.not.probOf * X,
    fun _ _ h σ ↦ by simp [add_le_add, mul_le_mul, wp.monotone C' h σ]⟩
-theorem wp_loop : (loop (ϖ:=ϖ) B C').wp = fun X ↦ OrderHom.lfp (C'.wp_loop_f B X) := rfl
+theorem wp_loop : (loop (ϖ:=ϖ) b C').wp = fun X ↦ OrderHom.lfp (C'.wp_loop_f b X) := rfl
 
 theorem wp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
   (pGCL.loop b C).wp = fun X ↦ b.probOf * (C ; pGCL.loop b C).wp X + b.not.probOf * X

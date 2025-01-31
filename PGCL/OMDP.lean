@@ -1,6 +1,21 @@
 import PGCL.SmallStep
 
+/-!
+# Operation MDP derived from `SmallStep`.
+
+## Main definitions
+
+* `pGCL.OMDP`: The derived `MDP` from the small step semantics.
+* `pGCL.OMDP.Ψ`: The characteristic function of doing one step in the `OMDP`.
+* `pGCL.dop`: The demonic expected cost given by the least fixed point of the Bellman-operator
+  `MDP.Φ`.
+* `pGCL.dop_eq_wp`: The proof connecting the fixed point characteristic of the operational
+  semantics to the weakest preexpectation formalization of `pGCL`.
+-/
+
 namespace pGCL
+
+open OrderHom
 
 variable {ϖ : Type*} [DecidableEq ϖ]
 
@@ -145,7 +160,7 @@ theorem op_isLeast (b : pGCL ϖ → Exp ϖ → Exp ϖ) (h : ς b ≤ b) : op ≤
     gcongr; split <;> simp_all [ih _ _ _]; split_ifs <;> simp
 
 theorem lfp_ς_eq_op : lfp (ς (ϖ:=ϖ)) = op :=
-  (OrderHom.lfp_le_fixed _ ς_op_eq_op).antisymm (OrderHom.le_lfp _ op_isLeast)
+  (lfp_le_fixed _ ς_op_eq_op).antisymm (le_lfp _ op_isLeast)
 
 variable {C : pGCL ϖ}
 
@@ -177,7 +192,7 @@ theorem ς_wp_eq_wp : ς (ϖ:=ϖ) wp = wp := by
     exact ⟨⟨_, _, h⟩, _, h', hp⟩
 
 theorem wp_le_op.loop (ih : C.wp ≤ C.op) : wp (.loop b C) ≤ op (.loop b C) := by
-  refine fun X ↦ OrderHom.lfp_le (wp_loop_f b C X) (le_trans ?_ <| ς_op_eq_op.le _ _ ·)
+  refine fun X ↦ lfp_le (wp_loop_f b C X) (le_trans ?_ <| ς_op_eq_op.le _ _ ·)
   simp_all [ς, 𝒬.tsum_succs_univ', wp_loop_f]
   split_ifs <;> simp_all; apply (ih _).trans (op_le_seq _)
 
