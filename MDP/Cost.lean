@@ -38,13 +38,6 @@ theorem EC_le (h : ∀ π ∈ Path[M,s,≤n], 𝒮 π = 𝒮' π) : EC c 𝒮 s 
 
 variable [DecidableEq State]
 
-theorem EC_eq_bound (s : State) (s' : M.succs_univ s) :
-    ⨅ 𝒮, EC c 𝒮 s' n = ⨅ 𝒮 : 𝔖[M], EC c (𝒮.bound (s:=s') (n:=n)).val s' n := by
-  congr with 𝒮
-  apply EC_eq fun _ _ ↦ by simp_all
-theorem EC_bound_eq_bound_EC (s : State) (s' : M.succs_univ s) :
-    ⨅ 𝒮 : 𝔖[M], EC c (𝒮.bound (s:=s') (n:=n)).val s' n = ⨅ ℬ : 𝔖[M,s',≤n], EC c ℬ.val s' n
-:= Function.Surjective.iInf_congr (·.bound) (by use ·.val; ext _ h; simp [h]) (fun _ ↦ rfl)
 theorem bound_EC_succ_eq_bound_EC (s : State) (s' : M.succs_univ s) :
     ⨅ ℬ : 𝔖[M,s,≤n+1], EC c ℬ[s ↦ s'].val s' n = ⨅ ℬ : 𝔖[M,s',≤n], EC c ℬ.val s' n
 := Function.Surjective.iInf_congr (·[s ↦ s']) (by use ·.cast_arb_tail; simp) (fun _ ↦ rfl)
@@ -53,22 +46,16 @@ theorem iInf_EC_specialized_eq_bounded (s : State) (s' : M.succs_univ s) :
     ⨅ 𝒮 : 𝔖[M], EC c 𝒮[s ↦ s'] s' n = ⨅ ℬ : 𝔖[M,s,≤n+1], EC c ℬ[s ↦ s'].val s' n
 := Function.Surjective.iInf_congr (·.bound) (by use ·.val; ext; simp_all)
   (fun _ ↦ EC_eq fun _ _ ↦ by simp; split_ifs <;> simp_all)
-theorem iInf_EC_eq_specialized (s : State) (s' : M.succs_univ s) :
-    ⨅ 𝒮, EC c 𝒮 s' n = ⨅ 𝒮 : 𝔖[M], EC c 𝒮[s ↦ s'] s' n := by
-  rw [EC_eq_bound, EC_bound_eq_bound_EC, iInf_EC_specialized_eq_bounded, bound_EC_succ_eq_bound_EC]
 
 theorem iInf_scheduler_eq_iInf_act_iInf_scheduler :
     ⨅ 𝒮 : 𝔖[M], ∑' s' : M.succs_univ s, M.P s (𝒮 {s}) s' * EC c 𝒮[s ↦ s'] s' n
   = ⨅ α : M.act s, ⨅ 𝒮 : 𝔖[M], ∑' s' : M.succs_univ s, M.P s α s' * EC c 𝒮[s ↦ s'] s' n
-:= by
-  apply le_antisymm
-  · apply le_iInf_iff.mpr fun α ↦ le_iInf_iff.mpr fun 𝒮 ↦ ?_
-    apply iInf_le_of_le ⟨fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
-      simp only; split_ifs <;> simp_all only [Path.last, Subtype.coe_prop, Scheduler.mem_act_if]⟩
-    simp
-    gcongr
-    exact EC_le (by simp)
-  · exact le_iInf fun 𝒮 ↦ iInf_le_of_le ⟨𝒮 {s}, by simp⟩ (iInf_le_of_le 𝒮 (by rfl))
+:= le_antisymm
+  (le_iInf₂ fun α 𝒮 ↦ iInf_le_of_le
+    ⟨fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
+      simp only; split_ifs <;> simp_all [Path.last, -Path.getElem_length_pred_eq_last]⟩
+    (ENNReal.tsum_le_tsum fun _ ↦ mul_le_mul (by simp) (EC_le (by simp)) (by simp) (by simp)))
+  (le_iInf fun 𝒮 ↦ iInf₂_le_of_le ⟨𝒮 {s}, by simp⟩ 𝒮 (by rfl))
 
 variable [M.FiniteBranching] in
 theorem tsum_iInf_bounded_comm (f : (s' : M.succs_univ s) → 𝔖[M,s',≤n] → ENNReal) :
@@ -96,6 +83,10 @@ theorem tsum_iInf_EC_comm :
   · apply Function.Surjective.iInf_congr (·.bound) (by use ·.val; ext; simp_all [Scheduler.bound])
     congr! 3; exact EC_eq (by simp_all)
 
+theorem iInf_EC_eq_specialized (s : State) (s' : M.succs_univ s) :
+    ⨅ 𝒮, EC c 𝒮 s' n = ⨅ 𝒮 : 𝔖[M], EC c 𝒮[s ↦ s'] s' n :=
+  (le_iInf_comp _ _).antisymm (le_iInf (iInf_le_of_le ⟨· ∘ .tail, by simp⟩ (EC_le (by simp_all))))
+
 theorem iInf_EC_succ_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s (n + 1) = M.Φ c (⨅ 𝒮, EC c 𝒮 · n) s :=
   by simp [EC_succ, Φ, Φf, ← ENNReal.add_iInf, iInf_EC_eq_specialized, ENNReal.mul_iInf,
       tsum_iInf_EC_comm, iInf_scheduler_eq_iInf_act_iInf_scheduler]
@@ -111,17 +102,13 @@ theorem iSup_iInf_EC_eq_iSup_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮
 theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 s n = M.lfp_Φ c s := by
   simp [lfp_Φ_eq_iSup_succ_Φ, iInf_EC_eq_Φ]
 
-theorem iSup_iInf_EC_eq_lfp_Φ' [M.FiniteBranching] : (⨆ n, ⨅ 𝒮, EC c 𝒮 · n) = M.lfp_Φ c := by
-  simp [iSup_iInf_EC_eq_lfp_Φ]
-
 theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
     EC c ℒ s (n + 1) = Φℒ ℒ c (EC c ℒ · n) s := by
   induction n generalizing s with
   | zero => simp [EC_succ]; rfl
   | succ n ih =>
-    simp [ih, EC_succ]; clear ih
-    simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf,
-      Scheduler.Markovian_path_take''']
+    simp [ih, EC_succ]
+    simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf]
 
 attribute [-simp] Function.iterate_succ in
 theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
@@ -157,11 +144,7 @@ theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp_�
 attribute [-simp] Function.iterate_succ in
 theorem iSup_iInf_EC_eq_iInf_iSup_EC [M.FiniteBranching] :
     ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 s n = ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 s n := by
-  apply le_antisymm (iSup_iInf_le_iInf_iSup _)
-  suffices ∃ (ℒ' : 𝔏[M]), ⨆ n, EC c ℒ' s n = ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 s n by
-    obtain ⟨ℒ', h⟩ := this
-    simp [← h, iInf_le]
-  use M.ℒ' c
+  apply le_antisymm (iSup_iInf_le_iInf_iSup _) (iInf_le_of_le ↑(M.ℒ' c) _)
   simp [iSup_ECℒ_eq_lfp_Φℒ, iSup_iInf_EC_eq_lfp_Φ, lfp_Φℒ_eq_lfp_Φ]
 
 theorem iInf_iSup_EC_eq_iInf_iSup_ECℒ [M.FiniteBranching] :
