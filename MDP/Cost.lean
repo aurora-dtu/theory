@@ -124,7 +124,7 @@ theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
       Scheduler.Markovian_path_take''']
 
 attribute [-simp] Function.iterate_succ in
-theorem iSup_n_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
+theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
     (⨆ n, EC c ℒ s n) = lfp_Φℒ ℒ c s := by
   simp [lfp_Φℒ_eq_iSup_succ_Φℒ]
   congr with n
@@ -162,11 +162,11 @@ theorem iSup_iInf_EC_eq_iInf_iSup_EC [M.FiniteBranching] :
     obtain ⟨ℒ', h⟩ := this
     simp [← h, iInf_le]
   use M.ℒ' c
-  simp [iSup_n_ECℒ_eq_lfp_Φℒ, iSup_iInf_EC_eq_lfp_Φ, lfp_Φℒ_eq_lfp_Φ]
+  simp [iSup_ECℒ_eq_lfp_Φℒ, iSup_iInf_EC_eq_lfp_Φ, lfp_Φℒ_eq_lfp_Φ]
 
 theorem iInf_iSup_EC_eq_iInf_iSup_ECℒ [M.FiniteBranching] :
     ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 s n = ⨅ ℒ : 𝔏[M], ⨆ n, EC c ℒ s n := by
-  simp [← iSup_iInf_EC_eq_iInf_iSup_EC, iSup_iInf_EC_eq_lfp_Φ, iSup_n_ECℒ_eq_lfp_Φℒ]
+  simp [← iSup_iInf_EC_eq_iInf_iSup_EC, iSup_iInf_EC_eq_lfp_Φ, iSup_ECℒ_eq_lfp_Φℒ]
   apply le_antisymm
   · refine le_iInf fun ℒ ↦ ?_
     suffices lfp_Φ c ≤ lfp_Φℒ ℒ c by exact this s
