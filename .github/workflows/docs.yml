@@ -48,6 +48,9 @@ jobs:
             .lake/build/doc/Lake
             .lake/build/doc/Lean
             .lake/build/doc/Std
+            .lake/build/doc/Batteries
+            .lake/build/doc/ProofWidgets
+            .lake/build/doc/Aesop
             .lake/build/doc/Mathlib
             .lake/build/doc/declarations
             !.lake/build/doc/declarations/declaration-data-MDP*
