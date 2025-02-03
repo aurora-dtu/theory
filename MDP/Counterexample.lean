@@ -147,12 +147,4 @@ theorem 𝒜.iSup_iInf_eq_eq_top : ⨆ n, ⨅ 𝒮, 𝒜.EC 𝒜.cost 𝒮 .init
   rcases n with _ | n <;> simp_all
   apply (iInf_le_of_le ⟨(if ·.last = .init then n + 1 else 0), by simp⟩ (by simp)).antisymm bot_le
 
-end Counterexample
-
-open Counterexample in
-theorem exists_iSup_iInf_EC_lt_iInf_iSup_EC :
-    ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
-      ⨆ n, ⨅ 𝒮, M.EC c 𝒮 s n < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 s n := by
-  use State, ℕ, 𝒜, 𝒜.cost, .init; simp
-
-end MDP
+end MDP.Counterexample

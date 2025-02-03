@@ -190,17 +190,4 @@ theorem iInf_iSup_EC_eq_lfp_Φ [M.FiniteBranching] :
     ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 s n = M.lfp_Φ c s := by
   simp [← iSup_iInf_EC_eq_lfp_Φ, iSup_iInf_EC_eq_iInf_iSup_EC]
 
-theorem Complete [M.FiniteBranching] :
-  let S: Set ENNReal := {
-    ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 s n,
-    ⨆ n, ⨅ ℒ : 𝔏[M], EC c ℒ s n,
-    ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 s n,
-    ⨅ ℒ : 𝔏[M], ⨆ n, EC c ℒ s n,
-    M.lfp_Φ c s
-  }
-  ∀ v₁ v₂ : S, v₁ = v₂
-:= by
-  simp [iSup_iInf_EC_eq_iInf_iSup_EC, iInf_iSup_EC_eq_iInf_iSup_ECℒ, iSup_iInf_ECℒ_eq_iInf_iSup_ECℒ,
-    ← iSup_iInf_EC_eq_lfp_Φ]
-
 end MDP

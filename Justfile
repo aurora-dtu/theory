@@ -11,4 +11,4 @@ docs-zip:
     zip -r docs.zip doc
 
 docs-vscode:
-    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs
+    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs MDP:docs
