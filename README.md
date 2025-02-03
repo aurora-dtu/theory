@@ -9,7 +9,7 @@ The best way to explore the project is by visiting the [documentation](https://a
 
 ## Building the project
 
-To build the project, one needs Lean installed. The recommended approach is to use VS Code as listed [here](https://lean-lang.org/lean4/doc/quickstart.html). If you prefer the CLI, then install [elan](https://github.com/leanprover/elan?tab=readme-ov-file#installation) and run `lake build`.
+To build the project, one needs to install Lean. The recommended approach is to use VS Code as listed [here](https://lean-lang.org/lean4/doc/quickstart.html). If you prefer the CLI, install [elan](https://github.com/leanprover/elan?tab=readme-ov-file#installation) and run `lake build`.
 
 ## Formalizations efforts
 
@@ -19,8 +19,8 @@ To build the project, one needs Lean installed. The recommended approach is to u
     - Fixed point formalization of expected cost and relation to finitly branching MDPs.
     - Connecting different interpretations of optimal expected cost across optimization order and history-dependence.
 - **_probobalistic Guarded Command Language_ (pGCL)** [[Docs](https://aurora-dtu.github.io/theory/PGCL.html)]
-    - Definition of a variant of pGCL and it's operational semantics.
-    - The induced MDP of the operational semantics of pGCL to define expected costs of programs.
+    - Definition of a variant of pGCL and its operational semantics.
+    - The induced MDP of the operational semantics of pGCL to define the expected costs of programs.
     - Connecting the _Weakest Preexpectation_ (WP) of pGCL programs to the optimal expected cost of the induced operational MDP by way of least fixed points.
 
 ## Publications
