@@ -7,9 +7,9 @@ import PGCL.SmallStep
 
 * `pGCL.OMDP`: The derived `MDP` from the small step semantics.
 * `pGCL.OMDP.Ψ`: The characteristic function of doing one step in the `OMDP`.
-* `pGCL.dop`: The demonic expected cost given by the least fixed point of the Bellman-operator
+* `pGCL.op`: The demonic expected cost given by the least fixed point of the Bellman-operator
   `MDP.Φ`.
-* `pGCL.dop_eq_wp`: The proof connecting the fixed point characteristic of the operational
+* `pGCL.op_eq_wp`: The proof connecting the fixed point characteristic of the operational
   semantics to the weakest preexpectation formalization of `pGCL`.
 -/
 
