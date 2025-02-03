@@ -1,5 +1,12 @@
 import Mathlib.Data.Finset.Lattice.Fold
 import Mathlib.Data.Fintype.Basic
+
+/-!
+# Extensions to `Finset`
+
+The intention is to upsteam these to mathlib.
+-/
+
 namespace Finset
 
 variable {α β : Type*}

@@ -1,5 +1,7 @@
 import PGCL.Exp
 
+open pGCL
+
 variable {ϖ : Type*}
 
 inductive pGCL (ϖ : Type*) where

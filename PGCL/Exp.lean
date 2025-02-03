@@ -1,5 +1,7 @@
 import Mathlib.Data.ENNReal.Operations
 
+namespace pGCL
+
 variable {ϖ : Type*}
 def States (ϖ : Type*) := ϖ → ENNReal
 
@@ -79,3 +81,5 @@ theorem pick_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y σ ≤ p.pick z 
 @[simp] theorem pick_of : p.val σ * x σ + (1 - p.val σ) * y σ = p.pick x y σ := rfl
 
 end ProbExp
+
+end pGCL

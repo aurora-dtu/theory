@@ -1,5 +1,11 @@
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 
+/-!
+# Extensions to `ENNReal`
+
+The intention is to upsteam these to mathlib.
+-/
+
 namespace ENNReal
 
 protected theorem tsum_biUnion' {ι : Type*} {S : Set ι} {f : α → ENNReal} {t : ι → Set α}

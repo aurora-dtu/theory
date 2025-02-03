@@ -1,6 +1,24 @@
 import MDP.OptimalCost
 import PGCL.OMDP
 
+/-!
+# _probabilistic Guarded Command Language_ (pGCL)
+
+## Main definitions
+
+* `pGCL`: The definition of a variant of the _pGCL language_.
+* `pGCL.SmallStep`: The _small step operations semantics_ of pGCL.
+* `pGCL.𝒬`: The _induced operational Markov Decision Process_ (`MDP`) by the small step operational
+  semantics.
+* `pGCL.wp`: The _weakest preexpectation transformer_ of a pGCL program.
+* `pGCL.op`: The _operational optimal expected cost transformer_ expressed as the optimal expected
+  cost of `pGCL.𝒬`.
+* `pGCL.op_eq_wp`: Theorem stating that the optimal expected cost is equal the weakest
+  preexpectation.
+* `pGCL.iSup_iInf_EC_eq_wp`: Theorem stating that the `⨅⨆` formulation of the optimal expected cost
+  is equal to the weakest preexpectation.
+-/
+
 theorem pGCL.iSup_iInf_EC_eq_wp [DecidableEq ϖ] :
   ⨅ 𝒮, ⨆ n, (𝒬 (ϖ:=ϖ)).EC (𝒬.cost X) 𝒮 (·⟨C,σ⟩) n = C.wp X σ
 := by

@@ -14,7 +14,7 @@ noncomputable def ofRelation (r : S → A → ENNReal → S → Prop)
       obtain ⟨p₀, c₀, h, h'⟩ := h
       exact h₁ h'
     ⟩ else none
-  progress := by
+  exists_P'_isSome := by
     intro s
     simp_all
     obtain ⟨p, α, c', h⟩ := h₂ s

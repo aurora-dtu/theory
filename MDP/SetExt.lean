@@ -1,5 +1,12 @@
 import Mathlib.Data.Set.Pairwise.Basic
 
+/-!
+# Extensions to `Set`
+
+The intention is to upsteam these to mathlib or to find and use similar existing theorems in
+mathlib.
+-/
+
 theorem Set.PairwiseDisjoint_iff {S : Set α} {f : α → Set β} :
     S.PairwiseDisjoint f ↔ (∀ {x} {a b}, a ∈ S → b ∈ S → x ∈ f a → x ∈ f b → a = b) := by
   constructor

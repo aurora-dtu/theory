@@ -20,8 +20,6 @@ notation "Path[" M "," s "," "≤" n "]" => MDP.Path_le M n s
 instance [DecidableEq State] : Decidable (π ∈ Path[M,s,=n]) := instDecidableAnd
 instance [DecidableEq State] : Decidable (π ∈ Path[M,s,≤n]) := instDecidableAnd
 
-theorem length_ne_zero (π : M.Path) (h : ∎|π| = 0) : False := by simp_all
-
 namespace Path_eq
 
 variable {M}

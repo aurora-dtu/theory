@@ -1,10 +1,8 @@
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
-abbrev PReal := { p : ENNReal // 0 < p ∧ p ≤ 1 }
-
 structure MDP (State : Type*) (Act : Type*) where
   P' : State → Act → Option (PMF State)
-  progress s : ∃a, (P' s a).isSome
+  exists_P'_isSome s : ∃a, (P' s a).isSome
 
 namespace MDP
 
@@ -17,15 +15,6 @@ def P (s : State) (a : Act) (s' : State) :=
   | some pmf => pmf s'
   | none => 0
 
-theorem progress' (s : State) : ∃ (a : Act), (M.P s a).support.Nonempty := by
-  have ⟨a, h⟩ := M.progress s
-  have ⟨pmf, s'⟩ := Option.isSome_iff_exists.mp h
-  simp_all [P]
-  unfold P
-  use a
-  simp [s']
-  exact Function.support_nonempty_iff.mp pmf.support_nonempty
-
 @[simp] lemma P_le_one (s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
   unfold P
   split
@@ -35,30 +24,19 @@ theorem progress' (s : State) : ∃ (a : Act), (M.P s a).support.Nonempty := by
 @[simp] lemma P_ne_top (s : State) (a : Act) (s' : State) : M.P s a s' ≠ ⊤ :=
   M.P_le_one s a s' |>.trans_lt ENNReal.one_lt_top |>.ne
 
-theorem P_pos_iff_sum_eq_one : (M.P s a).support.Nonempty ↔ ∑' s', M.P s a s' = 1 := by
-  constructor <;> intro h
-  · obtain ⟨s', h⟩ := h
-    simp_all [P]
-    split
-    · simp_all
-      apply PMF.tsum_coe
-    · simp_all
-  · by_contra q
-    simp_all
-
 def act (s : State) : Set Act := (M.P s).support
 
 class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite
   succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
 
-noncomputable instance [Fintype Act] : Finite (M.act s) := Subtype.finite
+instance [Fintype Act] : Finite (M.act s) := Subtype.finite
 noncomputable instance act.instFintype [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
-noncomputable instance act.instNonEmpty : Nonempty (M.act s) := by
-  simp only [act, ← P_pos_iff_sum_eq_one, Set.coe_setOf, nonempty_subtype]
-  have ⟨α, hα⟩ := M.progress' s
-  use α
-  simp_all
+noncomputable instance act.instNonEmpty : Nonempty (M.act s) :=
+  have ⟨α, hα⟩ := M.exists_P'_isSome s
+  have ⟨pmf, _⟩ := Option.isSome_iff_exists.mp hα
+  have ⟨s', h⟩ := pmf.support_nonempty
+  ⟨α, Function.ne_iff.mpr ⟨s', by simp_all [P]⟩⟩
 
 noncomputable def default_act (s : State) : Act :=
   (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose
@@ -82,10 +60,7 @@ theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.P s a).suppo
   simp_all [act₀_mem_iff_act_mem, act]
 
 noncomputable instance [M.FiniteBranching] : Nonempty (M.act₀ s) := by
-  simp [act₀]
-  have : Nonempty (M.act s) := act.instNonEmpty M
-  simp at this
-  exact this
+  simp_all [act.instNonEmpty M]
 
 noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
   Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
@@ -97,10 +72,6 @@ lemma P_ne_zero_sum_eq_one (h : ¬M.P s a s' = 0) : ∑' s'', M.P s a s'' = 1 :=
     simp [pmf.tsum_coe]
   · rename_i h'
     simp [h'] at h
-
-theorem P_nonempty_iff_act : (M.P s a).support.Nonempty ↔ a ∈ M.act s := by
-  simp only [Function.support_nonempty_iff, ne_eq]
-  exact Iff.symm Set.mem_def
 
 noncomputable instance act.instDefault : Inhabited (M.act s) := Classical.inhabited_of_nonempty'
 
