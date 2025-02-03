@@ -1,5 +1,5 @@
 import MDP.Relational
-import MDP.Cost
+import MDP.OptimalCost
 
 namespace MDP
 

@@ -1,4 +1,4 @@
-import MDP.Cost
+import MDP.OptimalCost
 import PGCL.OMDP
 
 theorem pGCL.iSup_iInf_EC_eq_wp [DecidableEq ϖ] :

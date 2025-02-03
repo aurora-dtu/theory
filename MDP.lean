@@ -1,4 +1,4 @@
-import MDP.Cost
+import MDP.OptimalCost
 import MDP.Counterexample
 
 namespace MDP
