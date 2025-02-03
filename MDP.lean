@@ -3,6 +3,9 @@ import MDP.Counterexample
 
 namespace MDP
 
+variable {State : Type*} {Act : Type*} {M : MDP State Act}
+variable [DecidableEq State]
+
 theorem Complete [M.FiniteBranching] :
   let S: Set ENNReal := {
     ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 s n,
