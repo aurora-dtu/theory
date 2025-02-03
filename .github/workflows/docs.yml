@@ -30,21 +30,43 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Install elan and build doc-gen4
-        uses: leanprover/lean-action@v1
+
+      - name: Install elan
+        run: curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:4.0.0
+
+      - name: Get cache
+        run: ~/.elan/bin/lake -Kenv=dev exe cache get || true
+
+      - name: Build project
+        run: ~/.elan/bin/lake -Kenv=dev build MDP PGCL
+
+      - name: Cache mathlib docs
+        uses: actions/cache@v3
         with:
-          build-args: "--wfail -Kenv=dev"
+          path: |
+            .lake/build/doc/Init
+            .lake/build/doc/Lake
+            .lake/build/doc/Lean
+            .lake/build/doc/Std
+            .lake/build/doc/Mathlib
+            .lake/build/doc/declarations
+            !.lake/build/doc/declarations/declaration-data-MDP*
+            !.lake/build/doc/declarations/declaration-data-PGCL*
+          key: MathlibDoc-${{ hashFiles('lake-manifest.json') }}
+          restore-keys: |
+            MathlibDoc-
+
       - name: Build documentation
-        run: |
-          export LEAN_ABORT_ON_PANIC=1
-          # lake build DocGen4:docs
-          lake -R -Kenv=dev build PGCL:docs MDP:docs
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
+        run: ~/.elan/bin/lake -Kenv=dev build MDP:docs PGCL:docs
+
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: "./.lake/build/doc"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
