@@ -68,47 +68,24 @@ theorem 𝒮_branch {𝒮 : 𝔖[𝒜]} : 𝒮 {.branch i j} = 0 := by
   simp_all
 
 @[simp] theorem succs_univ_init : 𝒜.succs_univ .init = {.branch α 0 | α} := by
-  ext s'
-  simp [succs_univ, succs, 𝒜]
-  simp [eq_comm]
+  simp [𝒜, eq_comm]
 
-@[simp] theorem succs_univ_branch : 𝒜.succs_univ (.branch i j) = {.branch i (j + 1) } := by
-  ext s'
-  simp [succs_univ, succs, 𝒜]
+@[simp] theorem succs_univ_branch : 𝒜.succs_univ (.branch i j) = {.branch i (j + 1)} := by
+  simp [𝒜]
 
-@[simp]
 theorem EC_branch_i_le_j_eq_top (h : i ≤ j) : 𝒜.EC 𝒜.cost 𝒮 (.branch i j) n = ⊤ := by
-  induction n with
-  | zero => simp [h]
-  | succ n ih => simp_all [EC_succ]
+  cases n <;> simp [h, EC_succ]
 
-theorem branch_forever (π : 𝒜.Path) (h' : i + n < ∎|π|) (h : π[i] = .branch α j) :
-    π[i + n] = .branch α (j + n) := by
-  induction n generalizing i j with
-  | zero => simp_all
-  | succ n ih => have := π.succs_succs_nat (i:=i + n) (by omega); simp_all; exact this
+theorem 𝒮_isMarkovian {𝒮 : 𝔖[𝒜]} : 𝒮.IsMarkovian := by
+  intro π
+  if h : π.last = .init then
+    have : ∎|π| = 1 := by by_contra q;  have := π.last_mem_succs (by simp_all); simp_all [𝒜]
+    exact DFunLike.congr rfl <| Path.ext this (by by_cases · = 0 <;> simp_all)
+  else
+    have h₁ := 𝒮.mem_act (π:=π); have h₂ := 𝒮.mem_act (π:={π.last})
+    simp_all
 
-@[simp]
-theorem EC_scheduler_specialize {𝒮 : 𝔖[𝒜]} :
-    𝒜.EC 𝒜.cost (𝒮.specialize s₀ s) s n = 𝒜.EC 𝒜.cost 𝒮 s n := by
-  apply EC_eq
-  obtain ⟨s, hs⟩ := s
-  rintro π ⟨_, _⟩
-  subst_eqs
-  simp [𝒜, step_iff] at hs
-  obtain ⟨α, _, (⟨⟨_⟩, ⟨_⟩, h⟩ | ⟨α, j, ⟨_⟩, ⟨_⟩, ⟨_⟩, h⟩)⟩ := hs
-  · have : π.last = .branch α (∎|π| - 1) := by
-      have h' := branch_forever π (α:=α) (i:=0) (j:=0) (n:=∎|π| - 1) (by simp) h
-      simp_all
-    have := 𝒮.mem_act (π:=π.prepend ⟨.init, by simp_all⟩)
-    have := 𝒮.mem_act (π:=π)
-    simp_all
-  · have : π.last = .branch α (j + ∎|π|) := by
-      have h' := branch_forever π (α:=α) (i:=0) (j:=j + 1) (n:=∎|π| - 1) (by simp) h
-      simp_all
-    have := 𝒮.mem_act (π:=π.prepend ⟨.branch α j, by simp_all⟩)
-    have := 𝒮.mem_act (π:=π)
-    simp_all
+instance {𝒮 : 𝔖[𝒜]} : 𝒮.Markovian := ⟨𝒮_isMarkovian⟩
 
 @[simp]
 theorem EC_step :

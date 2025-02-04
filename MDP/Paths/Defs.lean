@@ -77,6 +77,19 @@ def extend (s : M.succs_univ π.last) : M.Path := ⟨π.states ++ [s.val], by si
 
 def succs_univ : Set M.Path := {π' : M.Path | π'.prev = π ∧ 1 < ∎|π'|}
 
+@[simp]
+theorem last_if_singleton (h : ∎|π| = 1) : π.last = π[0] := by simp [Path.last, h]
+
+@[simp]
+theorem length_ne_one_iff : ¬∎|π| = 1 ↔ 1 < ∎|π| := by have := π.length_pos; omega
+
+@[simp]
+theorem length_sub_add_eq (h : 1 < ∎|π|) : ∎|π| - 2 + 1 = ∎|π| - 1 := by have := π.length_pos; omega
+
+@[simp]
+theorem last_mem_succs (h : 1 < ∎|π|) : π.last ∈ M.succs_univ π[∎|π| - 2] := by
+  have := π.succs_succs_nat (i:=∎|π| - 2) (by omega); simp_all
+
 @[simp] theorem mem_succs_univ_prev {π π' : M.Path} (h : π' ∈ π.succs_univ) : π'.prev = π := by
   simp [Path.succs_univ] at h; simp_all
 @[simp] theorem succs_univ_prev (π' : π.succs_univ) : π'.val.prev = π := by
@@ -87,12 +100,7 @@ def succs_univ : Set M.Path := {π' : M.Path | π'.prev = π ∧ 1 < ∎|π'|}
 def act := M.act π.last
 
 def tail : M.Path := ⟨if ∎|π| = 1 then π.states else π.states.tail,
-  by
-    split <;> simp
-    have := π.length_pos
-    refine List.ne_nil_of_length_pos ?isFalse.x
-    simp
-    omega,
+  by split <;> simp_all [List.ne_nil_of_length_pos],
   by
     intro i hi
     split_ifs with h <;> simp [h] at hi ⊢
@@ -140,7 +148,7 @@ theorem mk_getElem (states : List State) {h₁} {h₂} (hi : i < states.length) 
 
 @[simp]
 theorem tail_getElem_zero :
-    π.tail[0] = if h : ∎|π| = 1 then π[0] else π[1]'(by have := π.length_pos; omega) := by
+    π.tail[0] = if h : ∎|π| = 1 then π[0] else π[1]'(by simp_all) := by
   split_ifs <;> simp_all [tail]
 
 @[simp]
@@ -170,7 +178,7 @@ theorem extend_first : (π.extend s)[0] = π[0] := by simp [extend, List.getElem
 theorem prepend_first : (π.prepend s)[0] = s := by simp [prepend]
 @[simp]
 theorem tail_first :
-    π.tail[0] = if h : ∎|π| = 1 then π[0] else π[1]'(by have := π.length_pos; omega) := by
+    π.tail[0] = if h : ∎|π| = 1 then π[0] else π[1]'(by simp_all) := by
   simp [tail]; split_ifs <;> simp
 @[simp]
 theorem prev_first : π.prev[0] = π[0] := by simp [prev]; split_ifs <;> simp
@@ -222,18 +230,17 @@ theorem extend_length : ∎|π.extend s| = ∎|π| + 1 := by simp [extend]
 theorem prepend_length : ∎|π.prepend s| = ∎|π| + 1 := by simp [prepend]
 @[simp]
 theorem tail_length :
-    ∎|π.tail| = if ∎|π| = 1 then ∎|π| else ∎|π| - 1 := by
-  simp [tail]; split_ifs <;> simp
+    ∎|π.tail| = if 1 < ∎|π| then ∎|π| - 1 else ∎|π| := by
+  simp [tail]; split_ifs <;> simp_all
 @[simp]
-theorem prev_length : ∎|π.prev| = if ∎|π| = 1 then ∎|π| else ∎|π| - 1 := by
-  simp [prev]; split_ifs <;> simp
+theorem prev_length : ∎|π.prev| = if 1 < ∎|π| then ∎|π| - 1 else ∎|π| := by
+  simp [prev]; split_ifs <;> simp_all
 @[simp]
 theorem take_length : ∎|π.take n| = min (n + 1) ∎|π| := by simp [take]
 @[simp]
 theorem succs_length (π' : π.succs_univ) : ∎|π'.val| = ∎|π| + 1 := by
   rcases π' with ⟨π', ⟨_⟩, hπ'⟩
-  simp
-  split_ifs <;> omega
+  simp; split_ifs; omega
 
 theorem take_prepend :
     (π.take i).prepend s = (π.prepend ⟨s, by let h := s.prop; simp at h; simpa⟩).take (i + 1) := by
@@ -248,11 +255,10 @@ theorem extend_getElem_length_pred_eq_last : (π.extend s)[∎|π| - 1] = π.las
   simp [extend, List.getElem_append]
 @[simp]
 theorem take_lenth_pred_eq_prev : π.take (∎|π| - 2) = π.prev := by
-  simp [take, prev]; split_ifs with h <;> simp_all [List.dropLast_eq_take]; omega
+  simp [take, prev]; split_ifs with h <;> simp_all [List.dropLast_eq_take]
 @[simp]
 theorem extend_take_lenth_pred_eq_prev : (π.extend s).take (∎|π| - 1) = π := by
-  have h : ∎|π| - 1 + 1 = ∎|π| := by have := π.length_pos; omega
-  simp [take, prev, extend, h]
+  simp [take, prev, extend]
 @[simp]
 theorem extend_take (i : Fin ∎|π|) : (π.extend s).take i = π.take i := by
   simp [extend, take]; omega

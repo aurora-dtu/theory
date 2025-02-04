@@ -112,7 +112,6 @@ theorem finite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite :
         obtain ⟨h'', h'''⟩ := h''
         subst_eqs
         simp_all
-        split at h <;> simp_all
     · simp_all
       intros
       subst_eqs
@@ -121,7 +120,7 @@ theorem finite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite :
       else
         right
         use π.prev
-        have : ¬∎|π| = 1 := by omega
+        have : 1 < ∎|π| := by omega
         simp_all [π.mem_prev_succs_univ (by omega)]
 
 noncomputable instance [DecidableEq State] [M.FiniteBranching] : Fintype Path[M,s,≤n] :=

@@ -38,6 +38,10 @@ theorem EC_le (h : ∀ π ∈ Path[M,s,≤n], 𝒮 π = 𝒮' π) : EC c 𝒮 s 
 
 variable [DecidableEq State]
 
+@[simp]
+theorem EC_markovian_scheduler_specialize {𝒮 : 𝔖[M]} [𝒮.Markovian] :
+    M.EC c 𝒮[s₀ ↦ s] s n = M.EC c 𝒮 s n := EC_eq (by simp_all [𝒮.MarkovianOn])
+
 theorem bound_EC_succ_eq_bound_EC (s : State) (s' : M.succs_univ s) :
     ⨅ ℬ : 𝔖[M,s,≤n+1], EC c ℬ[s ↦ s'].val s' n = ⨅ ℬ : 𝔖[M,s',≤n], EC c ℬ.val s' n
 := Function.Surjective.iInf_congr (·[s ↦ s']) (by use ·.cast_arb_tail; simp) (fun _ ↦ rfl)
