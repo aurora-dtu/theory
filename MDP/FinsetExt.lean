@@ -4,7 +4,7 @@ import Mathlib.Data.Fintype.Basic
 /-!
 # Extensions to `Finset`
 
-The intention is to upsteam these to mathlib.
+The intention is to upstream these to mathlib.
 -/
 
 namespace Finset

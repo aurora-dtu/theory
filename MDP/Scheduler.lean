@@ -34,13 +34,9 @@ theorem toFun_coe' (π : M.Path) : (⟨f, h⟩ : 𝔖[M]) π = f π := by simp o
 theorem mem_act_if (𝒮 : 𝔖[M]) (h : π.last = s) : 𝒮 π ∈ M.act s := by
   simp only [𝒮.property π, h.symm, DFunLike.coe]
 
-@[simp]
-theorem singleton_mem_act (𝒮 : 𝔖[M]) : 𝒮 {s} ∈ M.act s := by
-  simp
+@[simp] theorem singleton_mem_act (𝒮 : 𝔖[M]) (s : State) : 𝒮 {s} ∈ M.act s := by simp
 
-@[simp]
-theorem mem_act (𝒮 : 𝔖[M]) : 𝒮 π ∈ M.act π.last := by
-  simp
+@[simp] theorem mem_act (𝒮 : 𝔖[M]) (π : M.Path) : 𝒮 π ∈ M.act π.last := by simp
 
 theorem mem_prepend (𝒮 : 𝔖[M]) (π : M.Path) (s₀ : M.prev_univ π[0]) :
     𝒮 (π.prepend s₀) ∈ M.act π.last := by simp

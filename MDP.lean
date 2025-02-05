@@ -59,4 +59,13 @@ theorem exists_iSup_iInf_EC_lt_iInf_iSup_EC :
       ⨆ n, ⨅ 𝒮, M.EC c 𝒮 s n < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 s n := by
   use State, ℕ, 𝒜, 𝒜.cost, State.init; simp
 
+open Counterexample in
+/-- There exists a (necessarily infinite branching) MDP such that the two notions of optimization
+  order (`⨆⨅` vs. `⨅⨆`) is not equivalent. See `MDP.Counterexample.𝒜` for an instance of such and
+  MDP. -/
+theorem exists_iSup_iInf_EC_lt_lfp_Φ :
+    ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
+      ⨆ n, ⨅ 𝒮, M.EC c 𝒮 s n < M.lfp_Φ c s := by
+  use State, ℕ, 𝒜, 𝒜.cost, State.init; simp
+
 end MDP

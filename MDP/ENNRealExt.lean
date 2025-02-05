@@ -3,7 +3,7 @@ import Mathlib.Topology.Instances.ENNReal.Lemmas
 /-!
 # Extensions to `ENNReal`
 
-The intention is to upsteam these to mathlib.
+The intention is to upstream these to mathlib.
 -/
 
 namespace ENNReal

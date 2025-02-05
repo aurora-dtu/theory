@@ -3,7 +3,7 @@ import Mathlib.Data.Set.Pairwise.Basic
 /-!
 # Extensions to `Set`
 
-The intention is to upsteam these to mathlib or to find and use similar existing theorems in
+The intention is to upstream these to mathlib or to find and use similar existing theorems in
 mathlib.
 -/
 

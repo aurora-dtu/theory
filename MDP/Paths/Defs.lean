@@ -254,10 +254,10 @@ theorem getElem_length_pred_eq_last : π[∎|π| - 1] = π.last := by rfl
 theorem extend_getElem_length_pred_eq_last : (π.extend s)[∎|π| - 1] = π.last := by
   simp [extend, List.getElem_append]
 @[simp]
-theorem take_lenth_pred_eq_prev : π.take (∎|π| - 2) = π.prev := by
+theorem take_length_pred_eq_prev : π.take (∎|π| - 2) = π.prev := by
   simp [take, prev]; split_ifs with h <;> simp_all [List.dropLast_eq_take]
 @[simp]
-theorem extend_take_lenth_pred_eq_prev : (π.extend s).take (∎|π| - 1) = π := by
+theorem extend_take_length_pred_eq_prev : (π.extend s).take (∎|π| - 1) = π := by
   simp [take, prev, extend]
 @[simp]
 theorem extend_take (i : Fin ∎|π|) : (π.extend s).take i = π.take i := by
