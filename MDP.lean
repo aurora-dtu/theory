@@ -4,7 +4,7 @@ import MDP.Counterexample
 /-!
 # Markov Decision Processes (MDP)
 
-This module consernes itself with countably infinite branching MDPs.
+This module concerns itself with countably infinite branching MDPs.
 
 ## Main definitions
 
@@ -12,10 +12,11 @@ This module consernes itself with countably infinite branching MDPs.
 * `MDP.FiniteBranching`: A class of MDPs where enabled actions and successors of every state is
   finite.
 * `MDP.Path`: Finite paths of MDPs.
-* `MDP.Scheduler`: Schedulers of paths.
+* `MDP.Scheduler`: Schedulers resolve nondeterminism. Also known as _Strategy_, _Policy_,
+  _Adversary_, etc..
 * `MDP.Φ`: The Bellman operator.
-* `MDP.EC`: Expected cost.
-* `MDP.Complete`: Relation of different formulizations of _optimal expected cost_ equivalent for
+* `MDP.EC`: Expected total cost.
+* `MDP.Complete`: Relation of different formalization of _optimal expected cost_ equivalent for
   finitely branching MDPs.
 -/
 
@@ -60,9 +61,9 @@ theorem exists_iSup_iInf_EC_lt_iInf_iSup_EC :
   use State, ℕ, 𝒜, 𝒜.cost, State.init; simp
 
 open Counterexample in
-/-- There exists a (necessarily infinite branching) MDP such that the two notions of optimization
-  order (`⨆⨅` vs. `⨅⨆`) is not equivalent. See `MDP.Counterexample.𝒜` for an instance of such and
-  MDP. -/
+/-- There exists a (necessarily infinite branching) MDP such that the `⨅⨆` notions of optimization
+  order is not equivalent to the lfp formulation. See `MDP.Counterexample.𝒜` for an instance of
+  such and MDP. -/
 theorem exists_iSup_iInf_EC_lt_lfp_Φ :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ⨆ n, ⨅ 𝒮, M.EC c 𝒮 s n < M.lfp_Φ c s := by

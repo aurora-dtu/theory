@@ -2,5 +2,35 @@
     "editor.rulers": [
         100
     ],
-    "workbench.colorTheme": "Palenight Operator"
+    "workbench.colorTheme": "Palenight Operator",
+    // Spellright
+    "spellright.spellContextByClass": {
+        "lean4": "comments"
+    },
+    "spellright.parserByClass": {
+        "lean4": {
+            "parser": "code",
+            "comment_start": "/-",
+            "comment_end": "-/",
+            "comment_line": "--"
+        }
+    },
+    "spellright.notificationClass": "hint",
+    "spellright.ignoreRegExpsByClass": {
+        "lean4": [
+            "/```[^]*?```/gm",
+            "/``[^\\n]*?``/g",
+            "/`[^\\n]*?`/g",
+            "/(?<indentation>[ \\t]*)(?<directiveline>\\.\\. code-block::[^\\n]*\\n)((?<codeline>\\k<indentation>+[ \\t]+[^\\n]*\\n)|(?<emptyline>\\k<indentation>*\\n))*/gm"
+        ]
+    },
+    "spellright.language": [
+        "en"
+    ],
+    "spellright.documentTypes": [
+        "markdown",
+        "latex",
+        "plaintext",
+        "lean4"
+    ]
 }

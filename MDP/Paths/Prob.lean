@@ -76,16 +76,16 @@ theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
     simpa
 
 @[simp]
-theorem Path.tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n], π.val.Prob 𝒮 = 1 := by
+theorem Path.tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n+1], π.val.Prob 𝒮 = 1 := by
   induction n with
   | zero => simp
   | succ n ih =>
     rw [Path_eq.eq_biUnion_succs_univ _, ENNReal.tsum_biUnion]
     · simpa
-    · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n) <;> simp_all
+    · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n+1) <;> simp_all
 
-theorem Path_eq.tsum_add_left (𝒮 : 𝔖[M]) (f : Path[M,s',=n] → ENNReal) :
-    ∑' π : Path[M,s',=n], (π.val.Prob 𝒮 * a + f π) = a + ∑' π : Path[M,s',=n], f π
+theorem Path_eq.tsum_add_left (𝒮 : 𝔖[M]) (f : Path[M,s',=n+1] → ENNReal) :
+    ∑' π : Path[M,s',=n+1], (π.val.Prob 𝒮 * a + f π) = a + ∑' π : Path[M,s',=n+1], f π
 := by simp [ENNReal.tsum_add, ENNReal.tsum_mul_right]
 
 end MDP

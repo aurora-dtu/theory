@@ -12,26 +12,30 @@ noncomputable def EC (c : M.Costs) (𝒮 : 𝔖[M]) s n :=
   ∑' π : Path[M,s,=n], π.val.ECost c 𝒮
 
 @[simp]
-theorem EC_zero : EC c 𝒮 s 0 = c s := by
+theorem EC_zero : EC c 𝒮 s 0 = 0 := by simp [EC]
+@[simp]
+theorem EC_one : EC c 𝒮 s 1 = c s := by
   simp [EC, Path.ECost, Path.Cost, Path.Prob, Path.instSingleton]
   simp only [Path.length]
   simp
 
 theorem EC_succ [DecidableEq State] (𝒮 : 𝔖[M]) :
     EC c 𝒮 s (n + 1) = c s + ∑' s' : M.succs_univ s, M.P s (𝒮 {s}) s' * EC c 𝒮[s ↦ s'] s' n := by
-  simp [← M.succs_tsum_add_left (s:=s) (α:=𝒮 {s}) (by simp), EC]
-  rw [Path_eq.eq_succs_univ_biUnion, ENNReal.tsum_biUnion M.Path_eq_follows_disjoint]
-  congr! 2 with s'
-  simp [← Path_eq.tsum_add_left 𝒮[s ↦ s'], ← ENNReal.tsum_mul_left]
-  apply tsum_eq_tsum_of_ne_zero_bij fun ⟨π, _⟩ ↦ ⟨π.val.prepend ⟨s, by simp⟩, by simp⟩
-  · intro ⟨⟨a, _, ha⟩, _⟩ ⟨⟨b, _, hb⟩, _⟩ h
-    simp_all
-    apply (Path.prepend_inj_right _ _ (by simp_all)).mp h
+  rcases n with _ | n
   · simp_all
-    intro π ⟨_, _⟩ _ _; subst_eqs
-    use π.tail
-    simp_all [Path.prepend_ECost, Path.ECost_tail, or_comm]
-  · simp_all [Path.prepend_ECost]; intros; ring
+  · simp [← M.succs_tsum_add_left (s:=s) (α:=𝒮 {s}) (by simp), EC]
+    rw [Path_eq.eq_succs_univ_biUnion, ENNReal.tsum_biUnion M.Path_eq_follows_disjoint]
+    congr! 2 with s'
+    simp [← Path_eq.tsum_add_left 𝒮[s ↦ s'], ← ENNReal.tsum_mul_left]
+    apply tsum_eq_tsum_of_ne_zero_bij fun ⟨π, _⟩ ↦ ⟨π.val.prepend ⟨s, by simp⟩, by simp⟩
+    · intro ⟨⟨a, _, ha⟩, _⟩ ⟨⟨b, _, hb⟩, _⟩ h
+      simp_all
+      apply (Path.prepend_inj_right _ _ (by simp_all)).mp h
+    · simp_all
+      intro π ⟨_, _⟩ _ _; subst_eqs
+      use π.tail
+      simp_all [Path.prepend_ECost, Path.ECost_tail, or_comm]
+    · simp_all [Path.prepend_ECost]; intros; ring
 theorem EC_eq (h : ∀ π ∈ Path[M,s,≤n], 𝒮 π = 𝒮' π) : EC c 𝒮 s n = EC c 𝒮' s n := by
   simp_all [EC, Path.ECost, Path.Prob]
 theorem EC_le (h : ∀ π ∈ Path[M,s,≤n], 𝒮 π = 𝒮' π) : EC c 𝒮 s n ≤ EC c 𝒮' s n := (EC_eq h).le
@@ -95,21 +99,21 @@ theorem iInf_EC_succ_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s (n + 1) =
   by simp [EC_succ, Φ, Φf, ← ENNReal.add_iInf, iInf_EC_eq_specialized, ENNReal.mul_iInf,
       tsum_iInf_EC_comm, iInf_scheduler_eq_iInf_act_iInf_scheduler]
 
-theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s n = (M.Φ c)^[n + 1] ⊥ s := by
+theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 s n = (M.Φ c)^[n] ⊥ s := by
   induction n generalizing s with
-  | zero => simp [EC, Path.ECost, Path.Cost]; simp [Path.instSingleton, Φ, Φf]
+  | zero => simp [EC, Path.ECost, Path.Cost]
   | succ n ih => rw [Function.iterate_succ']; simp [ih, iInf_EC_succ_eq_Φ]
 
 theorem iSup_iInf_EC_eq_iSup_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 s n = ⨆ n, (M.Φ c)^[n] ⊥ s :=
   by have := congrFun (iSup_iterate_succ' (f:=M.Φ c)) s; simp_all [iInf_EC_eq_Φ]
 
 theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 s n = M.lfp_Φ c s := by
-  simp [lfp_Φ_eq_iSup_succ_Φ, iInf_EC_eq_Φ]
+  simp [lfp_Φ_eq_iSup_Φ, iInf_EC_eq_Φ]
 
 theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
     EC c ℒ s (n + 1) = Φℒ ℒ c (EC c ℒ · n) s := by
   induction n generalizing s with
-  | zero => simp [EC_succ]; rfl
+  | zero => simp [EC_succ, Φℒ, Φf]
   | succ n ih =>
     simp [ih, EC_succ]
     simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf]
@@ -117,7 +121,7 @@ theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
 attribute [-simp] Function.iterate_succ in
 theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
     (⨆ n, EC c ℒ s n) = lfp_Φℒ ℒ c s := by
-  simp [lfp_Φℒ_eq_iSup_succ_Φℒ]
+  simp [lfp_Φℒ_eq_iSup_Φℒ]
   congr with n
   induction n generalizing s ℒ with
   | zero => simp [Φℒ, Φf]

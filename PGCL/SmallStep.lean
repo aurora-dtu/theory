@@ -8,14 +8,14 @@ import PGCL.WeakestPre
 
 ## Main definitions
 
-* `pGCL.SmallStep`: The inductive definition of the probobalistic small step semantics of `pGCL`.
+* `pGCL.SmallStep`: The inductive definition of the probabilistic small step semantics of `pGCL`.
 -/
 
 namespace pGCL
 
 variable {ϖ : Type*} [DecidableEq ϖ]
 
-/-- Probobalistic small step operational semantics for `pGCL` -/
+/-- Probabilistic small step operational semantics for `pGCL` -/
 @[aesop safe [constructors, cases]]
 inductive SmallStep : Conf ϖ → Act → ENNReal → Conf ϖ → Prop where
   | bot      : SmallStep none .N 1 none
