@@ -49,16 +49,29 @@ noncomputable def lfp_Φℒ (ℒ : 𝔏[M]) : M.Costs → M.Costs := lfp ∘ M.�
 
 theorem map_lfp_Φℒ : Φℒ c 𝒮 (lfp_Φℒ c 𝒮) = lfp_Φℒ c 𝒮 := map_lfp _
 
-section FiniteBranching
-
-variable [DecidableEq State] [M.FiniteBranching]
-
 theorem Φf_ωScottContinuous : ωScottContinuous (M.Φf s a) := by
   refine ωScottContinuous.of_monotone_map_ωSup ⟨(M.Φf s a).mono, fun c ↦ ?_⟩
-  simp [Φf, ωSup, tsum_fintype, ENNReal.mul_iSup]
+  simp [Φf, ωSup, ENNReal.mul_iSup, ENNReal.tsum_eq_iSup_sum]
+  rw [iSup_comm]
+  congr with Z
   refine ENNReal.finsetSum_iSup_of_monotone fun S _ _ h ↦ ?_
   gcongr
   exact OrderHomClass.GCongr.mono c h S
+
+theorem Φℒ_ωScottContinuous : ωScottContinuous (M.Φℒ c ℒ) := by
+  refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
+  simp [Φℒ, Φf_ωScottContinuous.map_ωSup]
+  simp [ωSup, ← ENNReal.add_iSup]
+
+theorem lfp_Φℒ_eq_iSup_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n] ⊥ :=
+  funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_iterate _ Φℒ_ωScottContinuous
+
+theorem lfp_Φℒ_eq_iSup_succ_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n + 1] ⊥ :=
+  funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_succ_iterate _ Φℒ_ωScottContinuous
+
+section FiniteBranching
+
+variable [M.FiniteBranching]
 
 theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
@@ -67,21 +80,10 @@ theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
 
-theorem Φℒ_ωScottContinuous : ωScottContinuous (M.Φℒ c ℒ) := by
-  refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
-  simp [Φℒ, Φf_ωScottContinuous.map_ωSup]
-  simp [ωSup, ← ENNReal.add_iSup]
-
 theorem lfp_Φ_eq_iSup_Φ : M.lfp_Φ = fun c ↦ ⨆ (n : ℕ), (Φ c)^[n] ⊥ :=
   funext fun _ ↦ fixedPoints.lfp_eq_sSup_iterate _ M.Φ_ωScottContinuous
 
 theorem lfp_Φ_eq_iSup_succ_Φ : M.lfp_Φ = fun c ↦ ⨆ (n : ℕ), (Φ c)^[n + 1] ⊥ :=
   lfp_Φ_eq_iSup_Φ.trans <| (Set.eqOn_univ _ _).mp fun c _ ↦ (iSup_succ_Φ_eq_iSup_Φ c).symm
-
-theorem lfp_Φℒ_eq_iSup_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n] ⊥ :=
-  funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_iterate _ Φℒ_ωScottContinuous
-
-theorem lfp_Φℒ_eq_iSup_succ_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n + 1] ⊥ :=
-  funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_succ_iterate _ Φℒ_ωScottContinuous
 
 end MDP.FiniteBranching

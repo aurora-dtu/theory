@@ -15,7 +15,7 @@ inductive Step : State → ℕ → ENNReal → State → Prop where
 | choice : Step .init α 1 (.node α 0)
 | step : Step (.node i j) 0 1 (.node i (j + 1))
 
-notation c " ⤳[" α "," p "] " c' => Step c α p c'
+local notation c " ⤳[" α "," p "] " c' => Step c α p c'
 
 noncomputable instance : Decidable (c ⤳[α,p] c') := Classical.propDecidable _
 

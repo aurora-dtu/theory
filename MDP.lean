@@ -1,5 +1,6 @@
-import MDP.OptimalCost
 import MDP.Counterexample
+import MDP.OptimalCost
+import MDP.SupSup
 
 /-!
 # Markov Decision Processes (MDP)
@@ -18,6 +19,7 @@ This module concerns itself with countably infinite branching MDPs.
 * `MDP.EC`: Expected total cost.
 * `MDP.Complete`: Relation of different formalization of _optimal expected cost_ equivalent for
   finitely branching MDPs.
+* `MDP.iSup_iSup_EC_eq_lfp_Φ_iSup`: Fixed point characterization of _maximal expected cost_.
 -/
 
 namespace MDP

@@ -19,6 +19,35 @@ theorem EC_one : EC c 𝒮 s 1 = c s := by
   simp only [Path.length]
   simp
 
+theorem EC_le_succ [DecidableEq State] : M.EC c 𝒮 s n ≤ M.EC c 𝒮 s (n + 1) := by
+  simp [EC]
+  rcases n with _ | n
+  · simp
+  · rw [Path_eq.eq_biUnion_succs_univ, ENNReal.tsum_biUnion]
+    · gcongr with π
+      obtain ⟨π, h, _, _⟩ := π
+      rw [Path.succs_univ_eq_extend_range, Set.range_eq_iUnion, ENNReal.tsum_biUnion]
+      · simp
+        simp [Path.ECost, Path.extend_Cost, Path.extend_Prob]
+        conv => right; arg 1; ext; rw [mul_comm, mul_assoc, mul_add, mul_add]
+        simp [tsum_add, ENNReal.tsum_mul_right]
+        apply le_add_right
+        simp [mul_comm]
+      · intro ⟨x, _⟩ _ ⟨y, _⟩ _ h
+        simp_all
+        contrapose h
+        simp_all
+        have := congrArg Path.last h
+        simp at this
+        exact this
+    · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n+1) <;> simp_all
+
+theorem EC_monotone [DecidableEq State] : Monotone (M.EC c 𝒮 s) := by
+  intro n m h
+  induction m, h using Nat.le_induction with
+  | base => rfl
+  | succ n' h ih => exact ih.trans EC_le_succ
+
 theorem EC_succ [DecidableEq State] (𝒮 : 𝔖[M]) :
     EC c 𝒮 s (n + 1) = c s + ∑' s' : M.succs_univ s, M.P s (𝒮 {s}) s' * EC c 𝒮[s ↦ s'] s' n := by
   rcases n with _ | n
