@@ -8,8 +8,10 @@ namespace MDP
 variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
 
-noncomputable def EC (c : M.Costs) (𝒮 : 𝔖[M]) s n :=
+noncomputable def EC (c : M.Costs) (𝒮 : 𝔖[M]) (s : State) (n : ℕ) :=
   ∑' π : Path[M,s,=n], π.val.ECost c 𝒮
+
+noncomputable abbrev OEC (c : M.Costs) (s : State) := ⨅ 𝒮 : 𝔖[M], ⨆ n : ℕ, M.EC c 𝒮 s n
 
 @[simp]
 theorem EC_zero : EC c 𝒮 s 0 = 0 := by simp [EC]
