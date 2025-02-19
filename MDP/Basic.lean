@@ -15,6 +15,17 @@ def P (s : State) (a : Act) (s' : State) :=
   | some pmf => pmf s'
   | none => 0
 
+def act (s : State) : Set Act := (M.P s).support
+def succs (α : Act) (s : State) : Set State := (M.P s α).support
+def prev (α : Act) (s' : State) : Set State := {s : State | s' ∈ M.succs α s}
+
+def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
+def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
+
+class FiniteBranching where
+  act_fin : ∀ (s : State), (M.act s).Finite
+  succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
+
 @[simp] lemma P_le_one (s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
   unfold P
   split
@@ -23,12 +34,6 @@ def P (s : State) (a : Act) (s' : State) :=
 
 @[simp] lemma P_ne_top (s : State) (a : Act) (s' : State) : M.P s a s' ≠ ⊤ :=
   M.P_le_one s a s' |>.trans_lt ENNReal.one_lt_top |>.ne
-
-def act (s : State) : Set Act := (M.P s).support
-
-class FiniteBranching where
-  act_fin : ∀ (s : State), (M.act s).Finite
-  succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
 
 instance [Fintype Act] : Finite (M.act s) := Subtype.finite
 noncomputable instance act.instFintype [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
@@ -89,8 +94,6 @@ theorem P_sum_one_iff : ∑' s', M.P s a s' = 1 ↔ a ∈ M.act s := by
 
 section Succs
 
-def succs (α : Act) (s : State) : Set State := (M.P s α).support
-def prev (α : Act) (s' : State) : Set State := {s : State | s' ∈ M.succs α s}
 noncomputable def succs₀ [i : M.FiniteBranching] (α : Act) (s : State) : Finset State :=
   (i.succs_fin s α).toFinset
 
@@ -115,9 +118,6 @@ instance instNonemptySuccs (α : M.act s) : Nonempty (M.succs α s) := by
 instance instNonemptySuccs₀ [M.FiniteBranching] (α : M.act s) : Nonempty (M.succs₀ α s) := by
   simp only [succs₀_mem_eq_succs_mem]
   exact instNonemptySuccs M α
-
-def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
-def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
 
 theorem prev_iff_succs : s' ∈ M.prev α s ↔ s ∈ M.succs α s' := by simp [prev]
 @[simp]
