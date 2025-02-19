@@ -20,6 +20,8 @@ import PGCL.OMDP
 -/
 
 theorem pGCL.iSup_iInf_EC_eq_wp [DecidableEq ϖ] :
-  ⨅ 𝒮, ⨆ n, (𝒬 (ϖ:=ϖ)).EC (𝒬.cost X) 𝒮 (·⟨C,σ⟩) n = C.wp X σ
+  ⨅ 𝒮, ⨆ n, (𝒬 (ϖ:=ϖ)).EC (𝒬.cost X) 𝒮 n (·⟨C,σ⟩) = C.wp X σ
 := by
-  simp [← MDP.iSup_iInf_EC_eq_iInf_iSup_EC, MDP.iSup_iInf_EC_eq_lfp_Φ, ← op_eq_wp, op]
+  simp [← MDP.iSup_iInf_EC_eq_lfp_Φ, ← op_eq_wp, op]
+  have := congrFun ((𝒬 (ϖ:=ϖ)).iSup_iInf_EC_eq_iInf_iSup_EC (c:=(𝒬.cost X))) (·⟨C,σ⟩) |>.symm
+  simp_all
