@@ -104,7 +104,7 @@ def ℒ_a (a : ℕ) : 𝔏[𝒜 𝓅] := ⟨⟨
 
 /-- Picks the action proportional to the length of the scheduled path -/
 noncomputable def 𝒮_len (a : ℕ) : 𝔖[𝒜 𝓅] := ⟨
-  fun π ↦ if π.last = .s₁ then some (a + ∎|π|) else (𝒜 𝓅).default_act π.last,
+  fun π ↦ if π.last = .s₁ then some (a + ‖π‖) else (𝒜 𝓅).default_act π.last,
   fun π ↦ by
     simp_all; split_ifs <;> simp_all
     set s := π.last with h
@@ -277,7 +277,7 @@ theorem iSup_EC_eq :
     simp [asjhdasd, 𝒮_x_add]
     simp [add_comm]
 
-theorem Path_s₁_prior (π : (𝒜 𝓅).Path) (hi : i < ∎|π|) (h : π[i]'(hi) = State.s₁) (hij : j ≤ i) :
+theorem Path_s₁_prior (π : (𝒜 𝓅).Path) (hi : i < ‖π‖) (h : π[i]'(hi) = State.s₁) (hij : j ≤ i) :
     π[j] = State.s₁ := by
   induction i, hij using Nat.le_induction with
   | base => exact h
@@ -295,7 +295,7 @@ theorem 𝒮_x_𝒮_len_one : (𝒮_x 𝓅 (𝒮_len 𝓅 n) 1) = 𝒮_len 𝓅 
   · ring_nf
   · contrapose h
     simp_all
-    apply Path_s₁_prior (i:=∎|π| - 1) <;> simp_all
+    apply Path_s₁_prior (i:=‖π‖ - 1) <;> simp_all
 
 @[simp]
 theorem 𝒮_x_𝒮_len : (𝒮_x 𝓅 (𝒮_len 𝓅 n) m) = 𝒮_len 𝓅 (n + m) := by
@@ -319,7 +319,7 @@ by
 --   ring
 
 instance {State : Type*} {Act: Type*} {M : MDP State Act} : Membership State M.Path where
-  mem π s := ∃ i : Fin ∎|π|, π[i] = s
+  mem π s := ∃ i : Fin ‖π‖, π[i] = s
 
 noncomputable instance {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
     {π : M.Path} (s : State) : Decidable (∀ s' ∈ π, s' = s) :=
@@ -392,7 +392,7 @@ theorem 𝒮_x_ℒ (ℒ : 𝔏[𝒜 𝓅]) : 𝒮_x 𝓅 ℒ i = ℒ := by
     split_ifs with h
     · simp_all
     · contrapose h
-      have := Path_s₁_prior (i:=∎|π| - 1) (π:=π) (j:=0)
+      have := Path_s₁_prior (i:=‖π‖ - 1) (π:=π) (j:=0)
       simp_all
       if π.last = .s₁ then
         simp_all
@@ -461,7 +461,7 @@ theorem asdasd (hn : 0 < n) : ∃! π ∈ Path[𝒜 𝓅,.s₁,=n], ∀ s ∈ π
 --   simp [Path.Cost, Subtype.eq_iff]
 --   have : ∀ (x : Path[𝒜 𝓅,State.s₁,=n]),
 --         x.val = ⟨List.replicate n State.s₁, by simp; omega, by simp⟩
---       ↔ ∀ i : Fin ∎|x.val|, x.val[i] = .s₁ := by
+--       ↔ ∀ i : Fin ‖x.val‖, x.val[i] = .s₁ := by
 --     simp_all
 --     rintro π ⟨hn, h⟩
 --     constructor
@@ -472,8 +472,8 @@ theorem asdasd (hn : 0 < n) : ∃! π ∈ Path[𝒜 𝓅,.s₁,=n], ∀ s ∈ π
 --       apply h' ⟨i, by simp_all⟩
 --   simp [this]; clear this
 --   have : ∀ (x : Path[𝒜 𝓅,State.s₁,=n]),
---         (∃ i : Fin ∎|x.val|, ¬x.val[i] = .s₁)
---       ↔ ∃ i : Fin ∎|x.val|, x.val[i] = .s₂ := by
+--         (∃ i : Fin ‖x.val‖, ¬x.val[i] = .s₁)
+--       ↔ ∃ i : Fin ‖x.val‖, x.val[i] = .s₂ := by
 --     simp_all
 --     rintro π ⟨hn, h⟩
 --     constructor <;> simp_all <;> intro i hi

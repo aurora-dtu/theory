@@ -57,21 +57,21 @@ theorem MarkovianOn (𝒮 : 𝔖[M]) [inst : 𝒮.Markovian] (π : M.Path) :
     𝒮 π = 𝒮 {π.last} := inst.intro π
 
 @[simp]
-theorem Markovian_path_take (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin ∎|π|) :
+theorem Markovian_path_take (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin ‖π‖) :
     𝒮 (π.take i) = 𝒮 {π[i]} := by simp [MarkovianOn]
 
 theorem singleton_last (s : State) : ({s} : M.Path).last = s := by simp
 
 @[simp]
-theorem Markovian_path_take' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : ℕ) (hi : i < ∎|π|) :
+theorem Markovian_path_take' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : ℕ) (hi : i < ‖π‖) :
     𝒮 (π.take i) = 𝒮 {π[i]} := by simp [MarkovianOn, hi]
 
 @[simp]
-theorem Markovian_path_take'' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin ∎|π|) :
+theorem Markovian_path_take'' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin ‖π‖) :
     𝒮 (π.take i) = 𝒮 {π[i]} := by simp [𝒮.MarkovianOn (π.take i), Fin.getElem_fin]
 
 @[simp]
-theorem Markovian_path_take''' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin (∎|π| - 1)) :
+theorem Markovian_path_take''' (𝒮 : 𝔖[M]) [𝒮.Markovian] (π : M.Path) (i : Fin (‖π‖ - 1)) :
     𝒮 (π.take i) = 𝒮 {π[i]} := by simp [𝒮.MarkovianOn (π.take i), Fin.getElem_fin]
 
 end Scheduler
@@ -161,7 +161,7 @@ theorem Scheduler.specialize_apply :
 
 @[simp]
 theorem Scheduler.specialize_tail_take (π : M.Path)
-  (h : 1 < ∎|π|) :
+  (h : 1 < ‖π‖) :
     𝒮[π[0] ↦ ⟨π[1], by simp⟩] (π.tail.take i) = 𝒮 (π.take (i + 1)) := by
   simp [Nat.ne_of_lt' h, Path.take_prepend, π.tail_prepend h]
 

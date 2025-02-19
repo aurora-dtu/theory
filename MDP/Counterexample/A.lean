@@ -62,7 +62,7 @@ theorem EC_node_i_le_j_eq_top (h : i ≤ j) : 𝒜.EC 𝒜.cost 𝒮 n (.node i 
 theorem 𝒮_isMarkovian : 𝒮.IsMarkovian := by
   intro π
   if h : π.last = .init then
-    have : ∎|π| = 1 := by by_contra q;  have := π.last_mem_succs (by simp_all); simp_all [𝒜]
+    have : ‖π‖ = 1 := by by_contra q;  have := π.last_mem_succs (by simp_all); simp_all [𝒜]
     exact DFunLike.congr rfl <| Path.ext this (by by_cases · = 0 <;> simp_all)
   else
     have h₁ := 𝒮.mem_act π; have h₂ := 𝒮.mem_act {π.last}; simp_all

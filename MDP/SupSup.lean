@@ -56,7 +56,7 @@ theorem iSup_iSup_EC_eq_lfp_Ψ [DecidableEq State] :
     simp [ENNReal.add_iSup]
     intro n 𝒮
     apply le_iSup₂_of_le (n + 1) ⟨
-        fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else 𝒮 π.tail,
+        fun π ↦ if ‖π‖ = 1 ∧ π[0] = s then α else 𝒮 π.tail,
         fun π ↦ by simp_all; split_ifs <;> simp_all⟩
     simp [EC_succ]
     gcongr
@@ -104,7 +104,7 @@ theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ n
 --   simp [ENNReal.add_iSup]
 --   intro n ℒ
 --   apply le_iSup₂_of_le (n + 1) ⟨⟨
---       fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else ℒ π.tail,
+--       fun π ↦ if ‖π‖ = 1 ∧ π[0] = s then α else ℒ π.tail,
 --       fun π ↦ by obtain ⟨ℒ, _⟩ := ℒ; simp only [DFunLike.coe];simp_all; split_ifs <;> simp_all⟩,
 --       by constructor; intro π; simp_all⟩
 --   simp_all [EC_succ]

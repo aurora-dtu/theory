@@ -22,11 +22,11 @@ theorem extend_Cost (c : M.Costs) (s : M.succs_univ π.last) :
     (π.extend s).Cost c = π.Cost c + c s := by
   simp [Cost, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ, extend]
 
-theorem Cost_tail (h : 1 < ∎|π|) (c : M.Costs) :
+theorem Cost_tail (h : 1 < ‖π‖) (c : M.Costs) :
     π.Cost c = c π[0] + π.tail.Cost c := by
   nth_rw 1 [←π.tail_prepend h, prepend_Cost]
 
-theorem ECost_tail [DecidableEq State] (𝒮 : 𝔖[M]) (c : M.Costs) (h : 1 < ∎|π|) :
+theorem ECost_tail [DecidableEq State] (𝒮 : 𝔖[M]) (c : M.Costs) (h : 1 < ‖π‖) :
     π.ECost c 𝒮 = M.P π[0] (𝒮 {π[0]}) π[1] *
       (c π[0] * π.tail.Prob 𝒮[π[0] ↦ π[1]]'(by simp)
         + π.tail.ECost c 𝒮[π[0] ↦ π[1]]'(by simp)) := by

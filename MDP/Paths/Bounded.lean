@@ -8,9 +8,9 @@ variable {State : Type*} {Act : Type*}
 variable (M : MDP State Act)
 
 /-- Paths starting in `s` with length `n` -/
-def Path_eq (n : ℕ) (s : State) := { π : M.Path | ∎|π| = n ∧ π[0] = s }
+def Path_eq (n : ℕ) (s : State) := { π : M.Path | ‖π‖ = n ∧ π[0] = s }
 /-- Paths starting in `s` with length at most `n` -/
-def Path_le (n : ℕ) (s : State) := { π : M.Path | ∎|π| ≤ n ∧ π[0] = s }
+def Path_le (n : ℕ) (s : State) := { π : M.Path | ‖π‖ ≤ n ∧ π[0] = s }
 
 @[inherit_doc]
 notation "Path[" M "," s "," "=" n "]" => MDP.Path_eq M n s
@@ -29,11 +29,11 @@ section
 
 variable (π : Path[M,s,=n])
 
-@[simp] theorem length_pos : 0 < ∎|π.val| := by have := π.val.length_ne_zero; omega
+@[simp] theorem length_pos : 0 < ‖π.val‖ := by have := π.val.length_ne_zero; omega
 @[simp] theorem first_eq : π.val[0]'(by simp) = s := π.prop.right
-@[simp] theorem length_eq : ∎|π.val| = n := π.prop.left
+@[simp] theorem length_eq : ‖π.val‖ = n := π.prop.left
 
-@[simp] theorem iff (π) : π ∈ Path[M,s,=n] ↔ ∎|π| = n ∧ π[0] = s := by simp [Path_eq]
+@[simp] theorem iff (π) : π ∈ Path[M,s,=n] ↔ ‖π‖ = n ∧ π[0] = s := by simp [Path_eq]
 
 end
 
@@ -83,20 +83,20 @@ noncomputable instance [DecidableEq State] [M.FiniteBranching] (π : M.Path) : F
 
 variable {n} {s}
 
-@[simp] theorem length_pos (π : Path[M,s,≤n]) : 0 < ∎|π.val| := by
+@[simp] theorem length_pos (π : Path[M,s,≤n]) : 0 < ‖π.val‖ := by
   have := π.val.length_ne_zero
   omega
-@[simp] theorem length_le (π : Path[M,s,≤n]) : ∎|π.val| ≤ n := π.prop.left
+@[simp] theorem length_le (π : Path[M,s,≤n]) : ‖π.val‖ ≤ n := π.prop.left
 @[simp] theorem first_le (π : Path[M,s,≤n]) : π.val[0] = s := π.prop.right
 
-@[simp] theorem iff (π : M.Path) : π ∈ Path[M,s,≤n] ↔ ∎|π| ≤ n ∧ π[0] = s := Set.mem_def
+@[simp] theorem iff (π : M.Path) : π ∈ Path[M,s,≤n] ↔ ‖π‖ ≤ n ∧ π[0] = s := Set.mem_def
 
 instance : Subsingleton Path[M,s,≤0] where
   allEq := fun ⟨a, _, _⟩ ⟨b, _, h⟩ ↦ by
     congr
     ext i
-    · have : ∎|a| = 1 := by have := a.length_pos; omega
-      have : ∎|b| = 1 := by have := b.length_pos; omega
+    · have : ‖a‖ = 1 := by have := a.length_pos; omega
+      have : ‖b‖ = 1 := by have := b.length_pos; omega
       simp_all
     · have : i = 0 := by omega
       subst_eqs
@@ -111,7 +111,7 @@ theorem finite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite :
       refine Set.Finite.ofFinset {{s}} fun π ↦ ?_
       constructor <;> simp_all
       rintro _ _
-      have : ∎|π| = 1 := by have := π.length_pos; omega
+      have : ‖π‖ = 1 := by have := π.length_pos; omega
       ext <;> simp_all; simp_all
     | succ n ih =>
       apply Set.Finite.ofFinset (ih.toFinset ∪ ih.toFinset.biUnion (fun π ↦ π.succs_univ.toFinset))
@@ -124,10 +124,10 @@ theorem finite [DecidableEq State] [M.FiniteBranching] : Path[M,s,≤n].Finite :
       · simp_all
         intros
         subst_eqs
-        if ∎|π| ≤ n + 1 then omega else
+        if ‖π‖ ≤ n + 1 then omega else
         right
         use π.prev
-        have : 1 < ∎|π| := by omega
+        have : 1 < ‖π‖ := by omega
         simp_all [π.mem_prev_succs_univ (by omega)]
 
 noncomputable instance [DecidableEq State] [M.FiniteBranching] : Fintype Path[M,s,≤n] :=
@@ -163,7 +163,7 @@ theorem eq_biUnion_succs_univ : Path[M,s,=n+2] = ⋃ π : Path[M,s,=n+1], π.val
     simp [Path.succs_univ] at h
     obtain ⟨_, _⟩ := h
     subst_eqs
-    have : ¬∎|π| = 1 := by omega
+    have : ¬‖π‖ = 1 := by omega
     simp_all
 
 theorem eq_succs_univ_biUnion : Path[M,s,=n+2] = ⋃ s', Path[M,s─s',=n] := by

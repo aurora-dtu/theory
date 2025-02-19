@@ -94,7 +94,7 @@ theorem iInf_scheduler_eq_iInf_act_iInf_scheduler :
   = ⨅ α : M.act s, ⨅ 𝒮 : 𝔖[M], ∑' s' : M.succs_univ s, M.P s α s' * EC c 𝒮[s ↦ s'] n s'
 := le_antisymm
   (le_iInf₂ fun α 𝒮 ↦ iInf_le_of_le
-    ⟨fun π ↦ if ∎|π| = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
+    ⟨fun π ↦ if ‖π‖ = 1 ∧ π[0] = s then α else 𝒮 π, fun π ↦ by
       simp only; split_ifs <;> simp_all [Path.last, -Path.getElem_length_pred_eq_last]⟩
     (ENNReal.tsum_le_tsum fun _ ↦ mul_le_mul (by simp) (EC_le (by simp)) (by simp) (by simp)))
   (le_iInf fun 𝒮 ↦ iInf₂_le_of_le ⟨𝒮 {s}, by simp⟩ 𝒮 (by rfl))
@@ -106,7 +106,7 @@ theorem tsum_iInf_bounded_comm (f : (s' : M.succs_univ s) → 𝔖[M,s',≤n] �
 := by
   apply le_antisymm (le_iInf_iff.mpr fun ℬ ↦ ENNReal.tsum_le_tsum (iInf_le_of_le ℬ[s ↦ ·] (by rfl)))
   apply iInf_le_of_le <| BScheduler.mk' (M:=M) s (n+1) (fun ⟨π, hπ⟩ ↦
-      if h : ∎|π| ≤ 1 then M.default_act π.last
+      if h : ‖π‖ ≤ 1 then M.default_act π.last
       else BScheduler.elems.argmin (by simp) (f ⟨π[1], by simp [← hπ.right]⟩) π.tail)
     (fun _ ↦ by simp_all; split <;> simp)
   gcongr with s'
