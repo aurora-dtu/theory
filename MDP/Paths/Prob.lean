@@ -65,7 +65,7 @@ theorem Prob_tail [DecidableEq State] (h : 1 < ∎|π|) (𝒮 : 𝔖[M]) :
 end Path
 
 @[simp]
-theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
+theorem Path.tsum_succs_univ_Prob_eq_one (π : M.Path) :
     ∑' π' : π.succs_univ, π'.val.Prob 𝒮 = π.Prob 𝒮 := by
   rw [succs_univ_eq_extend_range, Set.range_eq_iUnion, ENNReal.tsum_biUnion]
   · simp [extend_Prob, ENNReal.tsum_mul_right]
@@ -76,7 +76,7 @@ theorem Path.tsum_succs_univ_Prob_eq_one (𝒮 : 𝔖[M]) (π : M.Path) :
     simpa
 
 @[simp]
-theorem Path.tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n+1], π.val.Prob 𝒮 = 1 := by
+theorem Path.tsum_Prob_eq_one (n : ℕ) : ∑' π : Path[M,s,=n+1], π.val.Prob 𝒮 = 1 := by
   induction n with
   | zero => simp
   | succ n ih =>
@@ -84,8 +84,37 @@ theorem Path.tsum_Prob_eq_one (𝒮 : 𝔖[M]) (n : ℕ) : ∑' π : Path[M,s,=n
     · simpa
     · intro ⟨_, _⟩ _ ⟨_, _⟩ _ _; apply Path_eq.succs_univ_disjoint M (s:=s) (n:=n+1) <;> simp_all
 
-theorem Path_eq.tsum_add_left (𝒮 : 𝔖[M]) (f : Path[M,s',=n+1] → ENNReal) :
+theorem Path_eq.tsum_add_left (f : Path[M,s',=n+1] → ENNReal) :
     ∑' π : Path[M,s',=n+1], (π.val.Prob 𝒮 * a + f π) = a + ∑' π : Path[M,s',=n+1], f π
 := by simp [ENNReal.tsum_add, ENNReal.tsum_mul_right]
+
+@[simp]
+theorem Path.tsum_Prob_eq_one_comp (n : ℕ) (S : Set Path[M,s,=n+1]) :
+    (∑' π : S, π.val.val.Prob 𝒮) + (∑' π : ↑Sᶜ, π.val.val.Prob 𝒮) = 1 := by
+  rw [tsum_add_tsum_compl (s:=S) (f:=fun π ↦ π.val.Prob 𝒮)] <;> simp
+
+@[simp]
+theorem Path.one_sub_tsum_ite_Prob_eq (n : ℕ) (p : Path[M,s,=n+1] → Prop) [DecidablePred p] :
+    1 - (∑' π, if p π then π.val.Prob 𝒮 else 0) = (∑' π, if p π then 0 else π.val.Prob 𝒮) := by
+  apply ENNReal.sub_eq_of_eq_add_rev
+  · have h₂ : (∑' π, if p π then π.val.Prob 𝒮 else 0) ≤ ∑' (π : ↑Path[M,s,=n + 1]), Prob 𝒮 ↑π := by
+      refine ENNReal.tsum_le_tsum fun π ↦ by split_ifs <;> simp
+    exact lt_of_le_of_lt h₂ (by simp) |>.ne
+  · symm
+    convert Path.tsum_Prob_eq_one_comp (𝒮:=𝒮) (S:=p)
+    · apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨⟨π, h₁⟩, h₂⟩ ↦ π)
+      · intro ⟨π₁, _⟩ ⟨π₂, _⟩ h; simp_all; exact SetCoe.ext h
+      · simp_all; exact fun _ _ h _ ↦ h
+      · simp_all; exact fun _ _ h₁ _ h₂ ↦ (h₂ h₁).elim
+    · apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨⟨π, h₁⟩, h₂⟩ ↦ π)
+      · intro ⟨π₁, _⟩ ⟨π₂, _⟩ h; simp_all; exact SetCoe.ext h
+      · simp_all; exact fun _ _ h _ ↦ h
+      · simp_all; exact fun _ _ h₁ _ h₂ ↦ (h₁ h₂).elim
+
+@[simp]
+theorem Path.one_sub_tsum_ite_Prob_eq' (n : ℕ) (p : Path[M,s,=n+1] → Prop) [DecidablePred p] :
+    1 - (∑' π, if p π then 0 else π.val.Prob 𝒮) = (∑' π, if p π then π.val.Prob 𝒮 else 0) := by
+  have := Path.one_sub_tsum_ite_Prob_eq (𝒮:=𝒮) n (¬p ·)
+  simp_all only [ite_not]
 
 end MDP

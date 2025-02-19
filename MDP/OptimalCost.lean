@@ -55,7 +55,7 @@ theorem EC_succ [DecidableEq State] (𝒮 : 𝔖[M]) :
   · simp [← M.succs_tsum_add_left (s:=s) (α:=𝒮 {s}) (by simp), EC]
     rw [Path_eq.eq_succs_univ_biUnion, ENNReal.tsum_biUnion M.Path_eq_follows_disjoint]
     congr! 2 with s'
-    simp [← Path_eq.tsum_add_left 𝒮[s ↦ s'], ← ENNReal.tsum_mul_left]
+    simp [← Path_eq.tsum_add_left (𝒮:=𝒮[s ↦ s']), ← ENNReal.tsum_mul_left]
     apply tsum_eq_tsum_of_ne_zero_bij fun ⟨π, _⟩ ↦ ⟨π.val.prepend ⟨s, by simp⟩, by simp⟩
     · intro ⟨⟨a, _, ha⟩, _⟩ ⟨⟨b, _, hb⟩, _⟩ h
       simp_all
