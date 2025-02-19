@@ -119,9 +119,9 @@ abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[𝒜 𝓅]) := (𝒮 {.s₁}).get (by
     simp_all)
 
 theorem EC_succ_s₁' :
-      (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ (n + 1)
-    = 1 + 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) .s₁ n
-        + (1 - 𝓅 (𝒮_s₁ 𝒮)) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₂]'(by simp) .s₂ n
+      (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁
+    = 1 + 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁
+        + (1 - 𝓅 (𝒮_s₁ 𝒮)) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₂]'(by simp) n .s₂
 := by
   simp [EC_succ]
   rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₁, by simp_all [𝒜]; aesop⟩]
@@ -169,20 +169,20 @@ theorem EC_succ_s₁' :
       have : (𝒮 {State.s₁}).get this = x := Option.get_of_mem this h'
       simp_all
 
-@[simp] theorem EC_succ_s₃ : (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₃ n = 0 := by
+@[simp] theorem EC_succ_s₃ : (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₃ = 0 := by
   induction n generalizing 𝒮 with
   | zero => simp_all
   | succ n ih => simp_all [EC_succ]
 
-@[simp] theorem EC_succ_s₂ : (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₂ n = 0 := by rcases n <;> simp_all [EC_succ]
+@[simp] theorem EC_succ_s₂ : (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₂ = 0 := by rcases n <;> simp_all [EC_succ]
 
 theorem EC_succ_s₁ :
-    (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ (n + 1) = 1 + 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) .s₁ n
+    (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁ = 1 + 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁
 := by simp [EC_succ_s₁']
 
 example :
-      (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) .s₁ (n + 1)
-    = 1 + 𝓅 a * (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) .s₁ n
+      (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) (n + 1) .s₁
+    = 1 + 𝓅 a * (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) n .s₁
 := by
   rw [EC_succ_s₁]
   congr! 2
@@ -218,15 +218,15 @@ theorem 𝒮_x_eq_alt (𝒮 : 𝔖[𝒜 𝓅]) :
 @[simp] theorem 𝒮_x_zero : 𝒮_x 𝓅 𝒮 0 = 𝒮 := rfl
 
 theorem iSup_EC_succ_s₁ :
-      ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n
-    = 1 + 𝓅 (𝒮_s₁ 𝒮) * (⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) .s₁ n)
+      ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁
+    = 1 + 𝓅 (𝒮_s₁ 𝒮) * (⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁)
 := by
   apply le_antisymm
   · simp
     intro n
     induction n with
     | zero => simp
-    | succ n ih => simp [EC_succ_s₁]; gcongr; apply le_iSup
+    | succ n ih => simp [EC_succ_s₁]; gcongr; exact le_iSup_iff.mpr fun _ h ↦ h n
   · simp [ENNReal.mul_iSup, ENNReal.add_iSup]
     intro n
     apply le_iSup_of_le (n + 1)
@@ -235,7 +235,7 @@ theorem iSup_EC_succ_s₁ :
 example {f : ℕ → ENNReal} : ∑' n, f n = f 0 + ∑' n, f (n + 1) := tsum_eq_zero_add' (by simp)
 
 theorem iSup_EC_eq :
-    ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n = ∑' n, ∏ i ∈ Finset.range n, 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 i)) := by
+    ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ = ∑' n, ∏ i ∈ Finset.range n, 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 i)) := by
   simp [ENNReal.tsum_eq_iSup_nat]
   congr with n
   induction n generalizing 𝒮 with
@@ -286,7 +286,7 @@ theorem 𝒮_x_𝒮_len : (𝒮_x 𝓅 (𝒮_len 𝓅 n) m) = 𝒮_len 𝓅 (n +
   simp [𝒮_s₁, 𝒮_len]
 
 theorem iSup_EC_𝒮_len :
-    ⨆ n, (𝒜 𝓅).EC 𝒜.cost (𝒮_len 𝓅 i) .s₁ n = ∑' (n : ℕ), ∏ x ∈ Finset.range n, 𝓅 (x + 1 + i) := by
+    ⨆ n, (𝒜 𝓅).EC 𝒜.cost (𝒮_len 𝓅 i) n .s₁ = ∑' (n : ℕ), ∏ x ∈ Finset.range n, 𝓅 (x + 1 + i) := by
   simp [iSup_EC_eq]
   congr! 4
   ring
@@ -314,11 +314,11 @@ theorem 𝒮_x_ℒ (ℒ : 𝔏[𝒜 𝓅]) : 𝒮_x 𝓅 ℒ i = ℒ := by
         rcases s <;> simp_all
 
 theorem iSup_ECℒ (ℒ : 𝔏[𝒜 𝓅]) :
-    ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ .s₁ n = (1 - 𝓅 (𝒮_s₁ ℒ.toScheduler))⁻¹
+    ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = (1 - 𝓅 (𝒮_s₁ ℒ.toScheduler))⁻¹
 := by simp [iSup_EC_eq]
 
 theorem iSup_iSup_ECℒ :
-    ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ .s₁ n = ⨆ i, (1 - 𝓅 i)⁻¹
+    ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = ⨆ i, (1 - 𝓅 i)⁻¹
 := by
   simp [iSup_ECℒ]
   apply le_antisymm <;> simp
@@ -337,16 +337,16 @@ def sufficient_lt :=
 
 noncomputable def p' (n : ℕ) : ENNReal := 1 - (1/2)^(n + 1) -- 1/2*(1 - (1/2)^n)
 
-example : p' 0 = 1/2 := by simp [p']
-example : p' 1 = 1/4 := by simp [p']
-example : p' 2 = 1/8 := by
-  simp [p']
-  ring_nf
+-- example : p' 0 = 1/2 := by simp [p']
+-- example : p' 1 = 1/4 := by simp [p']
+-- example : p' 2 = 1/8 := by
+--   simp [p']
+--   ring_nf
 
 -- 1 + p 1 + p 1 * p 2 + p 1 * p 2 * p 3 + ...
 
 theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt (h : sufficient_lt) :
-    ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ .s₁ n < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n := by
+    ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ := by
   obtain ⟨𝓅, h⟩ := h
   use 𝓅
   apply lt_iSup_iff.mpr
@@ -366,7 +366,7 @@ theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt (h : sufficient_lt) :
 
 theorem exists_iSup_iSup_ECℒ_lt_iSup_iSup_EC_if_sufficent_lt (h : sufficient_lt) :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
-      ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ s n < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 s n := by
+      ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n s < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s := by
   obtain ⟨𝓅, h⟩ := iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt h
   use State, Option ℕ, 𝒜 𝓅, 𝒜.cost, .s₁
   sorry
@@ -473,7 +473,7 @@ theorem asdhjashd : ∃ 𝓅 : P, ∑' (n : ℕ), ∏ x ∈ Finset.range n, 𝓅
 --   ring_nf
 
 theorem iSup_iSup_ECℒ_lt_iSup_iSup_EC (𝓅 : P) (h𝓅 : ⨆ i, 𝓅 i < 1) :
-    ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ .s₁ n < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n := by
+    ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ := by
   use 𝓅
   simp [iSup_iSup_ECℒ]
   apply lt_iSup_iff.mpr

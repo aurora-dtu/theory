@@ -56,7 +56,7 @@ variable {𝒮 : 𝔖[𝒜]}
 @[simp] theorem succs_univ_init : 𝒜.succs_univ .init = {.node α 0 | α} := by simp [𝒜, eq_comm]
 @[simp] theorem succs_univ_node : 𝒜.succs_univ (.node i j) = {.node i (j + 1)} := by simp [𝒜]
 
-theorem EC_node_i_le_j_eq_top (h : i ≤ j) : 𝒜.EC 𝒜.cost 𝒮 (.node i j) n = if n = 0 then 0 else ⊤ :=
+theorem EC_node_i_le_j_eq_top (h : i ≤ j) : 𝒜.EC 𝒜.cost 𝒮 n (.node i j) = if n = 0 then 0 else ⊤ :=
   by cases n <;> simp [h, EC_succ]
 
 theorem 𝒮_isMarkovian : 𝒮.IsMarkovian := by
@@ -71,7 +71,7 @@ instance : 𝒮.Markovian := ⟨𝒮_isMarkovian⟩
 
 @[simp]
 theorem EC_step :
-    𝒜.EC 𝒜.cost 𝒮 (.node i j) (n + 2) = 𝒜.EC 𝒜.cost 𝒮 (.node i (j + 1)) (n + 1) := by
+    𝒜.EC 𝒜.cost 𝒮 (n + 2) (.node i j) = 𝒜.EC 𝒜.cost 𝒮 (n + 1) (.node i (j + 1)) := by
   rw [EC_succ]; simp
   split_ifs
   · simp_all; rw [EC_node_i_le_j_eq_top (by omega)]; simp
@@ -79,23 +79,23 @@ theorem EC_step :
 
 @[simp]
 theorem EC_node_i_j_n_eq_i_j_add_n :
-    𝒜.EC 𝒜.cost 𝒮 (.node i j) (n + 1) = 𝒜.EC 𝒜.cost 𝒮 (.node i (j + n)) 1 := by
+    𝒜.EC 𝒜.cost 𝒮 (n + 1) (.node i j) = 𝒜.EC 𝒜.cost 𝒮 1 (.node i (j + n)) := by
   induction n generalizing i j <;> simp_all; split_ifs <;> first | rfl | omega
 
 @[simp]
 theorem EC_init_eq_EC_node :
-    𝒜.EC 𝒜.cost 𝒮 .init (n + 2) = 𝒜.EC 𝒜.cost 𝒮 (.node (𝒮 {.init}) 0) (n + 1) := by
+    𝒜.EC 𝒜.cost 𝒮 (n + 2) .init = 𝒜.EC 𝒜.cost 𝒮 (n + 1) (.node (𝒮 {.init}) 0) := by
   rw [EC_succ]; simp_all
   split_ifs with h
   · exact ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node (𝒮 {.init}) 0, by simp⟩, by simp_all [𝒜]⟩
   · simp_all [𝒜]; rintro s α ⟨_⟩; apply Decidable.not_or_of_imp; rintro ⟨_⟩; assumption
 
 @[simp]
-theorem iInf_iSup_EC_eq_0 : ⨅ 𝒮, ⨆ n, 𝒜.EC 𝒜.cost 𝒮 .init n = ⊤ :=
+theorem iInf_iSup_EC_eq_0 : ⨅ 𝒮, ⨆ n, 𝒜.EC 𝒜.cost 𝒮 n .init = ⊤ :=
   iInf_eq_top.mpr fun 𝒮 ↦ le_antisymm (by simp) (le_iSup_of_le (𝒮 {.init} + 2) (by simp))
 
 @[simp]
-theorem iSup_iInf_EC_eq_top : ⨆ n, ⨅ 𝒮, 𝒜.EC 𝒜.cost 𝒮 .init n = 0 := by
+theorem iSup_iInf_EC_eq_top : ⨆ n, ⨅ 𝒮, 𝒜.EC 𝒜.cost 𝒮 n .init = 0 := by
   refine ENNReal.iSup_eq_zero.mpr fun n ↦ ?_
   rcases n with _ | ⟨_ | n⟩ <;> simp_all
   apply (iInf_le_of_le ⟨(if ·.last = .init then n + 1 else 0), by simp⟩ (by simp)).antisymm bot_le

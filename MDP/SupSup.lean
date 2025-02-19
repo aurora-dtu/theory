@@ -11,8 +11,8 @@ noncomputable def Ψ (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + ⨆ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
 theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
-      ∑' s' : M.succs_univ s, ⨆ n, ⨆ 𝒮, M.P s α s' * M.EC c 𝒮 s' n
-    ≤ ⨆ n, ⨆ 𝒮, ∑' s' : M.succs_univ s, M.P s α s' * M.EC c 𝒮 s' n := by
+      ∑' s' : M.succs_univ s, ⨆ n, ⨆ 𝒮, M.P s α s' * M.EC c 𝒮 n s'
+    ≤ ⨆ n, ⨆ 𝒮, ∑' s' : M.succs_univ s, M.P s α s' * M.EC c 𝒮 n s' := by
   simp [ENNReal.tsum_eq_iSup_sum, ENNReal.add_iSup, ENNReal.mul_iSup]
   intro Z
   simp [iSup_comm (ι':=Finset _)]
@@ -33,14 +33,14 @@ theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
       exact (EC_le <| by simp_all; split_ifs <;> simp_all).trans <| EC_monotone (by omega)
 
 theorem iSup_iSup_EC_eq_lfp_Ψ [DecidableEq State] :
-    (fun s ↦ ⨆ n, ⨆ 𝒮, EC c 𝒮 s n) = lfp (M.Ψ c) := by
+    ⨆ n, ⨆ 𝒮, EC c 𝒮 n = lfp (M.Ψ c) := by
   apply le_antisymm
-  · refine le_lfp _ fun b h ↦ Pi.le_def.mpr fun s ↦ iSup₂_le fun n 𝒮 ↦ ?_
-    induction n generalizing s 𝒮 b with
+  · refine le_lfp _ fun b h ↦ iSup₂_le fun n 𝒮 ↦ ?_
+    induction n generalizing 𝒮 b with
     | zero => simp
     | succ n ih =>
       simp [EC_succ]
-      apply le_trans _ (h s)
+      apply le_trans (fun s ↦ ?_) h
       simp [Ψ, Φf]
       gcongr
       apply le_iSup_of_le ⟨𝒮 {s}, by simp⟩
@@ -62,7 +62,7 @@ theorem iSup_iSup_EC_eq_lfp_Ψ [DecidableEq State] :
     gcongr
     apply EC_le (by simp_all)
 
-theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ s n ≤ ⨆ n, ⨆ 𝒮, EC c 𝒮 s n :=
+theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ n ≤ ⨆ n, ⨆ 𝒮, EC c 𝒮 n :=
   iSup₂_mono' fun n ℒ ↦ ⟨n, ℒ, by rfl⟩
 
 -- theorem tsum_succs_univ_iSup_iSup_ECℒ_comm [DecidableEq State] :
@@ -92,7 +92,7 @@ theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ s
 --     --   exact (EC_le <| by simp_all; split_ifs <;> simp_all).trans <| EC_monotone (by omega)
 
 -- theorem iSup_iSup_ECℒ_eq_lfp_Ψ [DecidableEq State] :
---     (fun s ↦ ⨆ n, ⨆ ℒ : 𝔏[M], EC c ℒ s n) = lfp (M.Ψ c) := by
+--     (fun s ↦ ⨆ n, ⨆ ℒ : 𝔏[M], EC c ℒ n s) = lfp (M.Ψ c) := by
 --   apply le_antisymm (iSup_iSup_ECℒ_le_iSup_iSup_EC.trans <| iSup_iSup_EC_eq_lfp_Ψ.le ·)
 --   apply lfp_le
 --   simp [Ψ]
@@ -113,7 +113,7 @@ theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ s
 
 -- theorem exists_iSup_iSup_ECℒ_lt_iSup_iSup_EC :
 --     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
---       ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ s n < ⨆ n, ⨆ 𝒮 : 𝔖[M], EC c 𝒮 s n := by
+--       ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ n s < ⨆ n, ⨆ 𝒮 : 𝔖[M], EC c 𝒮 n s := by
 --   sorry
 
 end MDP
