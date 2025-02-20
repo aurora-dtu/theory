@@ -51,7 +51,7 @@ def after_inj (C' : pGCL ϖ) : Function.Injective C'.after := by
   split at h <;> split at h <;> simp_all
 
 @[simp]
-theorem after_eq_seq_iff : C₂.after c = ·⟨C₁ ; C₂, σ⟩ ↔ c = (·⟨C₁, σ⟩) := by
+theorem after_eq_seq_iff : C₂.after c = ·⟨C₁ ;; C₂, σ⟩ ↔ c = (·⟨C₁, σ⟩) := by
   simp [after]
   split <;> simp_all
 
@@ -68,7 +68,7 @@ theorem tsum_after_eq (C₂ : pGCL ϖ) {f g : Conf ϖ → ENNReal}
   (hg₃ : ∀ C σ, ¬g (·⟨C, σ⟩) = 0 → ∃ a, ¬f a = 0 ∧ C₂.after a = (·⟨C, σ⟩))
   (hf₁ : ¬f none = 0 → f none = g none)
   (hf₂ : ∀ σ, ¬f (·⟨⇓ ϖ, σ⟩) = 0 → f (·⟨⇓ ϖ, σ⟩) = g (·⟨C₂, σ⟩))
-  (hf₃ : ∀ C σ, ¬f (·⟨C, σ⟩) = 0 → f (·⟨C, σ⟩) = g (·⟨C ; C₂, σ⟩)) :
+  (hf₃ : ∀ C σ, ¬f (·⟨C, σ⟩) = 0 → f (·⟨C, σ⟩) = g (·⟨C ;; C₂, σ⟩)) :
     (∑' s, g s) = ∑' s, f s :=
   tsum_eq_tsum_of_ne_zero_bij (C₂.after ·.val) (fun ⟨_, _⟩ ⟨_, _⟩ ↦ by simp; apply C₂.after_inj)
     (by rintro (_ | _ | _) <;> simp_all [not_imp_not.mpr hg₁])
@@ -80,7 +80,7 @@ theorem tsum_after_eq (C₂ : pGCL ϖ) {f g : Conf ϖ → ENNReal}
 theorem tsum_after_le (C₂ : pGCL ϖ) {f g : Conf ϖ → ENNReal}
   (h₁ : g none ≤ f none)
   (h₂ : ∀ σ, g (·⟨⇓ ϖ, σ⟩) ≤ f (·⟨C₂, σ⟩))
-  (h₂ : ∀ C σ, g (·⟨C, σ⟩) ≤ f (·⟨C ; C₂, σ⟩)) :
+  (h₂ : ∀ C σ, g (·⟨C, σ⟩) ≤ f (·⟨C ;; C₂, σ⟩)) :
     (∑' s, g s) ≤ ∑' s, f s :=
   tsum_le_tsum_of_inj C₂.after C₂.after_inj (by simp_all)
     (by rintro (_ | _ | _) <;> simp_all [after]) (by simp) (by simp)

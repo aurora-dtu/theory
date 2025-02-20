@@ -30,10 +30,11 @@ inductive SmallStep : Conf ϖ → Act → ENNReal → Conf ϖ → Prop where
   | nonDet_L : SmallStep (·⟨C₁ [] C₂, σ⟩)      .L 1 (·⟨C₁, σ⟩)
   | nonDet_R : SmallStep (·⟨C₁ [] C₂, σ⟩)      .R 1 (·⟨C₂, σ⟩)
   | tick     : SmallStep (·⟨.tick r, σ⟩)       .N 1 (·⟨.skip, σ⟩)
-  | seq_L    : SmallStep (·⟨.skip ; C₂, σ⟩) .N 1 (·⟨C₂, σ⟩)
-  | seq_R    : SmallStep (·⟨C₁, σ⟩) α p (·⟨C₁', τ⟩) → SmallStep (·⟨C₁ ; C₂, σ⟩) α p (·⟨C₁' ; C₂, τ⟩)
+  | seq_L    : SmallStep (·⟨.skip ;; C₂, σ⟩) .N 1 (·⟨C₂, σ⟩)
+  | seq_R    : SmallStep (·⟨C₁, σ⟩) α p (·⟨C₁', τ⟩) →
+                SmallStep (·⟨C₁ ;; C₂, σ⟩) α p (·⟨C₁' ;; C₂, τ⟩)
   | loop     : ¬b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨.skip, σ⟩)
-  | loop'    : b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨C ; .loop b C, σ⟩)
+  | loop'    : b σ → SmallStep (·⟨.loop b C, σ⟩) .N 1 (·⟨C ;; .loop b C, σ⟩)
 
 @[inherit_doc]
 notation c " ⤳[" α "," p "] " c' => SmallStep c α p c'
@@ -66,9 +67,9 @@ variable {c : Conf ϖ} {σ : States ϖ}
 @[simp] theorem tick_iff : (·⟨.tick r, σ⟩ ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = ·⟨skip, σ⟩
   := by aesop
 @[simp] theorem seq_iff :
-      (·⟨C₁ ; C₂, σ⟩ ⤳[α,p] c')
+      (·⟨C₁ ;; C₂, σ⟩ ⤳[α,p] c')
     ↔ if C₁ = .skip then p = 1 ∧ α = .N ∧ c' = ·⟨C₂, σ⟩
-      else (∃ C' σ', (·⟨C₁, σ⟩ ⤳[α,p] ·⟨C', σ'⟩) ∧ c' = (·⟨C' ; C₂, σ'⟩))
+      else (∃ C' σ', (·⟨C₁, σ⟩ ⤳[α,p] ·⟨C', σ'⟩) ∧ c' = (·⟨C' ;; C₂, σ'⟩))
   := by
     constructor
     · rintro ⟨_⟩ <;> simp_all; intro; simp_all
@@ -76,7 +77,7 @@ variable {c : Conf ϖ} {σ : States ϖ}
       · intros; constructor
       · intros; constructor; assumption
 @[simp] theorem loop_iff : (·⟨.loop b C, σ⟩ ⤳[α,p] c')
-    ↔ p = 1 ∧ α = .N ∧ c' = if b σ then ·⟨C ; .loop b C, σ⟩ else ·⟨skip, σ⟩ := by aesop
+    ↔ p = 1 ∧ α = .N ∧ c' = if b σ then ·⟨C ;; .loop b C, σ⟩ else ·⟨skip, σ⟩ := by aesop
 def act (c : Conf ϖ) : Set Act := {α | ∃ p c', c ⤳[α,p] c'}
 
 noncomputable instance : Decidable (α ∈ act c) := Classical.propDecidable _
@@ -95,7 +96,7 @@ theorem exists_succ_iff {C : pGCL ϖ} (h : ¬C = .skip) :
 @[simp] theorem act_sink : act (·⟨⇓ ϖ, σ⟩) = {.N} := by simp [act]
 @[simp] theorem act_skip : act (·⟨skip, σ⟩) = {.N} := by simp [act]
 @[simp] theorem act_assign : act (·⟨x ::= e, σ⟩) = {.N} := by simp [act]
-@[simp] theorem act_seq : act (·⟨C₁ ; C₂, σ⟩) = act (·⟨C₁, σ⟩) := by
+@[simp] theorem act_seq : act (·⟨C₁ ;; C₂, σ⟩) = act (·⟨C₁, σ⟩) := by
   ext
   simp_all [act]
   split_ifs

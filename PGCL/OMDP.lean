@@ -52,7 +52,7 @@ instance : MDP.FiniteBranching (𝒬 (ϖ:=ϖ)) where
 noncomputable def cost (X : Exp ϖ)
   | ·⟨⇓ ϖ, σ⟩ => X σ
   | ·⟨tick r, σ⟩ => r σ
-  | ·⟨c' ; _, σ⟩ => cost X (·⟨c', σ⟩)
+  | ·⟨c' ;; _, σ⟩ => cost X (·⟨c', σ⟩)
   | _ => 0
 
 @[simp] theorem cost_X_of_pGCL : cost X (·⟨C, σ⟩) = cost 0 (·⟨C, σ⟩) := by induction C <;> simp_all
@@ -123,7 +123,7 @@ variable {f : pGCL ϖ → Exp ϖ → Exp ϖ}
     · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₁,σ⟩)]; simp
     · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₂,σ⟩)]; simp
 theorem ς.loop :
-    ς f (.loop b C) = fun X ↦ b.probOf * f (C ; .loop b C) X + b.not.probOf * f .skip X := by
+    ς f (.loop b C) = fun X ↦ b.probOf * f (C ;; .loop b C) X + b.not.probOf * f .skip X := by
   funext X σ
   simp [ς, 𝒬.tsum_succs_univ']
   split_ifs <;> simp_all
@@ -165,7 +165,7 @@ theorem lfp_ς_eq_op : lfp (ς (ϖ:=ϖ)) = op :=
 variable {C : pGCL ϖ}
 
 attribute [-simp] Function.iterate_succ in
-theorem op_le_seq : C.op ∘ C'.op ≤ (C ; C').op := by
+theorem op_le_seq : C.op ∘ C'.op ≤ (C ;; C').op := by
   intro X σ
   nth_rw 1 [op_eq_iSup_succ_Φ]
   simp

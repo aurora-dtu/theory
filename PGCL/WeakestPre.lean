@@ -33,12 +33,12 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | .loop b C' => wp.lfp (b.probOf * C'.wp · + b.not.probOf * X)
   | .tick e => e + X
 
-@[simp] theorem wp.skip : wp (ϖ:=ϖ) skip = (·) := rfl
-@[simp] theorem wp.assign : wp (ϖ:=ϖ) (assign x A) = fun X σ ↦ X (σ[x ↦ A σ]) := rfl
-@[simp] theorem wp.seq : wp (ϖ:=ϖ) (seq C₁ C₂) = C₁.wp ∘ C₂.wp := rfl
-@[simp] theorem wp.prob : wp (ϖ:=ϖ) (prob C₁ p C₂) = fun X ↦ p.pick (C₁.wp X) (C₂.wp X) := rfl
-@[simp] theorem wp.nonDet : wp (ϖ:=ϖ) (nonDet C₁ C₂) = C₁.wp ⊓ C₂.wp := rfl
-@[simp] theorem wp.tick : wp (ϖ:=ϖ) (tick e) = fun X ↦ e + X := rfl
+@[simp] theorem wp.skip : wp (ϖ:=ϖ) .skip = (·) := rfl
+@[simp] theorem wp.assign : wp (ϖ:=ϖ) (.assign x A) = fun X σ ↦ X (σ[x ↦ A σ]) := rfl
+@[simp] theorem wp.seq : wp (ϖ:=ϖ) (.seq C₁ C₂) = C₁.wp ∘ C₂.wp := rfl
+@[simp] theorem wp.prob : wp (ϖ:=ϖ) (.prob C₁ p C₂) = fun X ↦ p.pick (C₁.wp X) (C₂.wp X) := rfl
+@[simp] theorem wp.nonDet : wp (ϖ:=ϖ) (.nonDet C₁ C₂) = C₁.wp ⊓ C₂.wp := rfl
+@[simp] theorem wp.tick : wp (ϖ:=ϖ) (.tick e) = fun X ↦ e + X := rfl
 
 @[simp] theorem wp.monotone (C : pGCL ϖ) : Monotone (C.wp) := by
   intro X₁ X₂ h
@@ -54,7 +54,7 @@ noncomputable def wp_loop_f (b : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ 
 theorem wp_loop : (loop (ϖ:=ϖ) b C').wp = fun X ↦ OrderHom.lfp (C'.wp_loop_f b X) := rfl
 
 theorem wp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
-  (pGCL.loop b C).wp = fun X ↦ b.probOf * (C ; pGCL.loop b C).wp X + b.not.probOf * X
+  (pGCL.loop b C).wp = fun X ↦ b.probOf * (C ;; .loop b C).wp X + b.not.probOf * X
 := by
   ext
   simp only [wp_loop, wp_loop_f, Pi.add_apply, Pi.mul_apply]
