@@ -44,6 +44,9 @@ noncomputable def 𝒜 : MDP State ℕ := ofRelation Step
 @[simp] noncomputable def 𝒜.cost : 𝒜.Costs
 | .node i => 1 / (i : ENNReal)
 | _ => 0
+@[simp] noncomputable def 𝒜.rew : 𝒜.Costs
+| .node i => i
+| _ => 0
 
 @[simp]
 theorem 𝒜.act_eq : 𝒜.act = fun s ↦ if s = .init then Set.univ else {0} := by
@@ -63,6 +66,8 @@ variable {𝒮 : 𝔖[𝒜]}
   simp_all [𝒜, ite_and, eq_comm]
 @[simp] theorem P_node_term : 𝒜.P (.node i) 0 .term = 1 := by simp_all [𝒜]
 @[simp] theorem P_term_term : 𝒜.P .term 0 .term = 1 := by simp_all [𝒜]
+
+section EC
 
 @[simp]
 theorem EC_term_eq_0 : 𝒜.EC 𝒜.cost 𝒮 n .term = 0 := by
@@ -105,5 +110,52 @@ theorem all_𝒮_lt_iSup_iInf_EC (𝒮 : 𝔖[𝒜]) :
   constructor
   · apply ENNReal.lt_add_right <;> simp
   · intro n; split_ifs <;> simp
+
+end EC
+
+section ER
+
+@[simp]
+theorem ER_term_eq_0 : 𝒜.EC 𝒜.rew 𝒮 n .term = 0 := by
+  rcases n with _ | n <;> simp_all [EC_succ]
+  rintro _ ⟨_⟩
+  induction n generalizing 𝒮 with
+  | zero => simp
+  | succ => simp_all [EC_succ]
+@[simp] theorem ER_node_i_le_j_eq_top :
+    𝒜.EC 𝒜.rew 𝒮 n (.node i) = if n = 0 then 0 else i := by
+  cases n <;> simp [EC_succ]
+  rw [tsum_eq_single ⟨.term, by simp⟩ (by simp_all)]
+  simp_all
+theorem ER_init :
+    𝒜.EC 𝒜.rew 𝒮 n .init = if n < 2 then 0 else 𝒮 {.init} := by
+  rcases n with _ | n <;> simp_all
+  rcases n with _ | n
+  · simp
+  · rw [EC_succ]
+    simp
+    rw [tsum_eq_single ⟨.node (𝒮 {.init}), by simp⟩]
+    · simp_all; split_ifs <;> simp_all; omega
+    · simp_all
+      rintro _ α ⟨_⟩
+      simp_all [eq_comm]
+
+@[simp]
+theorem all_𝒮_iSup_iSup_ER_lt (𝒮 : 𝔖[𝒜]) :
+      ⨆ n, 𝒜.EC 𝒜.rew 𝒮 n .init < ⨆ 𝒮, ⨆ n, 𝒜.EC 𝒜.rew 𝒮 n .init := by
+  simp_all [ER_init]
+  apply lt_iSup_iff.mpr
+  exists ⟨fun π ↦ if π.last = .init then 𝒮 π + 1 else 0, by simp_all⟩
+  simp_all
+  refine lt_iSup_iff.mpr ?_
+  exists 2
+  simp_all
+  apply iSup_lt_iff.mpr
+  exists ((𝒮 {.init}) : ENNReal)
+  constructor
+  · apply ENNReal.lt_add_right <;> simp
+  · intro n; split_ifs <;> simp
+
+end ER
 
 end MDP.Counterexample.D

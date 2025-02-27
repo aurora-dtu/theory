@@ -79,4 +79,12 @@ theorem not_exists_optimal_𝒮_for_iSup_iInf_EC :
       ¬∃ 𝒮, ⨆ n, M.EC c 𝒮 n s = ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s :=
   ⟨_, _, _, 𝒜.cost, State.init, by simp [ne_of_gt]⟩
 
+open Counterexample.D in
+/-- There exists a (necessarily infinite branching) MDP such that there does not exist an optimal
+  scheduler for the `⨆⨆` notion of optimization. -/
+theorem not_exists_optimal_𝒮_for_iSup_iSup_EC :
+    ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
+      ¬∃ 𝒮, ⨆ n, M.EC c 𝒮 n s = ⨆ 𝒮, ⨆ n, M.EC c 𝒮 n s :=
+  ⟨_, _, _, 𝒜.rew, State.init, by simp [ne_of_lt]⟩
+
 end MDP
