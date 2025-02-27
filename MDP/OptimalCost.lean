@@ -153,7 +153,6 @@ theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
     simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf]
     rfl
 
-
 attribute [-simp] Function.iterate_succ in
 theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
     (⨆ n, EC c ℒ n) = lfp_Φℒ ℒ c := by
