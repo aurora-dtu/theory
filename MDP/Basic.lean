@@ -21,6 +21,8 @@ def prev (α : Act) (s' : State) : Set State := {s : State | s' ∈ M.succs α s
 
 def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
 def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
+def mem_prev_univ_iff_mem_succs_univ (s s' : State) : s ∈ M.prev_univ s' ↔ s' ∈ M.succs_univ s := by
+  simp_all [prev_univ, succs_univ, prev]
 
 class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite

@@ -11,40 +11,23 @@ inductive State where | s₁ | s₂ | s₃
 deriving DecidableEq
 
 structure P where
-  toFun : ℕ → ℝ
+  toFun : ℕ → ENNReal
   property : ∀ n, 0 < toFun n ∧ toFun n < 1
 
-instance : DFunLike P ℕ (fun _ ↦ ℝ) where
-  coe := P.toFun
-  coe_injective' := by rintro ⟨a, _⟩ ⟨b, _⟩ h; congr
-
 instance : DFunLike P ℕ (fun _ ↦ ENNReal) where
-  coe := fun p n ↦ ENNReal.ofReal (p.toFun n)
-  coe_injective' := by
-    rintro ⟨a, ha⟩ ⟨b, hb⟩ h; congr
-    simp_all
-    ext n
-    have := congrArg ENNReal.toReal (congrFun h n)
-    rw [ENNReal.toReal_ofReal, ENNReal.toReal_ofReal] at this
-    · assumption
-    · exact hb n |>.left |>.le
-    · exact ha n |>.left |>.le
-
-theorem P.property_ENNReal (p : P) : ∀ n, (0 : ENNReal) < p n ∧ p n < (1 : ENNReal) := by
-  intro n
-  have := p.property n
-  simp_all [DFunLike.coe]
+  coe := P.toFun
+  coe_injective' := by rintro ⟨a, ha⟩ ⟨b, hb⟩ h; congr
 
 variable (𝓅 : P)
 
-@[simp] theorem P.zero_lt (α) : 0 < 𝓅 α := (𝓅.property_ENNReal α).left
-@[simp] theorem P.lt_one (α) : 𝓅 α < 1 := (𝓅.property_ENNReal α).right
+@[simp] theorem P.zero_lt (α) : 0 < 𝓅 α := (𝓅.property α).left
+@[simp] theorem P.lt_one (α) : 𝓅 α < 1 := (𝓅.property α).right
 @[simp] theorem P.ne_zero (α) : ¬𝓅 α = 0 := (𝓅.zero_lt α).ne.symm
 @[simp] theorem P.ne_one (α) : ¬𝓅 α = 1 := (𝓅.lt_one α).ne
 @[simp] theorem P.le_one (α) : 𝓅 α ≤ 1 := (𝓅.lt_one α).le
 @[simp] theorem P.one_sub_ne_zero (α) : ¬1 - 𝓅 α = 0 := ne_of_gt <| tsub_pos_of_lt (𝓅.lt_one α)
 @[simp] theorem P.add_one_sub (α) : 𝓅 α + (1 - 𝓅 α) = 1 := add_tsub_cancel_of_le (𝓅.le_one α)
--- @[simp] theorem P.ne_top (α) : ¬𝓅 α = ⊤ := (𝓅.lt_one α).ne_top
+@[simp] theorem P.ne_top (α) : ¬𝓅 α = ⊤ := (𝓅.lt_one α).ne_top
 
 @[aesop safe [constructors, cases], mk_iff]
 inductive Step : State → ℕ → ENNReal → State → Prop where
@@ -620,506 +603,81 @@ theorem iSup_iSup_ECℒ : ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.
 theorem iInf_iSup_ECℒ : ⨅ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = 1 := by
   simp_all [iSup_ECℒ]
 
-def sufficient_lt :=
-  ∃ 𝓅 : P, ∑' (n : ℕ), (1 - 𝓅 (n + 1)) * ∏ x ∈ Finset.range n, 𝓅 (x + 1) < 1
-
--- ⨆ i, (1 - 𝓅 i)⁻¹
--- (1 - ⨆ i, 𝓅 i)⁻¹
--- (1 - 99/100)⁻¹
--- (1/100)⁻¹
--- 100
-
-
--- noncomputable def p' (ε : {ε : ℝ // 0 < ε ∧ ε < 1}) (n : ℕ) : ℝ :=
---   (1 - ε)^((2 ^ n)⁻¹ : ℝ)
---   -- (1 - ε)^((2⁻¹ : ℝ) ^ n)
--- theorem p'_bounded (n : ℕ) : 0 < p' ε n ∧ p' ε n < 1 := by
---   obtain ⟨ε, h⟩ := ε
---   simp [p']; ring_nf
---   constructor
---   · refine Real.rpow_pos_of_pos ?_ ((1 / 2) ^ n); simp_all
---   · refine Real.rpow_lt_one ?_ ?_ ?_ <;> simp_all
---     exact h.right.le
-noncomputable def p' (ε : {ε : ℝ // 0 < ε ∧ ε < 1}) : P := ⟨fun n ↦
-  (1 - ε)^((2 ^ n)⁻¹ : ℝ), by
+noncomputable def p : P := ⟨fun n ↦
+  (2 ^ (2 ^ n : ℝ)⁻¹)⁻¹, by
+  simp
   intro n
-  obtain ⟨ε, h⟩ := ε
-  ring_nf
-  constructor
-  · refine Real.rpow_pos_of_pos ?_ ((1 / 2) ^ n); simp_all
-  · refine Real.rpow_lt_one ?_ ?_ ?_ <;> simp_all
-    exact h.right.le⟩
+  refine ENNReal.one_lt_rpow ?_ ?_ <;> simp⟩
 
--- example : p' ε 0 = 1 - ε := by simp [p']
--- example : p' ε 1 = (1 - ε)^(2⁻¹ : ℝ) := by simp [p']
--- example : p' ε 2 = (1 - ε)^(4⁻¹ : ℝ) := by simp [p']; ring_nf
--- example : p' ε 3 = (1 - ε)^(8⁻¹ : ℝ) := by simp [p']; ring_nf
--- example : p' ε 4 = (1 - ε)^(16⁻¹ : ℝ) := by simp [p']; ring_nf
-
--- example (ε : {ε : ENNReal // 0 < ε ∧ ε < 1}) : sufficient_lt := by
---   exists ⟨p' ε, p'_bounded⟩
---   simp [DFunLike.coe]
---   simp [p']
---   sorry
-
-theorem asdasd (hn : 0 < n) : ∃! π ∈ Path[𝒜 𝓅,.s₁,=n], ∀ s ∈ π, s = .s₁ := by
-  simp_all only [Path_eq.iff]
-  exists ⟨List.replicate n .s₁, by simp; omega, by simp⟩
-  simp_all [Membership.mem, eq_comm]
-  rintro π ⟨⟨⟨_⟩, _⟩, h⟩
-  ext i h₁ h₂
-  · simp_all
-  · have := h π[i] ⟨i, by omega⟩
-    simp_all
--- theorem asdsadsad (hn : 0 < n) : (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n = 1 := by
---   simp [EC]
---   rw [ENNReal.tsum_eq_add_tsum_ite ⟨⟨List.replicate n .s₁, by simp; omega, by simp⟩, by simp⟩]
---   simp_all
---   nth_rw 1 [Path.ECost]
---   simp [Path.Cost, Subtype.eq_iff]
---   have : ∀ (x : Path[𝒜 𝓅,State.s₁,=n]),
---         x.val = ⟨List.replicate n State.s₁, by simp; omega, by simp⟩
---       ↔ ∀ i : Fin ‖x.val‖, x.val[i] = .s₁ := by
---     simp_all
---     rintro π ⟨hn, h⟩
---     constructor
---     · rintro ⟨_⟩
---       simp
---     · intro h'
---       ext i <;> simp_all
---       apply h' ⟨i, by simp_all⟩
---   simp [this]; clear this
---   have : ∀ (x : Path[𝒜 𝓅,State.s₁,=n]),
---         (∃ i : Fin ‖x.val‖, ¬x.val[i] = .s₁)
---       ↔ ∃ i : Fin ‖x.val‖, x.val[i] = .s₂ := by
---     simp_all
---     rintro π ⟨hn, h⟩
---     constructor <;> simp_all <;> intro i hi
---     · sorry
---     · sorry
---   conv => left; arg 1; ext; rw [← ite_not]
---   simp_all; clear this
---   induction n with
---   | zero => simp_all
---   | succ n ih =>
---     simp_all
---     rcases n with _ | n
---     · sorry
---     · rw []
-
-
-  -- simp_all [ite_ite_comm]
-  -- conv =>
-  --   left
-  --   arg 1
-  --   ext
-
-  -- sorry
-
--- theorem tprod_split (f : ℕ → ENNReal) (m : ℕ) :
---     (∏' n, f n) = (∏ n : Fin m, f n) * ∏' n, f (n + m + 1) := by
---   -- have := prod_mul_tprod_compl (α:=ENNReal) (f:=f)
---   symm
---   apply (ENNReal.eq_div_iff sorry sorry).mp
---   sorry
---   -- refine Eq.symm ((fun {a b c} ha ha' ↦ (ENNReal.eq_div_iff ha ha').mp) ?_ ?_ ?_)
---   -- <;> sorry
-
--- example (x : ENNReal) (a b : Real) : x^a * x^b = x^(a + b) := by
---   rcases x with _ | x
---   · simp
---     sorry
---   · simp
---     rw?
---   rw [Real.rpow_add]
-
-@[simp]
-abbrev P.real (p : P) (n : ℕ) : Real := p.toFun n
-
-theorem ashjdashjd (ε : ℝ) (h : 0 < ε ∧ ε < 1) : ∏' i : ℕ, ε^((1 / (2 : Real))^i) = ε^2 := by
-  -- have hε : 0 < 1 - ε := by simp_all
-  simp
-  rw [← Real.rexp_tsum_eq_tprod]
-  · apply Real.log_injOn_pos
-    · simp_all [Real.exp_pos]
-    · simp_all
-    · simp [Real.log_rpow h.left, tsum_mul_right]
-      left
-      ring_nf
-      exact tsum_geometric_two
-  · simp_all [Real.rpow_pos_of_pos]
-  · sorry
-
-theorem ahsjdashjdahjs' :
-    ∏' x : ℕ, (p' ε).real (x + 1) = (1 - ε.val) := by
-  have hε : 0 < 1 - ε.val := Set.Ioo.one_minus_pos ε
-  simp [p']
-  ring_nf
-  simp
-  simp [mul_comm]
-  simp [Real.rpow_mul hε.le]
-  ring_nf
-  simp
-  ring_nf
-  have : 0 < ((1 - ε.val) ^ (2⁻¹ : Real)) := by exact Real.rpow_pos_of_pos hε 2⁻¹
-  have : 0 ≤ ((1 - ε.val) ^ (2⁻¹ : Real)) := this.le
-  rw [ashjdashjd]
-  · simp
-    ring_nf
-    have := Real.rpow_mul hε.le (1 / (2 : Real)) 2
-    symm at this
-    simp_all
-  · simp_all
-    refine (Real.rpow_inv_lt_iff_of_pos ?_ ?_ ?_).mpr ?_ <;> simp_all
-    · exact le_of_lt ε.prop.right
-    · exact Set.Ioo.pos ε
-
-theorem ashjdashjd_ENNReal (ε : ENNReal) (h : 0 < ε ∧ ε < 1) : ∏' i : ℕ, ε^((1 / (2 : Real))^i) = ε^2 := by
-  -- have hε : 0 < 1 - ε := by simp_all
-  simp
-  sorry
-  -- rw [← Real.rexp_tsum_eq_tprod]
-  -- · apply Real.log_injOn_pos
-  --   · simp_all [Real.exp_pos]
-  --   · simp_all
-  --   · simp [Real.log_rpow h.left, tsum_mul_right]
-  --     left
-  --     ring_nf
-  --     exact tsum_geometric_two
-  -- · simp_all [Real.rpow_pos_of_pos]
-  -- · sorry
-
-theorem ahsjdashjdahjs'_ENNReal (ε : ENNReal) (h : 0 < ε ∧ ε < 1) :
-    ∏' x : ℕ, (p' ⟨ε.toReal, sorry⟩) (x + 1) = (1 - ENNReal.ofReal ε) := by
-  have hε : 0 < 1 - ε := by simp_all
-  simp [p', DFunLike.coe]
-  ring_nf
-  simp
-  simp [mul_comm]
-  simp [Real.rpow_mul hε.le]
-  ring_nf
-  simp
-  ring_nf
-  have : 0 < ((1 - ε.val) ^ (2⁻¹ : Real)) := by exact Real.rpow_pos_of_pos hε 2⁻¹
-  have : 0 ≤ ((1 - ε.val) ^ (2⁻¹ : Real)) := this.le
-  rw [ashjdashjd_ENNReal]
-  · simp
-    ring_nf
-    have := Real.rpow_mul hε.le (1 / (2 : Real)) 2
-    symm at this
-    simp_all
-  · simp_all
-    refine (Real.rpow_inv_lt_iff_of_pos ?_ ?_ ?_).mpr ?_ <;> simp_all
-    · exact le_of_lt ε.prop.right
-    · exact Set.Ioo.pos ε
-
-  -- -- have := ashjdashjd (((1 - ↑ε) ^ (1 / 2 : Real))) sorry
-  -- -- -- simp? at this
-  -- -- rw [this]
-  -- -- simp
-  -- -- rw [@pow_succ]
-  -- -- simp_all
-
-  -- -- simp [ashjdashjd]
-
-
-
-  -- rw [← Real.rexp_tsum_eq_tprod]
-  -- · apply Real.log_injOn_pos
-  --   · simp_all [Real.exp_pos]
-  --   · simp_all
-  --   · simp
-  --     simp [Real.log_rpow this]
-  --     simp [tsum_mul_right]
-  --     apply (by simp_all : ∀ {x y : ℝ}, x = 1 → x * y = y)
-  --     ring_nf
-  --     simp
-  --     simp [tsum_mul_right]
-  --     refine (IsUnit.mul_inv_eq_one ?_).mpr ?_
-  --     · simp
-  --     · ring_nf
-  --       exact tsum_geometric_two
-  -- · simp_all [Real.rpow_pos_of_pos]
-  -- · simp [asdasdas ε]
-
-  -- rcases n with _ | n | n | n | n | n | n
-  -- · simp_all [p']
-  -- · simp_all [p']; ring_nf
-  -- · simp_all [p']; ring_nf
-  --   simp_all
-  --   simp_all [← Real.rpow_add]
-  --   ring_nf
-  -- · simp_all [p']; ring_nf
-  --   simp_all [Fin.prod_univ_three]
-  --   simp_all [← Real.rpow_add]
-  --   ring_nf
-  -- · simp_all [p']; ring_nf
-  --   simp_all [Fin.prod_univ_four]
-  --   simp_all [← Real.rpow_add]
-  --   ring_nf
-  --   simp_all
-  --   ring_nf
-  --   simp_all [Fin.val]
-  --   ring_nf
-  --   simp_all
-  --   sorry
-  -- · simp []
-  --   rw [@Fin.prod_univ_three]; simp
-  --   simp [p']
-  --   ring_nf
-  --   simp_all [← Real.rpow_add]
-  --   rw [← Real.rpow_add]
-  --   simp [-one_div, ← Real.rpow_add]
-  --   simp [-one_div, Real.rpow_add]
-  --   -- rw?
-  --   ; sorry
-  -- · simp; sorry
-  -- · simp; sorry
-  -- · simp; sorry
-  -- -- induction n with
-  -- -- | zero => simp only [Finset.univ_eq_empty, Finset.prod_empty, -OfNat.one_ne_ofNat]
-  -- -- | succ n ih =>
-  -- --   rw [@Fin.prod_univ_castSucc]
-  -- --   simp [p']
-  -- --   rw [ih]
-
-theorem ahsjdashjdahjs'_ENNReal' :
-    ∏' x : ℕ, (p' ε) (x + 1) = (1 - ENNReal.ofReal ε.val) := by
-  refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
-  · simp_all [p', DFunLike.coe]
-    apply ne_of_lt
-    apply lt_trans (b:=1) _ (by simp)
-    sorry
-  · simp
-  · convert ahsjdashjdahjs' (ε:=ε)
-    · sorry
-    · refine (Real.toNNReal_eq_toNNReal_iff ?_ ?_).mp ?_
-      · simp
-      · simp_all [ε.prop.right.le]
-      · simp_all
-        refine NNReal.eq ?_
-        have hε : 0 < 1 - ε.val := Set.Ioo.one_minus_pos ε
-        simp [hε]
-        simp [sup_of_le_left hε.le]
-        sorry
-
--- set_option maxHeartbeats 0 in
-theorem iInf_iSup_EC_a (ε : {ε : Real // 0 < ε ∧ ε < 1}) :
-    ⨅ 𝒮, ⨆ n, (𝒜 (p' ε)).EC 𝒜.cost 𝒮 n .s₁ ≤ (1 - ∏' x, p' ε (↑x + 1)) := by
-  apply iInf_le_of_le (𝒮_len (p' ε) 0)
+theorem iInf_iSup_EC_ab :
+    ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ ≤ ⨆ n, (1 - ∏ x : Fin (n - 1), p (↑x + 1)) := by
+  apply iInf_le_of_le (𝒮_len p 0)
   simp_all
   intro n
+  apply le_iSup_of_le n
   simp only [EC_𝒮_len', AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false, ↓reduceIte]
-  simp [asdjhsad (𝓅:=p' ε) (i:=0)]
-  simp_all [DFunLike.coe]
+  simp [asdjhsad (𝓅:=p) (i:=0)]
   split_ifs <;> simp_all
-  have : ∏' (x : ℕ), p' ε (x + 1) ≤ ∏ x : Fin (n - 1), p' ε (↑x + 1) := by
-    have := ahsjdashjdahjs (n:=n - 1) (ε:=ε)
-    simp at this
-    refine tprod_le_of_prod_range_le ?_ ?_
-    ·
 
-      simp [p']
-      sorry
-    · intro n'
-      sorry
-  sorry
-
-
-  sorry
-
-theorem iInf_iSup_ECℒ_lt_iInf_iSup_EC_if_sufficent_lt (ε : {ε : Real // 0 < ε ∧ ε < 1}) :
-    ∃ 𝓅, ⨅ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ := by
-  -- obtain ⟨𝓅, h⟩ := h
-  simp [iInf_iSup_ECℒ]
-  use p' ε
-  apply (iInf_iSup_EC_a ε).trans_lt
-  refine (ENNReal.sub_lt_self_iff (by simp)).mpr ?_
-  simp_all
-  simp [p', DFunLike.coe]
-  sorry
-
-
-  refine iInf_lt_iff.mpr ⟨𝒮_len (⟨p' ε, p'_bounded⟩) 0, ?_⟩
-  simp only [EC_𝒮_len', AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false, ↓reduceIte]
-  simp [asdjhsad (𝓅:=⟨p' ε, p'_bounded⟩) (i:=0)]
-  simp_all [DFunLike.coe]
-  -- apply?
-  rw [@iSup_lt_iff]
-  exists 1 - ∏' x, p' ε (↑x + 1)
-  -- simp_all
-  constructor
-  ·
-    -- have ⟨h₁, h₂⟩ := p'_bounded q (ε:=ε)
-    refine (ENNReal.sub_lt_self_iff ?_).mpr ?_ <;> simp_all
-    simp [p']
-    sorry
-    -- rintro ⟨i, hi⟩
-    -- simp_all
-    -- exact p'_bounded (i + 1) |>.left
-  · rintro (_ | n) <;> simp_all
-    rw [ENNReal.sub_add_eq_add_sub]
-    · have : ∀ {x y z : ENNReal}, z < y → x ≤ x + y - z := by
-        refine fun {x y z} h ↦ ?_
-        refine ENNReal.le_sub_of_add_le_left ?_ ?_
-        · exact LT.lt.ne_top h
-        · rw [add_comm]; gcongr
-      apply this
-      simp [p']
-      sorry
-    · sorry
-      -- refine Fintype.prod_le_one fun i ↦ ?_
-      -- exact p'_bounded (i + 1) |>.right |>.le
-    · sorry
-      -- refine ENNReal.prod_ne_top fun i ↦ ?_
-      -- simp_all
-      -- exact p'_bounded (i + 1) |>.right |>.ne_top
-
--- theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt (ε : {ε : ENNReal // 0 < ε ∧ ε < 1}) :
---     ∃ 𝓅, ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 .s₁ n < ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ .s₁ n := by
---   simp [iSup_iSup_ECℒ]
---   use ⟨p' ε, p'_bounded⟩
---   apply iSup_lt_iff.mpr
---   apply lt_iSup_iff.mpr
---   use 𝒮_len ⟨p' ε, p'_bounded⟩ 0
---   rw [← iSup_EC_succ_eq_iSup_EC]
---   simp only [EC_𝒮_len', AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false, ↓reduceIte]
---   simp [asdjhsad (𝓅:=⟨p' ε, p'_bounded⟩) (i:=0)]
---   simp [p', DFunLike.coe]
---   rw [@lt_iSup_iff]
---   sorry
-
-
-
-
-
-
-
-
-
-
-
-
-theorem exists_iSup_iSup_ECℒ_lt_iSup_iSup_EC_if_sufficent_lt (h : sufficient_lt) :
-    ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
-      ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n s < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s := by
-  -- obtain ⟨𝓅, h⟩ := iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt h
-  -- use State, Option ℕ, 𝒜 𝓅, 𝒜.cost, .s₁
-  sorry
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-theorem ashjdashjdasjdhj :
-      ∑' (n : ℕ), ∏ x ∈ Finset.range n, 𝓅 (x + 1)
-    -- = ⨆ k, ∑ n ∈ Finset.range k, ∏ i ∈ Finset.range n, 𝓅 (i + 1) := by
-    = ⨆ k, (1 - (𝓅 (i + 1))^(k + 1)) / (1 - 𝓅 (i + 1)) := by
-  simp [ENNReal.tsum_eq_iSup_nat]
-  congr! with k
-  refine Finset.sum_range_induction _ (fun k ↦ _) ?_ ?_ k
-  · simp
-    sorry
-  · simp_all
+theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) - 1) := by
+  simp [p, DFunLike.coe]
+  induction n with
+  | zero => simp [← ENNReal.rpow_neg]
+  | succ n ih =>
+    rw [@Fin.prod_univ_castSucc]
+    simp [ih]; clear ih
     ring_nf
-    sorry
+    simp [ENNReal.rpow_add]
+    rw [mul_assoc]
+    congr! 1
+    rw [← ENNReal.rpow_neg]
+    simp [← ENNReal.rpow_add]
+    congr! 1
+    ring_nf
+    simp_all
+    rw [@mul_div_left_comm]
+    simp_all [@neg_inv]
+    rw [@add_neg_eq_iff_eq_add]
+    have : ((2 : ℝ) ^ (n : ℝ))⁻¹ = 2^(-n:ℝ) := by
+      simp
+      rw [← Real.rpow_neg_one]
+      have := Real.rpow_mul (x:=2) (y:=n) (z:=-1)
+      simp_all
+    simp at this; simp [this]; clear this
+    ring_nf
+    simp [← Real.rpow_neg_one]
+    rw [← Real.rpow_add (by simp)]
+    ring_nf
+    have := Real.rpow_add (x:=2) (by simp) (-1 - n:ℝ) 1
+    simp at this; simp [← this]
+    ring_nf
 
-theorem one_sub_𝓅_inv_monotone (h : Monotone 𝓅) : Monotone fun i ↦ (1 - 𝓅 i)⁻¹ := by
-  refine monotone_nat_of_le_succ ?_
-  intro n
+theorem iInf_iSup_ECℒ_lt_iInf_iSup_EC :
+    ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[𝒜 p], ⨆ n, (𝒜 p).EC 𝒜.cost ℒ n .s₁ := by
+  simp [iInf_iSup_ECℒ]
+  apply (iInf_iSup_EC_ab).trans_lt
+  refine iSup_lt_iff.mpr ?_
+  use 1/2
   simp_all
-  have : 𝓅 n ≤ 𝓅 (n + 1) := h (by simp)
-  have : 𝓅 (n + 1) ≤ 1 := 𝓅.le_one (n + 1)
-  rw [ENNReal.sub_add_eq_add_sub (by simp) (by simp)]
-
-  sorry
-
-theorem one_sub_𝓅_inv_strict_monotone (h : StrictMono 𝓅) : StrictMono fun i ↦ (1 - 𝓅 i)⁻¹ := by
-  refine strictMono_nat_of_lt_succ ?_
-  simp
-  intro n
-  sorry
-  -- refine monotone_nat_of_le_succ ?_
-  -- intro n
-  -- simp_all
-  -- have : 𝓅 n ≤ 𝓅 (n + 1) := 𝓅_monotone ε (by simp)
-  -- have : 𝓅 (n + 1) ≤ 1 := by sorry
-  -- sorry
-
-theorem asdsad (h : ⨆ i, 𝓅 i < 1) : (⨆ i, (1 - 𝓅 i)⁻¹) = (1 - ⨆ i, 𝓅 i)⁻¹ := by
-  apply le_antisymm
-  · simp
-    intro i
-    rw [@ENNReal.add_iSup]
-    apply le_iSup_of_le i
-    exact le_tsub_add
-  · sorry
-  -- apply le_antisymm
-  -- · simp
-  --   intro α
-  --   have := 𝓅.zero_lt α
-  --   have := 𝓅.lt_one α
-  --   rw [← ENNReal.tsum_geometric]
-  --   simp [-ENNReal.tsum_geometric, ge_iff_le, ENNReal.tsum_eq_iSup_nat]
-  --   intro n
-  --   simp_all
-  --   induction n with
-  --   | zero => simp
-  --   | succ n ih =>
-  --     rw [@geom_sum_succ]
-
-
-theorem asdhjashj : ∃ 𝓅 : P, (1 - ⨆ i, 𝓅 i)⁻¹ < ⊤ := by
-  simp_all
-  sorry
-
-theorem asdhjashd : ∃ 𝓅 : P, ∑' (n : ℕ), ∏ x ∈ Finset.range n, 𝓅 (x + 1) = ⊤ := by
-  simp [ENNReal.tsum_eq_iSup_nat]
-  apply Exists.intro
-  · rw [@iSup_eq_top]
-    intro b hb
-    sorry
-  · sorry
-
-  --   -- simp [𝓅]
-  --   -- ring_nf
-  --   -- refine ENNReal.le_sub_of_add_le_left sorry ?_
-  --   -- simp_all
-  --   -- ring_nf
-  --   -- sorry
-  -- · apply le_iSup_of_le 10
-  --   simp
-  --   ring_nf
-  --   refine (ENNReal.le_div_iff_mul_le ?_ ?_).mp ?_ <;> simp
-
-  --   sorry
-
--- theorem asdasdasd : 𝓅' 0 + 𝓅' 0 * 𝓅' 1 + 𝓅' 0 * 𝓅' 1 * 𝓅' 2 = 6 := by
---   simp [𝓅, ε']
---   ring_nf
-
-theorem iSup_iSup_ECℒ_lt_iSup_iSup_EC (𝓅 : P) (h𝓅 : ⨆ i, 𝓅 i < 1) :
-    ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ := by
-  use 𝓅
-  simp [iSup_iSup_ECℒ]
-  apply lt_iSup_iff.mpr
-  use 𝒮_len 𝓅 0
-  simp [iSup_EC_𝒮_len]
-  simp [ENNReal.tsum_eq_iSup_nat]
-  -- rw [asdsad _ h𝓅]
-  -- rw [ashjdashjdasjdhj]
-
-  sorry
+  · intro n
+    rcases n with _ | n
+    · simp
+    · simp
+      simp [prod_p_eq']
+      ring_nf
+      have : (2 : ENNReal)⁻¹ = 1 - 2⁻¹ := by rw [ENNReal.one_sub_inv_two]
+      rw [this]; clear this
+      rw [ENNReal.sub_add_eq_add_sub] <;> simp
+      apply ENNReal.le_sub_of_add_le_left (by simp)
+      rw [add_comm]
+      gcongr
+      have : (2 : ENNReal)⁻¹ = 2^(-1:ℝ) := by rw [ENNReal.rpow_neg_one]
+      rw [this]
+      gcongr
+      · simp
+      · simp_all
+        apply Real.rpow_nonneg
+        simp
 
 end MDP.Counterexample.C
 
