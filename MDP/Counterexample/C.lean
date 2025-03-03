@@ -652,7 +652,7 @@ theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) -
     simp at this; simp [← this]
     ring_nf
 
-theorem iInf_iSup_ECℒ_lt_iInf_iSup_EC :
+theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
     ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[𝒜 p], ⨆ n, (𝒜 p).EC 𝒜.cost ℒ n .s₁ := by
   simp [iInf_iSup_ECℒ]
   apply (iInf_iSup_EC_ab).trans_lt

@@ -75,10 +75,10 @@ open Counterexample.C in
 /-- There exists a (necessarily infinite branching) MDP such that the optimal cost given by `⨅⨆`
   with history is strictly less than that of the memoryless. See `MDP.Counterexample.C.𝒜` for an
   instance of such and MDP. -/
-theorem exists_iInf_iSup_lt_iInf_iSup_ECℒ :
+theorem exists_iInf_iSup_EC_lt_iInf_iSup_ECℒ :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s < ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n s :=
-  ⟨_, _, 𝒜 p, 𝒜.cost, .s₁, iInf_iSup_ECℒ_lt_iInf_iSup_EC⟩
+  ⟨_, _, 𝒜 p, 𝒜.cost, .s₁, iInf_iSup_EC_lt_iInf_iSup_ECℒ⟩
 
 open Counterexample.D in
 /-- There exists a (necessarily infinite branching) MDP such that there does not exist an optimal
