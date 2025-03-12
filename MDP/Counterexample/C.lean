@@ -680,6 +680,3 @@ theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
         simp
 
 end MDP.Counterexample.C
-
--- NOTE: what is this?
--- https://leanprover-community.github.io/mathlib4_docs/Mathlib/Order/SupIndep.html#iSupIndep
