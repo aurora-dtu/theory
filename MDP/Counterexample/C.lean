@@ -1,9 +1,10 @@
-import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
-import MDP.OptimalCost
-import MDP.Relational
-import MDP.SupSup
 import Mathlib.Analysis.PSeries
 import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLog
+import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
+import MDP.OptimalCost
+import MDP.Paths.Membership
+import MDP.Relational
+import MDP.SupSup
 
 namespace MDP.Counterexample.C
 
@@ -272,91 +273,6 @@ theorem iSup_EC_𝒮_len :
     = ∑' (n : ℕ), (1 - 𝓅 (i + n + 1)) * ∏ x ∈ Finset.range n, 𝓅 (i + x + 1) := by
   simp [iSup_EC_eq]
 
-instance {State : Type*} {Act: Type*} {M : MDP State Act} : Membership State M.Path where
-  mem π s := ∃ i : Fin ‖π‖, π[i] = s
-
-noncomputable instance {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
-    {π : M.Path} (s : State) : Decidable (∀ s' ∈ π, s' = s) :=
-  Classical.propDecidable (∀ s' ∈ π, s' = s)
-
-@[simp]
-theorem Path.mem_extend {State : Type*} {Act: Type*} {M : MDP State Act}
-    (π : M.Path) (s : M.succs_univ π.last) (s' : State) : s' ∈ π.extend s ↔ s' ∈ π ∨ s = s' := by
-  simp [instMembershipPath]
-  constructor
-  · simp_all
-    rintro ⟨i, hi⟩ h
-    simp_all
-    if i = ‖π.extend s‖ - 1 then
-      simp_all
-    else
-      simp_all
-      simp at hi
-      rw [Path.extend_getElem_nat _ (by omega)] at h
-      left
-      exists ⟨i, by omega⟩
-  · rintro (⟨i, hi⟩ | h)
-    · use ⟨i, by simp_all; omega⟩
-      simp_all
-    · use ⟨‖π‖, by simp⟩
-      simp_all
-
-@[simp]
-theorem Path.mem_states {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
-    {π : M.Path} {a : State} : a ∈ π.states ↔ a ∈ π := by
-  simp [List.mem_iff_getElem]
-  simp [Membership.mem, Fin.exists_iff]
-
-
-theorem Path.induction_on {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
-  {P : M.Path → Prop} (π : M.Path)
-  (single : P {π[0]}) (extend : ∀ π (s' : M.succs_univ π.last), P π → P (π.extend s')) :
-    P π := by
-  simp_all
-  obtain ⟨π, nonempty, progress⟩ := π
-  simp_all
-  induction π using List.reverseRecOn with
-  | nil => contradiction
-  | append_singleton l s' ih =>
-    simp_all
-    if nonempty' : l = [] then
-      subst_eqs
-      simp_all
-      exact single
-    else
-      simp_all
-      have := extend ⟨l, by simp_all, by
-          simp_all
-          intro i hi
-          have := progress i (by simp_all; omega)
-          simp [List.getElem_append] at this
-          split_ifs at this <;> try omega
-          exact this⟩ s'
-        (by
-          simp_all
-          have := progress (l.length - 1) (by simp_all [List.length_pos])
-          simp [List.getElem_append] at this
-          split_ifs at this <;> (try omega) <;> simp_all)
-      apply this
-      apply ih
-      simp_all
-      simp_all [List.getElem_append]
-      simp_all [List.length_pos]
-
-@[simp]
-theorem Path.mem_singleton {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
-    (s s' : State) : s ∈ (Path.instSingleton  (M:=M)).singleton s' ↔ s = s' := by
-  simp_all [instMembershipPath]
-  constructor
-  · simp_all
-  · intro; simp_all; exact Fin.isSome_find_iff.mp rfl
-
-@[simp]
-theorem Path.last_mem {State : Type*} {Act: Type*} [DecidableEq State] {M : MDP State Act}
-    (π : M.Path) : π.last ∈ π := by
-  simp_all [instMembershipPath]
-  use ⟨‖π‖ - 1, by simp⟩
-
 theorem le_of_s₁_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₁) {j : ℕ} (hj : j ≤ i) :
     π[j]'(by omega) = State.s₁ := by
   induction i, hj using Nat.le_induction with
@@ -407,7 +323,7 @@ theorem gt_of_s₂_eq_s₃ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i
   apply ge_of_s₁_eq_s₁ 𝓅 π this hj hj'
 
 theorem s₂_mem_of_s₁_s₃_mem (π : (𝒜 𝓅).Path) (hs₁ : .s₁ ∈ π) (hs₃ : .s₃ ∈ π) : State.s₂ ∈ π := by
-  simp_all [instMembershipPath]
+  simp_all [Path.mem_iff_getElem]
   obtain ⟨⟨i₁, h₁'⟩, h₁⟩ := hs₁
   obtain ⟨⟨i₃, h₃'⟩, h₃⟩ := hs₃
   have : i₁ < i₃ := by
@@ -438,9 +354,8 @@ theorem askdjaskdkjas (π : (𝒜 𝓅).Path) :
     ∨ (∃ j : ℕ, ∀ i : Fin ‖π‖, π[i] = if i < j then .s₁ else if i = j then .s₂ else .s₃) := by
   simp_all [or_iff_not_imp_left]
   intro s₁' hs₁' hs₁'' s₃' hs₃' hs₃''
-  simp_all [instMembershipPath]
+  simp_all [Path.mem_iff_getElem]
   suffices .s₂ ∈ π by
-    simp_all [instMembershipPath]
     obtain ⟨j, h⟩ := this
     use j
     intro i
@@ -450,7 +365,7 @@ theorem askdjaskdkjas (π : (𝒜 𝓅).Path) :
     · simp_all
     · simp_all
       apply gt_of_s₂_eq_s₃ 𝓅 π h <;> omega
-  simp [instMembershipPath]
+  simp [Path.mem_iff_getElem]
   obtain ⟨i₃, h₃⟩ := hs₁'
   obtain ⟨i₁, h₁⟩ := hs₃'
   rcases s₁' <;> simp_all
@@ -494,7 +409,7 @@ theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost 𝒜.cost π = 1
         have : Path.Cost 𝒜.cost π = 0 := by
           simp [Path.Cost]
           refine List.sum_eq_zero ?_
-          simp_all [instMembershipPath]
+          simp_all [Path.mem_iff_getElem]
           intro ⟨i, hi⟩
           simp_all
           have : π[i] = .s₁ := by
