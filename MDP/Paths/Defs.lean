@@ -127,6 +127,11 @@ theorem ext {π₁ π₂ : M.Path} (h₁ : ‖π₁‖ = ‖π₂‖)
   simp [length] at h₁ hi
   convert h₂ i (by simp [length]; omega)
 
+theorem ext_states {π₁ π₂ : M.Path} (h : π₁.states = π₂.states) : π₁ = π₂ := by
+  obtain ⟨_, _, _⟩ := π₁
+  obtain ⟨_, _, _⟩ := π₂
+  simp_all
+
 @[simp]
 theorem mk_states (states : List State) {h₁} {h₂} :
     (⟨states, h₁, h₂⟩ : M.Path).states = states := by simp
@@ -356,5 +361,31 @@ theorem succs_univ_eq_extend_range : π.succs_univ = Set.range π.extend := by
   · rintro ⟨_⟩ h
     exact Exists.intro _ (Exists.intro _ (π'.prev_extend h))
   · intros; subst_eqs; simp
+
+theorem induction_on
+  {P : M.Path → Prop} (π : M.Path)
+  (single : P {π[0]}) (extend : ∀ π (s' : M.succs_univ π.last), P π → P (π.extend s')) :
+    P π := by
+  obtain ⟨π, nonempty, progress⟩ := π
+  induction π using List.reverseRecOn with
+  | nil => contradiction
+  | append_singleton l s' ih =>
+    if nonempty' : l = [] then
+      subst_eqs
+      exact single
+    else
+      simp_all
+      apply extend ⟨l, nonempty', by
+          simp_all
+          intro i hi
+          have := progress i (by simp_all; omega)
+          simp [List.getElem_append] at this
+          split_ifs at this <;> try omega
+          exact this⟩ s'
+      · simp_all
+        have := progress (l.length - 1) (by simp_all [List.length_pos])
+        simp [List.getElem_append] at this
+        split_ifs at this <;> (try omega) <;> simp_all
+      · apply ih; simp_all [List.getElem_append, List.length_pos]
 
 end MDP.Path
