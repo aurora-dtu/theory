@@ -6,6 +6,23 @@ import MDP.Paths.Membership
 import MDP.Relational
 import MDP.SupSup
 
+namespace List
+
+variable {α : Type*}
+
+theorem take_append_cons_drop {l : List α} {s : α} {i : ℕ} (hi : i < l.length) (h : l[i] = s) :
+    l.take i ++ s :: l.drop (i + 1) = l := by
+  apply ext_getElem
+  · simp_all [inf_of_le_left hi.le]; omega
+  · simp_all [inf_of_le_left hi.le, getElem_append, getElem_cons]
+    intro j hj hj'
+    split_ifs
+    · rfl
+    · simp_all [(by omega : i = j)]
+    · congr; omega
+
+end List
+
 namespace MDP.Counterexample.C
 
 inductive State where | s₁ | s₂ | s₃
@@ -59,29 +76,16 @@ noncomputable def 𝒜 : MDP State ℕ := ofRelation (Step 𝓅)
   (by
     intro s α p₀ c₀ h
     cases h <;> simp_all [ite_and]
-    · rw [ENNReal.tsum_eq_add_tsum_ite .s₁]
-      simp_all [ite_and]
-      rw [ENNReal.tsum_eq_add_tsum_ite .s₂]
-      simp_all
-    · rw [ENNReal.tsum_eq_add_tsum_ite .s₁]
-      simp_all [ite_and]
-      rw [ENNReal.tsum_eq_add_tsum_ite .s₂]
-      simp_all)
-  (by
-    rintro (_ | ⟨i, j⟩) <;> simp_all
-    use 𝓅 0, 0, .s₁; simp)
+    · rw [ENNReal.tsum_eq_add_tsum_ite .s₁]; simp_all [ite_and]
+      rw [ENNReal.tsum_eq_add_tsum_ite .s₂]; simp_all
+    · rw [ENNReal.tsum_eq_add_tsum_ite .s₁]; simp_all [ite_and]
+      rw [ENNReal.tsum_eq_add_tsum_ite .s₂]; simp_all)
+  (by rintro (_ | ⟨i, j⟩) <;> simp_all; use 𝓅 0, 0, .s₁; simp)
 
-@[simp] def 𝒜.cost : (𝒜 ℯ).Costs
-| .s₂ => 1
-| _ => 0
+@[simp] def 𝒜.cost : (𝒜 ℯ).Costs | .s₂ => 1 | _ => 0
 
-@[simp]
-theorem 𝒜.act_eq : (𝒜 𝓅).act = fun s ↦ if s = .s₁ then Set.univ else {0} := by
-  ext s α
-  split_ifs
-  · subst_eqs; simp [𝒜]
-    aesop
-  · simp [𝒜]; cases s <;> simp_all
+@[simp] theorem 𝒜.act_eq : (𝒜 𝓅).act = fun s ↦ if s = .s₁ then Set.univ else {0} := by
+  ext s; cases s <;> simp_all [𝒜]; aesop
 
 variable {𝒮 : 𝔖[𝒜 𝓅]}
 
@@ -90,8 +94,7 @@ variable {𝒮 : 𝔖[𝒜 𝓅]}
 @[simp] theorem succs_univ_s₁ : (𝒜 𝓅).succs_univ .s₁ = {.s₁, .s₂} := by
   ext; simp_all [𝒜]
   constructor
-  · simp_all
-    rintro _ _ (⟨_, _⟩) <;> simp_all
+  · simp_all; rintro _ _ (⟨_, _⟩) <;> simp_all
   · rintro (_ | _) <;> (subst_eqs; simp_all)
 @[simp] theorem succs_univ_s₂ : (𝒜 𝓅).succs_univ .s₂ = {.s₃} := by simp [𝒜]
 @[simp] theorem succs_univ_s₃ : (𝒜 𝓅).succs_univ .s₃ = {.s₃} := by simp [𝒜]
@@ -114,7 +117,6 @@ noncomputable def 𝒮_len (a : ℕ) : 𝔖[𝒜 𝓅] := ⟨
 
 abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[𝒜 𝓅]) := 𝒮 {.s₁}
 
-
 @[simp] theorem EC_succ_s₃ : (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₃ = 0 := by
   induction n generalizing 𝒮 with
   | zero => simp_all
@@ -128,28 +130,15 @@ theorem EC_succ_s₁' :
     = 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁
         + (1 - 𝓅 (𝒮_s₁ 𝒮)) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₂]'(by simp) n .s₂
 := by
-  simp
   simp [EC_succ]
-  rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₁, by simp_all [𝒜]⟩]
-  rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₂, by simp_all [𝒜]⟩]
-  simp_all
-  simp_all [𝒜]
-  rw [ENNReal.tsum_eq_zero.mpr (by simp_all)]
-  simp_all
-  congr
+  rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₁, by simp⟩, ENNReal.tsum_eq_add_tsum_ite ⟨.s₂, by simp⟩]
+  simp_all [𝒜, ENNReal.tsum_eq_zero.mpr]
+  rfl
 
 theorem EC_succ_s₁ :
     (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁
   = 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁ + if n = 0 then 0 else 1 - 𝓅 (𝒮_s₁ 𝒮)
 := by simp [EC_succ_s₁']
-
--- example :
---       (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) .s₁ (n + 1)
---     = 1 + 𝓅 a * (𝒜 𝓅).EC 𝒜.cost (ℒ_a 𝓅 a) .s₁ n
--- := by
---   rw [EC_succ_s₁]
---   congr! 2
---   apply EC_eq (by simp_all)
 
 /-- Specializes the given scheduler with a chain of `n` repetitions of `[.s₁ ↦ .s₁]` s.t.
     `𝒮[.s₁ ↦ .s₁]^n`. -/
@@ -201,9 +190,7 @@ theorem iSup_EC_succ_s₁ :
     · apply le_iSup_of_le (n + 2)
       simp [EC_succ_s₁]
 
-example {f : ℕ → ENNReal} : ∑' n, f n = f 0 + ∑' n, f (n + 1) := tsum_eq_zero_add' (by simp)
-
-theorem asjhdasd : (𝒮.specialize State.s₁ ⟨State.s₁, by simp⟩) = 𝒮_x 𝓅 𝒮 1 := by rfl
+theorem specialize_eq_𝒮_x : 𝒮[.s₁ ↦ .s₁]'(by simp) = 𝒮_x 𝓅 𝒮 1 := by rfl
 
 theorem iSup_EC_succ_eq_iSup_EC :
     ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁ = ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ :=
@@ -212,28 +199,14 @@ theorem iSup_EC_succ_eq_iSup_EC :
 theorem iSup_EC_eq :
       ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁
     = ∑' n, (1 - 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 n))) * ∏ i ∈ Finset.range n, 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 i)) := by
-  rw [← iSup_EC_succ_eq_iSup_EC]
-  simp [ENNReal.tsum_eq_iSup_nat]
+  simp [← iSup_EC_succ_eq_iSup_EC, ENNReal.tsum_eq_iSup_nat]
   congr with n
   induction n generalizing 𝒮 with
   | zero => simp
   | succ n ih =>
-    rw [EC_succ_s₁]
-    simp
-    rw [ih]; clear ih
-    rw [Finset.sum_range_succ']
-    simp
-    simp [Finset.prod_range_succ']
-    conv =>
-      right
-      arg 1
-      arg 2
-      ext n
-      rw [← mul_assoc]
-    simp [← Finset.sum_mul]
-    nth_rw 2 [mul_comm]
-    simp [asjhdasd, 𝒮_x_add]
-    simp [add_comm]
+    rw [EC_succ_s₁, ih]; clear ih
+    simp [Finset.sum_range_succ', Finset.prod_range_succ', ← mul_assoc, ← Finset.sum_mul]
+    simp [specialize_eq_𝒮_x, 𝒮_x_add, add_comm, mul_comm]
 
 theorem Path_s₁_prior (π : (𝒜 𝓅).Path) (hi : i < ‖π‖) (h : π[i]'(hi) = State.s₁) (hij : j ≤ i) :
     π[j] = State.s₁ := by
@@ -339,105 +312,38 @@ theorem s₂_mem_of_s₁_s₃_mem (π : (𝒜 𝓅).Path) (hs₁ : .s₁ ∈ π)
     if π[i₁ + 1] = State.s₁ then
       apply ih (i₁ + 1) <;> try omega
       · simp_all
-      · rw [← h₃]
-        congr! 1
-        simp
-        omega
+      · rw [← h₃]; congr! 1; simp; omega
     else
       have := π.property i₁ (by simp_all; omega)
       simp_all
       use ⟨i₁ + 1, by omega⟩
 
-theorem askdjaskdkjas (π : (𝒜 𝓅).Path) :
-      (∀ s ∈ π, s = .s₁)
-    ∨ (∀ s ∈ π, s = .s₃)
-    ∨ (∃ j : ℕ, ∀ i : Fin ‖π‖, π[i] = if i < j then .s₁ else if i = j then .s₂ else .s₃) := by
-  simp_all [or_iff_not_imp_left]
-  intro s₁' hs₁' hs₁'' s₃' hs₃' hs₃''
-  simp_all [Path.mem_iff_getElem]
-  suffices .s₂ ∈ π by
-    obtain ⟨j, h⟩ := this
-    use j
-    intro i
-    split_ifs with h₁ h₂
-    · simp_all
-      exact lt_of_s₂_eq_s₁ 𝓅 π h h₁
-    · simp_all
-    · simp_all
-      apply gt_of_s₂_eq_s₃ 𝓅 π h <;> omega
-  simp [Path.mem_iff_getElem]
-  obtain ⟨i₃, h₃⟩ := hs₁'
-  obtain ⟨i₁, h₁⟩ := hs₃'
-  rcases s₁' <;> simp_all
-  · use i₃
-  · rcases s₃' <;> simp_all
-    · obtain ⟨i₁, h₁'⟩ := i₁
-      obtain ⟨i₃, h₃'⟩ := i₃
-      simp_all
-      exact s₂_mem_of_s₁_s₃_mem 𝓅 π ⟨⟨i₁, h₁'⟩, h₁⟩ ⟨⟨i₃, h₃'⟩, h₃⟩
-    · use i₁
-
 theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost 𝒜.cost π = 1 := by
   rename_i 𝓅
   obtain ⟨⟨i, hi⟩, hi'⟩ := hs₂
-  simp_all
-  induction π using Path.induction_on with
-  | single => simp_all [Path.Cost, Path.instSingleton]
-  | extend π s' ih =>
-    obtain ⟨s', hs'⟩ := s'
-    simp_all [Path.extend_Cost]
-    rcases i with _ | i
-    · simp_all [𝒜]
-      simp_all [𝒜]
-      simp_all [𝒜]
-      if ‖π‖ = 1 then
-        simp_all
-      else
-        have : π.last = .s₃ := by
-          rw [Path.last]
-          apply gt_of_s₂_eq_s₃ (i:=0) _ π  hi' <;> simp_all
-        simp_all
-        obtain ⟨α, p, h⟩ := hs'
-        have : .s₃ ⤳[𝓅,α,p] s' := by convert h; exact this.symm
-        simp_all
-    · rw [π.extend_getElem_succ (i := ⟨i, by simp at hi; omega⟩)] at hi'
-      simp_all
-      split_ifs at hi'
-      · subst_eqs
-        simp_all [𝒜]
-        simp_all [𝒜]
-        have : Path.Cost 𝒜.cost π = 0 := by
-          simp [Path.Cost]
-          refine List.sum_eq_zero ?_
-          simp_all [Path.mem_iff_getElem]
-          intro ⟨i, hi⟩
-          simp_all
-          have : π[i] = .s₁ := by
-            apply le_of_s₁_eq_s₁ (i:=‖π‖ - 1) _ π
-            · exact hs'
-            · omega
-          simp_all
-        simp_all
-      · simp_all
-        simp_all [𝒜]
-        have := ih (by simp at hi; omega)
-        simp_all
-        split <;> try simp_all
-        simp [𝒜] at hs'
-        have : i + 1 < ‖π‖ := by simp at hi; omega
-        if i + 1 < ‖π‖ - 1 then
-          have := gt_of_s₂_eq_s₃ 𝓅 π (i:=i + 1) (j:=‖π‖ - 1) (hi:=this) hi'
-          simp_all
-          have : State.s₁ = State.s₃ := by
-            rw [← hs', ← this]
-            rfl
-          simp at this
-        else
-          simp_all
-          have : i = ‖π‖ - 2 := by omega
-          subst_eqs
-          have : ‖π‖ - 2 + 1 = ‖π‖ - 1 := by omega
-          simp_all
+  obtain ⟨states, nonempty, progress⟩ := π
+  simp at hi
+  have := List.take_append_cons_drop hi hi'
+  simp [Path.Cost]
+  rw [← this]
+  simp
+  rw [← add_comm, add_assoc]
+  have : ∀ x : ENNReal, x = 0 → 1 + x = 1 := by rintro x ⟨_⟩; simp
+  apply this; clear this
+  simp
+  constructor <;> apply List.sum_eq_zero
+  · simp_all [List.mem_drop_iff_getElem]
+    intro s j hs hs'
+    split at hs'
+    · suffices states[i + 1 + j] = .s₃ by simp_all
+      apply gt_of_s₂_eq_s₃ 𝓅 ⟨states, nonempty, progress⟩ hi' (by omega) (by simp; omega)
+    · simp_all
+  · simp_all [List.mem_take_iff_getElem]
+    intro s j hs hs'
+    split at hs'
+    · suffices states[j] = .s₁ by simp_all
+      apply lt_of_s₂_eq_s₁ 𝓅 ⟨states, nonempty, progress⟩ hi'; simp_all
+    · simp_all
 
 theorem EC_𝒮_len' :
       (𝒜 𝓅).EC 𝒜.cost (𝒮_len 𝓅 i) n .s₁
@@ -462,7 +368,7 @@ theorem EC_𝒮_len' :
       apply s₂_mem_of_s₁_s₃_mem _ _ _ hs
       exact ⟨⟨0, by simp⟩, hπ.right⟩
 
-theorem asdjhsad :
+theorem tsum_paths_eq_ite_tprod :
       (∑' π : Path[𝒜 𝓅,.s₁,=n], if ∀ s ∈ π.val, s = .s₁ then π.val.Prob (𝒮_len 𝓅 i) else 0)
     = if n = 0 then 0 else ∏ x : Fin (n - 1), 𝓅 (x + i + 1) := by
   rcases n with _ | n
@@ -531,7 +437,7 @@ theorem iInf_iSup_EC_ab :
   intro n
   apply le_iSup_of_le n
   simp only [EC_𝒮_len', AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false, ↓reduceIte]
-  simp [asdjhsad (𝓅:=p) (i:=0)]
+  simp [tsum_paths_eq_ite_tprod]
   split_ifs <;> simp_all
 
 theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) - 1) := by
@@ -549,7 +455,6 @@ theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) -
     simp [← ENNReal.rpow_add]
     congr! 1
     ring_nf
-    simp_all
     rw [@mul_div_left_comm]
     simp_all [@neg_inv]
     rw [@add_neg_eq_iff_eq_add]
@@ -570,28 +475,19 @@ theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) -
 theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
     ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[𝒜 p], ⨆ n, (𝒜 p).EC 𝒜.cost ℒ n .s₁ := by
   simp [iInf_iSup_ECℒ]
-  apply (iInf_iSup_EC_ab).trans_lt
+  apply iInf_iSup_EC_ab.trans_lt
   refine iSup_lt_iff.mpr ?_
   use 1/2
   simp_all
-  · intro n
-    rcases n with _ | n
+  · rintro (_ | n)
     · simp
-    · simp
-      simp [prod_p_eq']
-      ring_nf
-      have : (2 : ENNReal)⁻¹ = 1 - 2⁻¹ := by rw [ENNReal.one_sub_inv_two]
-      rw [this]; clear this
-      rw [ENNReal.sub_add_eq_add_sub] <;> simp
-      apply ENNReal.le_sub_of_add_le_left (by simp)
-      rw [add_comm]
-      gcongr
-      have : (2 : ENNReal)⁻¹ = 2^(-1:ℝ) := by rw [ENNReal.rpow_neg_one]
-      rw [this]
-      gcongr
-      · simp
-      · simp_all
-        apply Real.rpow_nonneg
-        simp
+    simp [prod_p_eq']
+    ring_nf
+    rw [← ENNReal.one_sub_inv_two, ENNReal.sub_add_eq_add_sub (by simp) (by simp)]
+    apply ENNReal.le_sub_of_add_le_left (by simp)
+    rw [add_comm]
+    gcongr
+    rw [← ENNReal.rpow_neg_one]
+    gcongr <;> simp_all [Real.rpow_nonneg zero_le_two]
 
 end MDP.Counterexample.C
