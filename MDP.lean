@@ -20,7 +20,7 @@ This module concerns itself with countably infinite branching MDPs.
 * `MDP.EC`: Expected total cost.
 * `MDP.iInf_iSup_EC_comm_lfp_Φ_all_eq`: Relation of different formalization of _optimal expected
   cost_ equivalent for finitely branching MDPs.
-* `MDP.iSup_iSup_EC_eq_lfp_Φ_iSup`: Fixed point characterization of _maximal expected cost_.
+* `MDP.iSup_iSup_EC_eq_lfp_Ψ`: Fixed point characterization of _maximal expected cost_.
 -/
 
 namespace MDP

@@ -10,10 +10,7 @@ variable {State : Type*} {Act : Type*}
 
 variable (M : MDP State Act)
 
-def P (s : State) (a : Act) (s' : State) :=
-  match M.P' s a with
-  | some pmf => pmf s'
-  | none => 0
+def P (s : State) (a : Act) (s' : State) := if let some pmf := M.P' s a then pmf s' else 0
 
 def act (s : State) : Set Act := (M.P s).support
 def succs (α : Act) (s : State) : Set State := (M.P s α).support
@@ -28,6 +25,35 @@ class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite
   succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
 
+noncomputable def ofP (P : State → Act → State → ENNReal)
+    (h₁ : ∀ s α, ∑' s', P s α s' = 0 ∨ ∑' s', P s α s' = 1)
+    (h₂ : ∀ s, ∃ α s', 0 < P s α s') : MDP State Act where
+  P' s α :=
+    have : Decidable (α ∈ (P s).support) := Classical.propDecidable _
+    if h : α ∈ (P s).support then some ⟨P s α, by
+      apply (Summable.hasSum_iff ENNReal.summable).mpr
+      rcases h₁ s α with h₁ | _
+      · simp_all
+        apply h
+        exact (Set.eqOn_univ (P s α) 0).mp fun ⦃x⦄ a ↦ h₁ x
+      · simp_all⟩
+    else none
+  exists_P'_isSome := by
+    intro s
+    obtain ⟨α, s', hα⟩ := h₂ s
+    use α
+    simp_all
+    intro p
+    simp_all only [Pi.zero_apply, lt_self_iff_false]
+
+@[simp]
+theorem ofP_P (P : State → Act → State → ENNReal) (h₁) (h₂) : (ofP P h₁ h₂).P = P := by
+  ext s α s'
+  simp [ofP, MDP.P]
+  split_ifs
+  · simp; rfl
+  · simp_all
+
 @[simp] lemma P_le_one (s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
   unfold P
   split
@@ -38,18 +64,18 @@ class FiniteBranching where
   M.P_le_one s a s' |>.trans_lt ENNReal.one_lt_top |>.ne
 
 instance [Fintype Act] : Finite (M.act s) := Subtype.finite
-noncomputable instance act.instFintype [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
-noncomputable instance act.instNonEmpty : Nonempty (M.act s) :=
+noncomputable instance instFintypeAct [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
+noncomputable instance instNonemptyAct : Nonempty (M.act s) :=
   have ⟨α, hα⟩ := M.exists_P'_isSome s
   have ⟨pmf, _⟩ := Option.isSome_iff_exists.mp hα
   have ⟨s', h⟩ := pmf.support_nonempty
   ⟨α, Function.ne_iff.mpr ⟨s', by simp_all [P]⟩⟩
 
 noncomputable def default_act (s : State) : Act :=
-  (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose
+  (nonempty_subtype.mp <| M.instNonemptyAct (s:=s)).choose
 @[simp]
 theorem default_act_spec (s : State) : M.default_act s ∈ M.act s :=
-  (nonempty_subtype.mp <| act.instNonEmpty M (s:=s)).choose_spec
+  (nonempty_subtype.mp <| M.instNonemptyAct (s:=s)).choose_spec
 
 instance [i : M.FiniteBranching] : Finite (M.act s) := i.act_fin s
 noncomputable instance [M.FiniteBranching] : Fintype (M.act s) := Fintype.ofFinite (M.act s)
@@ -67,7 +93,7 @@ theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.P s a).suppo
   simp_all [act₀_mem_iff_act_mem, act]
 
 noncomputable instance [M.FiniteBranching] : Nonempty (M.act₀ s) := by
-  simp_all [act.instNonEmpty M]
+  simp_all [M.instNonemptyAct]
 
 noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s).Nonempty :=
   Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀

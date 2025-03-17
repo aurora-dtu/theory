@@ -28,9 +28,11 @@ theorem ofRelation_P : (ofRelation r h₀ h₁ h₂).P = fun c α c' ↦ ∑' p 
   ext c α c'
   simp [ofRelation]
   symm
-  split <;> simp_all <;> rename_i h'
+  split_ifs with h'
   · obtain ⟨_, ⟨_⟩⟩ := h'; rfl
-  · exact fun p h ↦ False.elim (h' p (pos_iff_ne_zero.mpr (h₀ h)) c' h)
+  · simp_all
+    intro x
+    by_cases 0 < x <;> simp_all only [IsEmpty.forall_iff, not_lt, nonpos_iff_eq_zero, implies_true]
 
 @[simp]
 theorem ofRelation_act : (ofRelation r h₀ h₁ h₂).act = fun c ↦ {α | ∃ p c', r c α p c'} := by
