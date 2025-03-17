@@ -16,9 +16,9 @@ To build the project, one needs to install Lean. The recommended approach is to 
 - **_Markov Decision Processes_ (MDP)** [[Docs](https://aurora-dtu.github.io/theory/MDP.html)]
     - Formalization of countably infinite branching MDP.
     - Optimal expected cost of MDPs.
-    - Fixed point formalization of expected cost and relation to finitly branching MDPs.
+    - Fixed point formalization of expected cost and relation to finitely branching MDPs.
     - Connecting different interpretations of optimal expected cost across optimization order and history-dependence.
-- **_probobalistic Guarded Command Language_ (pGCL)** [[Docs](https://aurora-dtu.github.io/theory/PGCL.html)]
+- **_probabilistic Guarded Command Language_ (pGCL)** [[Docs](https://aurora-dtu.github.io/theory/PGCL.html)]
     - Definition of a variant of pGCL and its operational semantics.
     - The induced MDP of the operational semantics of pGCL to define the expected costs of programs.
     - Connecting the _Weakest Preexpectation_ (WP) of pGCL programs to the optimal expected cost of the induced operational MDP by way of least fixed points.
