@@ -345,7 +345,7 @@ noncomputable def p' (n : ℕ) : ENNReal := 1 - (1/2)^(n + 1) -- 1/2*(1 - (1/2)^
 
 -- 1 + p 1 + p 1 * p 2 + p 1 * p 2 * p 3 + ...
 
-theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt (h : sufficient_lt) :
+theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficient_lt (h : sufficient_lt) :
     ∃ 𝓅, ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ < ⨆ 𝒮, ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ := by
   obtain ⟨𝓅, h⟩ := h
   use 𝓅
@@ -364,10 +364,10 @@ theorem iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt (h : sufficient_lt) :
 
 
 
-theorem exists_iSup_iSup_ECℒ_lt_iSup_iSup_EC_if_sufficent_lt (h : sufficient_lt) :
+theorem exists_iSup_iSup_ECℒ_lt_iSup_iSup_EC_if_sufficient_lt (h : sufficient_lt) :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n s < ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s := by
-  obtain ⟨𝓅, h⟩ := iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficent_lt h
+  obtain ⟨𝓅, h⟩ := iSup_iSup_EC_lt_iSup_iSup_ECℒ_if_sufficient_lt h
   use State, Option ℕ, 𝒜 𝓅, 𝒜.cost, .s₁
   sorry
 
