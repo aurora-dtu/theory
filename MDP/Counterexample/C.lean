@@ -8,6 +8,50 @@ import MDP.SupSup
 
 namespace List
 
+/-!
+# Counterexample exhibiting `⨅ 𝒮, ⨆ n, EC c 𝒮 n < ⨅ ℒ, ⨆ n, EC c ℒ n`
+
+```
+        $0          $1          $0
+     ┌─►s₁─────────►s₂─────────►s₃─┐
+𝓅(α) │  │   1-𝓅(α)        1     ▲  │ 1
+     └──┘                       └──┘
+```
+
+**Setup:** ([instance](#MDP.Counterexample.C.M))
+- The MDP consists three states `s₁`, `s₂`, and, `s₃` and actions `ℕ`.
+- State `s₁` has all actions enabled (i.e. all `ℕ`) while `s₂` and `s₃` only has `0` enabled.
+- The MDP is parameterized by a probability function `𝓅 : ℕ → ℝ≥0∞` where `0 < 𝓅 < 1` that
+  dictates the probability in `s₁` such that `P(s₁, i, s₁) = 𝓅(i)` and `P(s₁, i, s₂) = 1 - 𝓅(i)`
+  for all `i ∈ ℕ`.
+- The remaining probabilities are `P(s₂, 0, s₃) = 1` and `P(s₃, 0, s₃) = 1`, with all others being
+  `0`.
+- State `s₁` and `s₃` has cost `0` and `s₂` has cost `1`.
+
+Note that if we were to ever leave `s₁` we would get a incur a cost of `1`, and thus in order to get
+minimal cost (`0`) one would have to stay in `s₁` forever.
+
+Now, there's no way to pick `0 < 𝓅 < 1` such that the outgoing probability `1 - 𝓅(α)` is zero, we
+must instead try to minimize it.
+
+For a fixed `α` the probability of staying `n` times `𝓅(α)ⁿ` which in the limit is `0`, and thus
+the probability of leaving is `1`.
+
+As a Markovian scheduler will always pick the same action in the same state, we find ourself in the
+above scenario, and will thus have an expected cost of `1` for any Markovian scheduler, regardless
+of choice of `𝓅`.
+
+The task now is to pick `𝓅` such to exploit the history of a scheduled path to beat the Markovian
+scheduler.
+
+By carefully picking `𝓅(n) = (2 ^ (2 ^ n)⁻¹)⁻¹` and using the scheduler that picks an action based
+on the length of the scheduled path, such that, `𝒮(π) = ‖π‖`, we find that _in the limit_ the
+probability of staying (and of leaving) is `1/2`, and thus the expected cost is `1/2`.
+
+This leads us to conclude `iInf_iSup_EC_lt_iInf_iSup_ECℒ`.
+
+-/
+
 variable {α : Type*}
 
 theorem take_append_cons_drop {l : List α} {s : α} {i : ℕ} (hi : i < l.length) (h : l[i] = s) :
@@ -58,8 +102,7 @@ local notation c " ⤳[" 𝓅 "," α "," p "] " c' => Step 𝓅 c α p c'
 
 noncomputable instance : Decidable (c ⤳[𝓅,α,p] c') := Classical.propDecidable _
 
-@[simp] theorem s₁_iff :
-    (.s₁ ⤳[𝓅,α,p] s') ↔ (s' = .s₁ ∧ p = 𝓅 α ∨ s' = .s₂ ∧ p = 1 - 𝓅 α) := by aesop
+@[simp] theorem s₁_iff : (.s₁ ⤳[𝓅,α,p] s') ↔ s' = .s₁ ∧ p = 𝓅 α ∨ s' = .s₂ ∧ p = 1 - 𝓅 α := by aesop
 @[simp] theorem iff_s₁ : (s ⤳[𝓅,α,p] .s₁) ↔ s = .s₁ ∧ p = 𝓅 α := by aesop
 @[simp] theorem s₂_iff : (.s₂ ⤳[𝓅,α,p] s') ↔ α = 0 ∧ p = 1 ∧ s' = .s₃ := by aesop
 @[simp] theorem iff_s₂ : (s ⤳[𝓅,α,p] .s₂) ↔ s = .s₁ ∧ p = 1 - 𝓅 α := by aesop
@@ -71,7 +114,7 @@ theorem tsum_p :
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩) <;> simp_all
   exact StrictMono.injective fun _ _ a ↦ a
 
-noncomputable def 𝒜 : MDP State ℕ := ofRelation (Step 𝓅)
+noncomputable def M : MDP State ℕ := ofRelation (Step 𝓅)
   (by rintro s α p s' (_ | _) <;> simp_all)
   (by
     intro s α p₀ c₀ h
@@ -82,67 +125,67 @@ noncomputable def 𝒜 : MDP State ℕ := ofRelation (Step 𝓅)
       rw [ENNReal.tsum_eq_add_tsum_ite .s₂]; simp_all)
   (by rintro (_ | ⟨i, j⟩) <;> simp_all; use 𝓅 0, 0, .s₁; simp)
 
-@[simp] def 𝒜.cost : (𝒜 ℯ).Costs | .s₂ => 1 | _ => 0
+@[simp] def M.cost : (M ℯ).Costs | .s₂ => 1 | _ => 0
 
-@[simp] theorem 𝒜.act_eq : (𝒜 𝓅).act = fun s ↦ if s = .s₁ then Set.univ else {0} := by
-  ext s; cases s <;> simp_all [𝒜]; aesop
+@[simp] theorem M.act_eq : (M 𝓅).act = fun s ↦ if s = .s₁ then Set.univ else {0} := by
+  ext s; cases s <;> simp_all [M]; aesop
 
-variable {𝒮 : 𝔖[𝒜 𝓅]}
+variable {𝒮 : 𝔖[M 𝓅]}
 
 @[simp] theorem 𝒮_s₂ : 𝒮 {.s₂} = 0 := by have := 𝒮.mem_act {.s₂}; simp_all
 @[simp] theorem 𝒮_s₃ : 𝒮 {.s₃} = 0 := by have := 𝒮.mem_act {.s₃}; simp_all
-@[simp] theorem succs_univ_s₁ : (𝒜 𝓅).succs_univ .s₁ = {.s₁, .s₂} := by
-  ext; simp_all [𝒜]
+@[simp] theorem succs_univ_s₁ : (M 𝓅).succs_univ .s₁ = {.s₁, .s₂} := by
+  ext; simp_all [M]
   constructor
   · simp_all; rintro _ _ (⟨_, _⟩) <;> simp_all
   · rintro (_ | _) <;> (subst_eqs; simp_all)
-@[simp] theorem succs_univ_s₂ : (𝒜 𝓅).succs_univ .s₂ = {.s₃} := by simp [𝒜]
-@[simp] theorem succs_univ_s₃ : (𝒜 𝓅).succs_univ .s₃ = {.s₃} := by simp [𝒜]
+@[simp] theorem succs_univ_s₂ : (M 𝓅).succs_univ .s₂ = {.s₃} := by simp [M]
+@[simp] theorem succs_univ_s₃ : (M 𝓅).succs_univ .s₃ = {.s₃} := by simp [M]
 
-def ℒ_a (a : ℕ) : 𝔏[𝒜 𝓅] := ⟨⟨
+def ℒ_a (a : ℕ) : 𝔏[M 𝓅] := ⟨⟨
   fun π ↦ if π.last = .s₁ then a else 0,
   fun π ↦ by simp_all⟩,
   by constructor; intro π; simp⟩
 
-@[simp] theorem default_act_s₂ : (𝒜 𝓅).default_act State.s₂ = 0 := by simp [default_act]
-@[simp] theorem default_act_s₃ : (𝒜 𝓅).default_act State.s₃ = 0 := by simp [default_act]
+@[simp] theorem default_act_s₂ : (M 𝓅).default_act State.s₂ = 0 := by simp [default_act]
+@[simp] theorem default_act_s₃ : (M 𝓅).default_act State.s₃ = 0 := by simp [default_act]
 
 /-- Picks the action proportional to the length of the scheduled path -/
-noncomputable def 𝒮_len (a : ℕ) : 𝔖[𝒜 𝓅] := ⟨
-  fun π ↦ if π.last = .s₁ then (a + ‖π‖) else (𝒜 𝓅).default_act π.last,
+noncomputable def 𝒮_len (a : ℕ) : 𝔖[M 𝓅] := ⟨
+  fun π ↦ if π.last = .s₁ then (a + ‖π‖) else (M 𝓅).default_act π.last,
   fun π ↦ by
     simp_all
     set s := π.last with h
     symm at h; rcases s <;> simp_all⟩
 
-abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[𝒜 𝓅]) := 𝒮 {.s₁}
+abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[M 𝓅]) := 𝒮 {.s₁}
 
-@[simp] theorem EC_succ_s₃ : (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₃ = 0 := by
+@[simp] theorem EC_succ_s₃ : (M 𝓅).EC M.cost 𝒮 n .s₃ = 0 := by
   induction n generalizing 𝒮 with
   | zero => simp_all
   | succ n ih => simp_all [EC_succ]
 
-@[simp] theorem EC_succ_s₂ : (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₂ = if n = 0 then 0 else 1 := by
-  rcases n <;> simp_all [EC_succ]; rw [tsum_eq_single ⟨.s₃, by simp_all [𝒜]⟩] <;> simp_all
+@[simp] theorem EC_succ_s₂ : (M 𝓅).EC M.cost 𝒮 n .s₂ = if n = 0 then 0 else 1 := by
+  rcases n <;> simp_all [EC_succ]; rw [tsum_eq_single ⟨.s₃, by simp_all [M]⟩] <;> simp_all
 
 theorem EC_succ_s₁' :
-      (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁
-    = 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁
-        + (1 - 𝓅 (𝒮_s₁ 𝒮)) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₂]'(by simp) n .s₂
+      (M 𝓅).EC M.cost 𝒮 (n + 1) .s₁
+    = 𝓅 (𝒮_s₁ 𝒮) * (M 𝓅).EC M.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁
+        + (1 - 𝓅 (𝒮_s₁ 𝒮)) * (M 𝓅).EC M.cost 𝒮[.s₁ ↦ .s₂]'(by simp) n .s₂
 := by
   simp [EC_succ]
   rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₁, by simp⟩, ENNReal.tsum_eq_add_tsum_ite ⟨.s₂, by simp⟩]
-  simp_all [𝒜, ENNReal.tsum_eq_zero.mpr]
+  simp_all [M, ENNReal.tsum_eq_zero.mpr]
   rfl
 
 theorem EC_succ_s₁ :
-    (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁
-  = 𝓅 (𝒮_s₁ 𝒮) * (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁ + if n = 0 then 0 else 1 - 𝓅 (𝒮_s₁ 𝒮)
+    (M 𝓅).EC M.cost 𝒮 (n + 1) .s₁
+  = 𝓅 (𝒮_s₁ 𝒮) * (M 𝓅).EC M.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁ + if n = 0 then 0 else 1 - 𝓅 (𝒮_s₁ 𝒮)
 := by simp [EC_succ_s₁']
 
 /-- Specializes the given scheduler with a chain of `n` repetitions of `[.s₁ ↦ .s₁]` s.t.
     `𝒮[.s₁ ↦ .s₁]^n`. -/
-noncomputable def 𝒮_x (𝒮 : 𝔖[𝒜 𝓅]) : ℕ → 𝔖[𝒜 𝓅]
+noncomputable def 𝒮_x (𝒮 : 𝔖[M 𝓅]) : ℕ → 𝔖[M 𝓅]
 | 0 => 𝒮
 | n + 1 => (𝒮_x 𝒮 n)[.s₁ ↦ ⟨.s₁, by simp⟩]
 
@@ -153,11 +196,11 @@ theorem 𝒮_x_add : 𝒮_x 𝓅 (𝒮_x 𝓅 𝒮 n) m = 𝒮_x 𝓅 𝒮 (n + 
     rw [add_comm, ← add_assoc]
     simp [← ih]
     rfl
-noncomputable def 𝒮_x_alt (𝒮 : 𝔖[𝒜 𝓅]) : ℕ → 𝔖[𝒜 𝓅]
+noncomputable def 𝒮_x_alt (𝒮 : 𝔖[M 𝓅]) : ℕ → 𝔖[M 𝓅]
   | 0 => 𝒮
   | n + 1 => 𝒮_x 𝓅 𝒮[.s₁ ↦ ⟨.s₁, by simp⟩] n
 
-theorem 𝒮_x_eq_alt (𝒮 : 𝔖[𝒜 𝓅]) :
+theorem 𝒮_x_eq_alt (𝒮 : 𝔖[M 𝓅]) :
     𝒮_x 𝓅 𝒮 n = 𝒮_x_alt 𝓅 𝒮 n := by
   induction n generalizing 𝒮 with
   | zero => rfl
@@ -170,8 +213,8 @@ theorem 𝒮_x_eq_alt (𝒮 : 𝔖[𝒜 𝓅]) :
 @[simp] theorem 𝒮_x_zero : 𝒮_x 𝓅 𝒮 0 = 𝒮 := rfl
 
 theorem iSup_EC_succ_s₁ :
-      ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁
-    = 𝓅 (𝒮_s₁ 𝒮) * (⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁) + (1 - 𝓅 (𝒮_s₁ 𝒮))
+      ⨆ n, (M 𝓅).EC M.cost 𝒮 n .s₁
+    = 𝓅 (𝒮_s₁ 𝒮) * (⨆ n, (M 𝓅).EC M.cost 𝒮[.s₁ ↦ .s₁]'(by simp) n .s₁) + (1 - 𝓅 (𝒮_s₁ 𝒮))
 := by
   apply le_antisymm
   · simp
@@ -193,11 +236,11 @@ theorem iSup_EC_succ_s₁ :
 theorem specialize_eq_𝒮_x : 𝒮[.s₁ ↦ .s₁]'(by simp) = 𝒮_x 𝓅 𝒮 1 := by rfl
 
 theorem iSup_EC_succ_eq_iSup_EC :
-    ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 (n + 1) .s₁ = ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁ :=
+    ⨆ n, (M 𝓅).EC M.cost 𝒮 (n + 1) .s₁ = ⨆ n, (M 𝓅).EC M.cost 𝒮 n .s₁ :=
   (iSup_le fun n ↦ le_iSup_of_le (n + 1) (by rfl)).antisymm (iSup_le (le_iSup_of_le · EC_le_succ))
 
 theorem iSup_EC_eq :
-      ⨆ n, (𝒜 𝓅).EC 𝒜.cost 𝒮 n .s₁
+      ⨆ n, (M 𝓅).EC M.cost 𝒮 n .s₁
     = ∑' n, (1 - 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 n))) * ∏ i ∈ Finset.range n, 𝓅 (𝒮_s₁ (𝒮_x 𝓅 𝒮 i)) := by
   simp [← iSup_EC_succ_eq_iSup_EC, ENNReal.tsum_eq_iSup_nat]
   congr with n
@@ -208,14 +251,14 @@ theorem iSup_EC_eq :
     simp [Finset.sum_range_succ', Finset.prod_range_succ', ← mul_assoc, ← Finset.sum_mul]
     simp [specialize_eq_𝒮_x, 𝒮_x_add, add_comm, mul_comm]
 
-theorem Path_s₁_prior (π : (𝒜 𝓅).Path) (hi : i < ‖π‖) (h : π[i]'(hi) = State.s₁) (hij : j ≤ i) :
+theorem Path_s₁_prior (π : (M 𝓅).Path) (hi : i < ‖π‖) (h : π[i]'(hi) = State.s₁) (hij : j ≤ i) :
     π[j] = State.s₁ := by
   induction i, hij using Nat.le_induction with
   | base => exact h
   | succ n h' ih =>
     apply ih (by omega)
     have := π.succs_succs_nat (i:=n) (by omega)
-    simp_all [𝒜, step_iff]
+    simp_all [M, step_iff]
 
 @[simp]
 theorem 𝒮_x_𝒮_len_one : (𝒮_x 𝓅 (𝒮_len 𝓅 n) 1) = 𝒮_len 𝓅 (n + 1) := by
@@ -232,21 +275,17 @@ theorem 𝒮_x_𝒮_len_one : (𝒮_x 𝓅 (𝒮_len 𝓅 n) 1) = 𝒮_len 𝓅 
 theorem 𝒮_x_𝒮_len : (𝒮_x 𝓅 (𝒮_len 𝓅 n) m) = 𝒮_len 𝓅 (n + m) := by
   induction m generalizing n with
   | zero => simp [𝒮_x]
-  | succ m ih =>
-    rw [add_comm, ← 𝒮_x_add]
-    simp
-    rw [ih]
-    ring_nf
+  | succ m ih => simp [add_comm, ← 𝒮_x_add, ih]; ring_nf
 
 @[simp] theorem 𝒮_s₁_𝒮_len : 𝒮_s₁ (𝒮_len 𝓅 i) = i + 1 := by
   simp [𝒮_s₁, 𝒮_len]
 
 theorem iSup_EC_𝒮_len :
-      ⨆ n, (𝒜 𝓅).EC 𝒜.cost (𝒮_len 𝓅 i) n .s₁
+      ⨆ n, (M 𝓅).EC M.cost (𝒮_len 𝓅 i) n .s₁
     = ∑' (n : ℕ), (1 - 𝓅 (i + n + 1)) * ∏ x ∈ Finset.range n, 𝓅 (i + x + 1) := by
   simp [iSup_EC_eq]
 
-theorem le_of_s₁_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₁) {j : ℕ} (hj : j ≤ i) :
+theorem le_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₁) {j : ℕ} (hj : j ≤ i) :
     π[j]'(by omega) = State.s₁ := by
   induction i, hj using Nat.le_induction with
   | base => exact h
@@ -254,10 +293,10 @@ theorem le_of_s₁_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i
     apply ih
     · have := π.property n (by simp; omega)
       simp at this
-      simp_all [𝒜]
+      simp_all [M]
     · omega
 
-theorem ge_of_s₁_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₃) (hj : i ≤ j)
+theorem ge_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₃) (hj : i ≤ j)
     (hj' : j < ‖π‖) : π[j]'(by omega) = State.s₃ := by
   obtain ⟨j, _, _⟩ := Nat.exists_eq_add_of_le hj
   simp_all
@@ -271,31 +310,31 @@ theorem ge_of_s₁_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i
     · omega
     · omega
 
-theorem lt_of_s₂_eq_s₁ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : j < i) :
+theorem lt_of_s₂_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : j < i) :
     π[j]'(by omega) = State.s₁ := by
   rcases hj with _ | hj
   · simp_all
     have := π.property j (by simp; omega)
     simp at this
-    simp_all [𝒜]
+    simp_all [M]
   · rename_i n
     simp_all
     apply le_of_s₁_eq_s₁ (i:=j+1)
     · apply le_of_s₁_eq_s₁ (i:=n)
       · have := π.property n (by simp; omega)
         simp at this
-        simp_all [𝒜]
+        simp_all [M]
       · simp_all
       · omega
     · simp_all
 
-theorem gt_of_s₂_eq_s₃ (π : (𝒜 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : i < j)
+theorem gt_of_s₂_eq_s₃ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : i < j)
     (hj' : j < ‖π‖) : π[j]'(by omega) = State.s₃ := by
   have := π.property i (by simp_all; omega)
   simp_all
   apply ge_of_s₁_eq_s₁ 𝓅 π this hj hj'
 
-theorem s₂_mem_of_s₁_s₃_mem (π : (𝒜 𝓅).Path) (hs₁ : .s₁ ∈ π) (hs₃ : .s₃ ∈ π) : State.s₂ ∈ π := by
+theorem s₂_mem_of_s₁_s₃_mem (π : (M 𝓅).Path) (hs₁ : .s₁ ∈ π) (hs₃ : .s₃ ∈ π) : State.s₂ ∈ π := by
   simp_all [Path.mem_iff_getElem]
   obtain ⟨⟨i₁, h₁'⟩, h₁⟩ := hs₁
   obtain ⟨⟨i₃, h₃'⟩, h₃⟩ := hs₃
@@ -318,7 +357,7 @@ theorem s₂_mem_of_s₁_s₃_mem (π : (𝒜 𝓅).Path) (hs₁ : .s₁ ∈ π)
       simp_all
       use ⟨i₁ + 1, by omega⟩
 
-theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost 𝒜.cost π = 1 := by
+theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost M.cost π = 1 := by
   rename_i 𝓅
   obtain ⟨⟨i, hi⟩, hi'⟩ := hs₂
   obtain ⟨states, nonempty, progress⟩ := π
@@ -346,9 +385,9 @@ theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost 𝒜.cost π = 1
     · simp_all
 
 theorem EC_𝒮_len' :
-      (𝒜 𝓅).EC 𝒜.cost (𝒮_len 𝓅 i) n .s₁
+      (M 𝓅).EC M.cost (𝒮_len 𝓅 i) n .s₁
     = if n = 0 then 0
-      else 1 - ∑' π : Path[𝒜 𝓅,.s₁,=n], if ∀ s ∈ π.val, s = .s₁ then π.val.Prob (𝒮_len 𝓅 i) else 0
+      else 1 - ∑' π : Path[M 𝓅,.s₁,=n], if ∀ s ∈ π.val, s = .s₁ then π.val.Prob (𝒮_len 𝓅 i) else 0
 := by
   rcases n with _ | n
   · simp
@@ -361,7 +400,7 @@ theorem EC_𝒮_len' :
       refine List.sum_eq_zero ?_
       simp_all
     · simp_all [Path.ECost]
-      suffices π.Cost 𝒜.cost = 1 by simp_all
+      suffices π.Cost M.cost = 1 by simp_all
       apply Cost_one_of_s₂_mem
       obtain ⟨s, hs, hs'⟩ := h
       cases s <;> simp_all
@@ -369,20 +408,18 @@ theorem EC_𝒮_len' :
       exact ⟨⟨0, by simp⟩, hπ.right⟩
 
 theorem tsum_paths_eq_ite_tprod :
-      (∑' π : Path[𝒜 𝓅,.s₁,=n], if ∀ s ∈ π.val, s = .s₁ then π.val.Prob (𝒮_len 𝓅 i) else 0)
+      (∑' π : Path[M 𝓅,.s₁,=n], if ∀ s ∈ π.val, s = .s₁ then π.val.Prob (𝒮_len 𝓅 i) else 0)
     = if n = 0 then 0 else ∏ x : Fin (n - 1), 𝓅 (x + i + 1) := by
   rcases n with _ | n
   · simp
-  · let π' : (𝒜 𝓅).Path := ⟨List.replicate (n + 1) .s₁, by simp, by simp⟩
+  · let π' : (M 𝓅).Path := ⟨List.replicate (n + 1) .s₁, by simp, by simp⟩
     rw [tsum_eq_single ⟨π', by simp [π']⟩]
     · simp_all [Membership.mem, Path.Prob]
       split_ifs
       · simp [𝒮_len]
-        simp_all [π', 𝒜]
+        simp_all [π', M]
         conv =>
-          left
-          arg 2
-          ext x
+          left; arg 2; ext x
           rw [min_eq_left (by obtain ⟨_, _⟩ := x; simp_all; simp_all; omega)]
         apply Function.Bijective.finset_prod (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩)
         · simp; rfl
@@ -397,7 +434,7 @@ theorem tsum_paths_eq_ite_tprod :
       exact h''' ⟨i, by omega⟩
 
 @[simp]
-theorem 𝒮_x_ℒ (ℒ : 𝔏[𝒜 𝓅]) : 𝒮_x 𝓅 ℒ i = ℒ := by
+theorem 𝒮_x_ℒ (ℒ : 𝔏[M 𝓅]) : 𝒮_x 𝓅 ℒ i = ℒ := by
   induction i generalizing ℒ with
   | zero => rfl
   | succ i ih =>
@@ -414,14 +451,14 @@ theorem 𝒮_x_ℒ (ℒ : 𝔏[𝒜 𝓅]) : 𝒮_x 𝓅 ℒ i = ℒ := by
     simp_all
     apply le_of_s₁_eq_s₁ 𝓅 π (i:=‖π‖ - 1) <;> simp_all
 
-theorem iSup_ECℒ (ℒ : 𝔏[𝒜 𝓅]) :
-    ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = 1
+theorem iSup_ECℒ (ℒ : 𝔏[M 𝓅]) :
+    ⨆ n, (M 𝓅).EC M.cost ℒ n .s₁ = 1
 := by simp [iSup_EC_eq, ENNReal.tsum_mul_left, ENNReal.mul_inv_cancel]
 
-theorem iSup_iSup_ECℒ : ⨆ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = 1 := by
+theorem iSup_iSup_ECℒ : ⨆ ℒ : 𝔏[M 𝓅], ⨆ n, (M 𝓅).EC M.cost ℒ n .s₁ = 1 := by
   simp_all [iSup_ECℒ]
 
-theorem iInf_iSup_ECℒ : ⨅ ℒ : 𝔏[𝒜 𝓅], ⨆ n, (𝒜 𝓅).EC 𝒜.cost ℒ n .s₁ = 1 := by
+theorem iInf_iSup_ECℒ : ⨅ ℒ : 𝔏[M 𝓅], ⨆ n, (M 𝓅).EC M.cost ℒ n .s₁ = 1 := by
   simp_all [iSup_ECℒ]
 
 noncomputable def p : P := ⟨fun n ↦
@@ -431,7 +468,7 @@ noncomputable def p : P := ⟨fun n ↦
   refine ENNReal.one_lt_rpow ?_ ?_ <;> simp⟩
 
 theorem iInf_iSup_EC_ab :
-    ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ ≤ ⨆ n, (1 - ∏ x : Fin (n - 1), p (↑x + 1)) := by
+    ⨅ 𝒮, ⨆ n, (M p).EC M.cost 𝒮 n .s₁ ≤ ⨆ n, (1 - ∏ x : Fin (n - 1), p (↑x + 1)) := by
   apply iInf_le_of_le (𝒮_len p 0)
   simp_all
   intro n
@@ -473,21 +510,21 @@ theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) -
     ring_nf
 
 theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
-    ⨅ 𝒮, ⨆ n, (𝒜 p).EC 𝒜.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[𝒜 p], ⨆ n, (𝒜 p).EC 𝒜.cost ℒ n .s₁ := by
+    ⨅ 𝒮, ⨆ n, (M p).EC M.cost 𝒮 n .s₁ < ⨅ ℒ : 𝔏[M p], ⨆ n, (M p).EC M.cost ℒ n .s₁ := by
   simp [iInf_iSup_ECℒ]
   apply iInf_iSup_EC_ab.trans_lt
   refine iSup_lt_iff.mpr ?_
   use 1/2
   simp_all
-  · rintro (_ | n)
-    · simp
-    simp [prod_p_eq']
-    ring_nf
-    rw [← ENNReal.one_sub_inv_two, ENNReal.sub_add_eq_add_sub (by simp) (by simp)]
-    apply ENNReal.le_sub_of_add_le_left (by simp)
-    rw [add_comm]
-    gcongr
-    rw [← ENNReal.rpow_neg_one]
-    gcongr <;> simp_all [Real.rpow_nonneg zero_le_two]
+  rintro (_ | n)
+  · simp
+  simp [prod_p_eq']
+  ring_nf
+  rw [← ENNReal.one_sub_inv_two, ENNReal.sub_add_eq_add_sub (by simp) (by simp)]
+  apply ENNReal.le_sub_of_add_le_left (by simp)
+  rw [add_comm]
+  gcongr
+  rw [← ENNReal.rpow_neg_one]
+  gcongr <;> simp_all [Real.rpow_nonneg zero_le_two]
 
 end MDP.Counterexample.C

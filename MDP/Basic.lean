@@ -1,8 +1,26 @@
 import Mathlib.Probability.ProbabilityMassFunction.Basic
 
+/-!
+
+# Markov Decision Process (MDP)
+
+MDP's are probabilistic transition systems consisting of sets of (possibly infinite) states and
+actions, equipped with a probability function.
+
+## Main definitions
+
+* `MDP State Act`: Markov Decision Process.
+* `MDP.P`: probability function relating states and actions to states.
+* `MDP.act`: enabled actions of a state.
+* `MDP.succs`, `MDP.succs_univ`: successors of states.
+* `MDP.prev`, `MDP.prev_univ`: predecessors of states.
+* `MDP.FiniteBranching`: class of MDP's where both `MDP.succs` and `MDP.act` are finite.
+
+-/
+
 structure MDP (State : Type*) (Act : Type*) where
   P' : State → Act → Option (PMF State)
-  exists_P'_isSome s : ∃a, (P' s a).isSome
+  exists_P'_isSome s : ∃α, (P' s α).isSome
 
 namespace MDP
 
@@ -10,20 +28,28 @@ variable {State : Type*} {Act : Type*}
 
 variable (M : MDP State Act)
 
-def P (s : State) (a : Act) (s' : State) := if let some pmf := M.P' s a then pmf s' else 0
+/-- The transition probability of going from `s` to `s'` using action `α` -/
+def P (s : State) (α : Act) (s' : State) := if let some pmf := M.P' s α then pmf s' else 0
 
+/-- An action is enabled in state `s` iff choosing this action gives a positive probability to any
+other state. -/
 def act (s : State) : Set Act := (M.P s).support
+/-- α-successors of `s` are states `s'` which have a positive probability for a given action `α`,
+such that `0 < M.P s α s'`. -/
 def succs (α : Act) (s : State) : Set State := (M.P s α).support
+/-- α-predecessors of `s` are states `s'` such that `s' ∈ M.succs α s`. -/
 def prev (α : Act) (s' : State) : Set State := {s : State | s' ∈ M.succs α s}
 
+/-- Successors of `s` are those `s'` with `s' ∈ M.succs α` for some `α`. -/
 def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
+/-- Predecessors of `s` are those `s'` with `s' ∈ M.prev α` for some `α`. -/
 def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
 def mem_prev_univ_iff_mem_succs_univ (s s' : State) : s ∈ M.prev_univ s' ↔ s' ∈ M.succs_univ s := by
   simp_all [prev_univ, succs_univ, prev]
 
 class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite
-  succs_fin : ∀ (s : State) (a : Act), (M.P s a).support.Finite
+  succs_fin : ∀ (s : State) (α : Act), (M.P s α).support.Finite
 
 noncomputable def ofP (P : State → Act → State → ENNReal)
     (h₁ : ∀ s α, ∑' s', P s α s' = 0 ∨ ∑' s', P s α s' = 1)
@@ -54,14 +80,14 @@ theorem ofP_P (P : State → Act → State → ENNReal) (h₁) (h₂) : (ofP P h
   · simp; rfl
   · simp_all
 
-@[simp] lemma P_le_one (s : State) (a : Act) (s' : State) : M.P s a s' ≤ 1 := by
+@[simp] lemma P_le_one (s : State) (α : Act) (s' : State) : M.P s α s' ≤ 1 := by
   unfold P
   split
   · apply PMF.coe_le_one
   · simp only [zero_le]
 
-@[simp] lemma P_ne_top (s : State) (a : Act) (s' : State) : M.P s a s' ≠ ⊤ :=
-  M.P_le_one s a s' |>.trans_lt ENNReal.one_lt_top |>.ne
+@[simp] lemma P_ne_top (s : State) (α : Act) (s' : State) : M.P s α s' ≠ ⊤ :=
+  M.P_le_one s α s' |>.trans_lt ENNReal.one_lt_top |>.ne
 
 instance [Fintype Act] : Finite (M.act s) := Subtype.finite
 noncomputable instance instFintypeAct [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
@@ -132,9 +158,7 @@ theorem succs₀_eq_succs [M.FiniteBranching] : M.succs₀ α s = M.succs α s :
 theorem succs₀_mem_eq_succs_mem [M.FiniteBranching] : s' ∈ M.succs₀ a s ↔ s' ∈ M.succs a s := by
   simp [succs, succs₀]
 
-instance [M.FiniteBranching] : Finite (M.succs α s) := by
-  apply Set.Finite.ofFinset (M.succs₀ α s)
-  simp
+instance [M.FiniteBranching] : Finite (M.succs α s) := Set.Finite.ofFinset (M.succs₀ α s) (by simp)
 theorem succs_finite [M.FiniteBranching] : (M.succs α s).Finite := Set.toFinite (M.succs α s)
 noncomputable instance [M.FiniteBranching] : Fintype (M.succs α s) := Fintype.ofFinite (M.succs α s)
 

@@ -30,7 +30,7 @@ theorem tsum_p :
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩) <;> simp_all
   exact StrictMono.injective fun _ _ a ↦ a
 
-noncomputable def 𝒜 : MDP State ℕ := ofRelation Step
+noncomputable def M : MDP State ℕ := ofRelation Step
   (by rintro s α p s' (_ | _) <;> simp_all)
   (by
     intro s α p₀ c₀ h
@@ -41,48 +41,48 @@ noncomputable def 𝒜 : MDP State ℕ := ofRelation Step
       )
   (by rintro (_ | i | _) <;> simp)
 
-@[simp] noncomputable def 𝒜.cost : 𝒜.Costs
+@[simp] noncomputable def M.cost : M.Costs
 | .node i => 1 / (i : ENNReal)
 | _ => 0
-@[simp] noncomputable def 𝒜.rew : 𝒜.Costs
+@[simp] noncomputable def M.rew : M.Costs
 | .node i => i
 | _ => 0
 
 @[simp]
-theorem 𝒜.act_eq : 𝒜.act = fun s ↦ if s = .init then Set.univ else {0} := by
+theorem M.act_eq : M.act = fun s ↦ if s = .init then Set.univ else {0} := by
   ext s α
   split_ifs
-  · subst_eqs; simp [𝒜]
-  · simp [𝒜]; cases s <;> simp_all
+  · subst_eqs; simp [M]
+  · simp [M]; cases s <;> simp_all
 
-variable {𝒮 : 𝔖[𝒜]}
+variable {𝒮 : 𝔖[M]}
 
 @[simp] theorem 𝒮_node : 𝒮 {.node i} = 0 := by have := 𝒮.mem_act {.node i}; simp_all
 @[simp] theorem 𝒮_term : 𝒮 {.term} = 0 := by have := 𝒮.mem_act {.term}; simp_all
-@[simp] theorem succs_univ_init : 𝒜.succs_univ .init = {.node α | α} := by simp [𝒜, eq_comm]
-@[simp] theorem succs_univ_node : 𝒜.succs_univ (.node i) = {.term} := by simp [𝒜]
-@[simp] theorem succs_univ_term : 𝒜.succs_univ .term = {.term} := by simp [𝒜]
-@[simp] theorem P_init_node : 𝒜.P .init α (.node β) = if α = β then 1 else 0 := by
-  simp_all [𝒜, ite_and, eq_comm]
-@[simp] theorem P_node_term : 𝒜.P (.node i) 0 .term = 1 := by simp_all [𝒜]
-@[simp] theorem P_term_term : 𝒜.P .term 0 .term = 1 := by simp_all [𝒜]
+@[simp] theorem succs_univ_init : M.succs_univ .init = {.node α | α} := by simp [M, eq_comm]
+@[simp] theorem succs_univ_node : M.succs_univ (.node i) = {.term} := by simp [M]
+@[simp] theorem succs_univ_term : M.succs_univ .term = {.term} := by simp [M]
+@[simp] theorem P_init_node : M.P .init α (.node β) = if α = β then 1 else 0 := by
+  simp_all [M, ite_and, eq_comm]
+@[simp] theorem P_node_term : M.P (.node i) 0 .term = 1 := by simp_all [M]
+@[simp] theorem P_term_term : M.P .term 0 .term = 1 := by simp_all [M]
 
 section EC
 
 @[simp]
-theorem EC_term_eq_0 : 𝒜.EC 𝒜.cost 𝒮 n .term = 0 := by
+theorem EC_term_eq_0 : M.EC M.cost 𝒮 n .term = 0 := by
   rcases n with _ | n <;> simp_all [EC_succ]
   rintro _ ⟨_⟩
   induction n generalizing 𝒮 with
   | zero => simp
   | succ => simp_all [EC_succ]
 @[simp] theorem EC_node_i_le_j_eq_top :
-    𝒜.EC 𝒜.cost 𝒮 n (.node i) = if n = 0 then 0 else 1 / (i : ENNReal) := by
+    M.EC M.cost 𝒮 n (.node i) = if n = 0 then 0 else 1 / (i : ENNReal) := by
   cases n <;> simp [EC_succ]
   rw [tsum_eq_single ⟨.term, by simp⟩ (by simp_all)]
   simp_all
 theorem EC_init :
-    𝒜.EC 𝒜.cost 𝒮 n .init = if n < 2 then 0 else 1 / (𝒮 {.init} : ENNReal) := by
+    M.EC M.cost 𝒮 n .init = if n < 2 then 0 else 1 / (𝒮 {.init} : ENNReal) := by
   rcases n with _ | n <;> simp_all
   rcases n with _ | n
   · simp
@@ -95,8 +95,8 @@ theorem EC_init :
       simp_all [eq_comm]
 
 @[simp]
-theorem all_𝒮_lt_iSup_iInf_EC (𝒮 : 𝔖[𝒜]) :
-      ⨅ 𝒮, ⨆ n, 𝒜.EC 𝒜.cost 𝒮 n .init < ⨆ n, 𝒜.EC 𝒜.cost 𝒮 n .init := by
+theorem all_𝒮_lt_iSup_iInf_EC (𝒮 : 𝔖[M]) :
+      ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init < ⨆ n, M.EC M.cost 𝒮 n .init := by
   simp_all [EC_init]
   apply iInf_lt_iff.mpr
   exists ⟨fun π ↦ if π.last = .init then 𝒮 π + 1 else 0, by simp_all⟩
@@ -116,19 +116,19 @@ end EC
 section ER
 
 @[simp]
-theorem ER_term_eq_0 : 𝒜.EC 𝒜.rew 𝒮 n .term = 0 := by
+theorem ER_term_eq_0 : M.EC M.rew 𝒮 n .term = 0 := by
   rcases n with _ | n <;> simp_all [EC_succ]
   rintro _ ⟨_⟩
   induction n generalizing 𝒮 with
   | zero => simp
   | succ => simp_all [EC_succ]
 @[simp] theorem ER_node_i_le_j_eq_top :
-    𝒜.EC 𝒜.rew 𝒮 n (.node i) = if n = 0 then 0 else i := by
+    M.EC M.rew 𝒮 n (.node i) = if n = 0 then 0 else i := by
   cases n <;> simp [EC_succ]
   rw [tsum_eq_single ⟨.term, by simp⟩ (by simp_all)]
   simp_all
 theorem ER_init :
-    𝒜.EC 𝒜.rew 𝒮 n .init = if n < 2 then 0 else 𝒮 {.init} := by
+    M.EC M.rew 𝒮 n .init = if n < 2 then 0 else 𝒮 {.init} := by
   rcases n with _ | n <;> simp_all
   rcases n with _ | n
   · simp
@@ -141,8 +141,8 @@ theorem ER_init :
       simp_all [eq_comm]
 
 @[simp]
-theorem all_𝒮_iSup_iSup_ER_lt (𝒮 : 𝔖[𝒜]) :
-      ⨆ n, 𝒜.EC 𝒜.rew 𝒮 n .init < ⨆ 𝒮, ⨆ n, 𝒜.EC 𝒜.rew 𝒮 n .init := by
+theorem all_𝒮_iSup_iSup_ER_lt (𝒮 : 𝔖[M]) :
+      ⨆ n, M.EC M.rew 𝒮 n .init < ⨆ 𝒮, ⨆ n, M.EC M.rew 𝒮 n .init := by
   simp_all [ER_init]
   apply lt_iSup_iff.mpr
   exists ⟨fun π ↦ if π.last = .init then 𝒮 π + 1 else 0, by simp_all⟩

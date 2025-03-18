@@ -22,8 +22,8 @@ namespace MDP
 variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
 
-noncomputable def Φf (s : State) (a : Act) : M.Costs →o ENNReal :=
-  ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s a s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
+noncomputable def Φf (s : State) (α : Act) : M.Costs →o ENNReal :=
+  ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s α s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
 
 /-- The Bellman operator. -/
 noncomputable def Φ (c : M.Costs) : M.Costs →o M.Costs :=
