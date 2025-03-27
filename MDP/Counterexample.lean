@@ -34,7 +34,7 @@ theorem exists_iInf_iSup_EC_lt_iInf_iSup_ECℒ :
 open Counterexample.D in
 /-- There exists a (necessarily infinite branching) MDP such that there does not exist an optimal
   scheduler for the `⨅⨆` notion of optimization. See `MDP.Counterexample.D.M` for an instance of
-  such and MDP.-/
+  such and MDP. -/
 theorem not_exists_optimal_𝒮_for_iSup_iInf_EC :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ¬∃ 𝒮, ⨆ n, M.EC c 𝒮 n s = ⨅ 𝒮, ⨆ n, M.EC c 𝒮 n s :=
@@ -43,7 +43,7 @@ theorem not_exists_optimal_𝒮_for_iSup_iInf_EC :
 open Counterexample.D in
 /-- There exists a (necessarily infinite branching) MDP such that there does not exist an optimal
   scheduler for the `⨆⨆` notion of optimization. See `MDP.Counterexample.D.M` for an instance of
-  such and MDP.-/
+  such and MDP. -/
 theorem not_exists_optimal_𝒮_for_iSup_iSup_EC :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ¬∃ 𝒮, ⨆ n, M.EC c 𝒮 n s = ⨆ 𝒮, ⨆ n, M.EC c 𝒮 n s :=
