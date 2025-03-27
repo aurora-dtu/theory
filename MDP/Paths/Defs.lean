@@ -41,9 +41,9 @@ instance instGetElem : GetElem M.Path ℕ State (fun π i ↦ i < ‖π‖) wher
 @[simp] theorem states_length_eq_length : π.states.length = ‖π‖ := rfl
 
 @[simp] theorem states_nonempty : π.states ≠ [] := π.nonempty
-@[simp] theorem length_pos : 0 < ‖π‖ := List.length_pos.mpr π.nonempty
-@[simp] theorem length_pos' : 1 ≤ ‖π‖ := List.length_pos.mpr π.nonempty
-@[simp] theorem length_ne_zero : ¬‖π‖ = 0 := Nat.not_eq_zero_of_lt π.length_pos
+@[simp] theorem length_pos : 0 < ‖π‖ := List.length_pos_iff.mpr π.nonempty
+@[simp] theorem length_pos' : 1 ≤ ‖π‖ := List.length_pos_iff.mpr π.nonempty
+@[simp] theorem length_ne_zero : ¬‖π‖ = 0 := π.length_pos.ne.symm
 
 @[simp] theorem length_pred_succ : ‖π‖ - 1 + 1 = ‖π‖ := by have := π.length_pos; omega
 
@@ -143,7 +143,7 @@ theorem mk_length (states : List State) {h₁} {h₂} :
 @[simp]
 theorem mk_last (states : List State) {h₁} {h₂} :
       (⟨states, h₁, h₂⟩ : M.Path).last
-    = states[states.length - 1]'(by simp [List.length_pos.mpr h₁]) := by
+    = states[states.length - 1]'(by simp [List.length_pos_iff.mpr h₁]) := by
   simp only [last, length, instGetElem]
 
 @[simp]
@@ -383,9 +383,9 @@ theorem induction_on
           split_ifs at this <;> try omega
           exact this⟩ s'
       · simp_all
-        have := progress (l.length - 1) (by simp_all [List.length_pos])
+        have := progress (l.length - 1) (by simp_all [List.length_pos_iff])
         simp [List.getElem_append] at this
         split_ifs at this <;> (try omega) <;> simp_all
-      · apply ih; simp_all [List.getElem_append, List.length_pos]
+      · apply ih; simp_all [List.getElem_append, List.length_pos_iff]
 
 end MDP.Path

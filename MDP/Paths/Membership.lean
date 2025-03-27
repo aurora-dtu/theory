@@ -35,6 +35,6 @@ theorem mem_extend (s : M.succs_univ π.last) (s' : State) : s' ∈ π.extend s 
 theorem mem_singleton (s s' : State) : s ∈ (instSingleton  (M:=M)).singleton s' ↔ s = s' := by
   simp [instMembership]
   constructor <;> simp_all
-  exact fun _ ↦ Fin.isSome_find_iff.mp rfl
+  exact fun _ ↦ instNonemptyOfInhabited
 
 end MDP.Path

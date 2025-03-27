@@ -7,7 +7,7 @@ abbrev linters : Array LeanOption := #[
   ⟨`linter.docPrime, false⟩,
   ⟨`linter.hashCommand, true⟩,
   ⟨`linter.oldObtain, true,⟩,
-  ⟨`linter.refine, true⟩,
+  ⟨`linter.style.cases, true⟩,
   ⟨`linter.style.cdot, true⟩,
   ⟨`linter.style.dollarSyntax, true⟩,
   ⟨`linter.style.header, true⟩,

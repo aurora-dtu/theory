@@ -1,6 +1,7 @@
 import MDP.ENNRealExt
 import MDP.Scheduler
 import MDP.Paths.Bounded
+import Mathlib.Algebra.BigOperators.Fin
 
 namespace MDP
 
