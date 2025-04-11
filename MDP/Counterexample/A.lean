@@ -144,6 +144,17 @@ theorem iSup_iInf_EC_eq_top : ⨆ n, ⨅ 𝒮, M.EC M.cost 𝒮 n .init = 0 := b
   rcases n with _ | ⟨_ | n⟩ <;> simp_all
   apply (iInf_le_of_le ⟨(if ·.last = .init then n + 1 else 0), by simp⟩ (by simp)).antisymm bot_le
 
+@[simp]
+theorem iInf_iSup_ECℒ_eq_0 : ⨅ ℒ : 𝔏[M], ⨆ n, M.EC M.cost ℒ n .init = ⊤ :=
+  iInf_eq_top.mpr fun ℒ ↦ le_antisymm (by simp) (le_iSup_of_le (ℒ {.init} + 2) (by simp))
+
+@[simp]
+theorem iSup_iInf_ECℒ_eq_top : ⨆ n, ⨅ ℒ : 𝔏[M], M.EC M.cost ℒ n .init = 0 := by
+  refine ENNReal.iSup_eq_zero.mpr fun n ↦ ?_
+  rcases n with _ | ⟨_ | n⟩ <;> simp_all
+  apply (iInf_le_of_le ⟨⟨(if ·.last = .init then n + 1 else 0), by simp⟩,
+      by constructor; intro; simp_all⟩ (by simp [DFunLike.coe])).antisymm bot_le
+
 theorem lfp_Φ_node_eq_add :
     M.lfp_Φ M.cost (.node i α) = M.lfp_Φ M.cost (.node (i + j) α) := by
   induction j with simp_all
@@ -170,6 +181,10 @@ theorem lfp_Φ_node_eq_top : M.lfp_Φ M.cost (.node α β) = ⊤ := by
 
 theorem iSup_iInf_EC_lt_iInf_iSup_EC :
     ⨆ n, ⨅ 𝒮, M.EC M.cost 𝒮 n .init < ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init := by simp
+
+theorem iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ :
+    ⨆ n, ⨅ ℒ : 𝔏[M], M.EC M.cost ℒ n .init < ⨅ ℒ : 𝔏[M], ⨆ n, M.EC M.cost ℒ n .init := by
+  simp
 
 theorem iSup_iInf_EC_lt_lfp_Φ :
     ⨆ n,  ⨅ 𝒮, M.EC M.cost 𝒮 n .init < M.lfp_Φ M.cost .init := by simp

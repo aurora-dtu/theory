@@ -14,6 +14,15 @@ theorem exists_iSup_iInf_EC_lt_iInf_iSup_EC :
   ⟨_, _, _, M.cost, State.init, iSup_iInf_EC_lt_iInf_iSup_EC⟩
 
 open Counterexample.A in
+/-- There exists a (necessarily infinite branching) MDP such that the two notions of optimization
+  order (`⨆⨅` vs. `⨅⨆`) is not equivalent with Markovian schedulers. See
+  `MDP.Counterexample.A.M` for an instance of such and MDP. -/
+theorem exists_iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ :
+    ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
+      ⨆ n, ⨅ ℒ : 𝔏[M], M.EC c ℒ n s < ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n s :=
+  ⟨_, _, _, M.cost, State.init, iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ⟩
+
+open Counterexample.A in
 /-- There exists a (necessarily infinite branching) MDP such that the `⨅⨆` notions of optimization
   order is not equivalent to the lfp formulation. See `MDP.Counterexample.A.M` for an instance of
   such and MDP. -/

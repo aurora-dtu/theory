@@ -15,12 +15,12 @@ example : relations
 
 example : relations
     [⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 n] ≤ [⨆ n, ⨅ ℒ : 𝔏[M], EC c ℒ n]
-            ∃<                                 ≤
+            ∃<                                 ∃<
     [⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n] ∃< [⨅ ℒ : 𝔏[M], ⨆ n, EC c ℒ n]
 := by
-  simp_all only [iInf_apply, iSup_apply, exists_iInf_iSup_EC_lt_iInf_iSup_ECℒ,
-    exists_iSup_iInf_EC_lt_iInf_iSup_EC, iSup_iInf_le_iInf_iSup, implies_true,
-    iSup_iInf_EC_le_iSup_iInf_ECℒ, true_and]
+  simp_all only [iSup_iInf_EC_le_iSup_iInf_ECℒ, implies_true, iSup_apply, iInf_apply,
+    exists_iSup_iInf_EC_lt_iInf_iSup_EC, exists_iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ,
+    exists_iInf_iSup_EC_lt_iInf_iSup_ECℒ, true_and]
 
 example : relations
     [⨆ n, ⨆ 𝒮 : 𝔖[M], EC c 𝒮 n] ≥ [⨆ n, ⨆ ℒ : 𝔏[M], EC c ℒ n]
