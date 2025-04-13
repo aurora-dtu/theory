@@ -37,7 +37,7 @@ theorem iSup_iSup_EC_eq_lfp_Ψ [DecidableEq State] :
   apply le_antisymm
   · refine le_lfp _ fun b h ↦ iSup₂_le fun n 𝒮 ↦ ?_
     induction n generalizing 𝒮 b with
-    | zero => simp
+    | zero => intro; simp
     | succ n ih =>
       simp [EC_succ]
       apply le_trans (fun s ↦ ?_) h

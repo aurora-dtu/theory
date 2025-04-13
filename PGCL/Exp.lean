@@ -72,7 +72,8 @@ theorem top_ne_one_sub : ¬⊤ = 1 - p.val σ :=
 noncomputable def pick (x y : Exp ϖ) : Exp ϖ := p.val * x + (1 - p.val) * y
 
 @[simp]
-theorem pick_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y ≤ p.pick z w := by simp [pick]; gcongr
+theorem pick_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y ≤ p.pick z w := by
+  intro; simp [pick]; gcongr <;> apply_assumption
 @[simp]
 theorem pick_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y σ ≤ p.pick z w σ := p.pick_le h₁ h₂ σ
 

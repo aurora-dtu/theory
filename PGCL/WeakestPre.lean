@@ -46,7 +46,7 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | assign x e => intro σ; exact h _
   | nonDet C₁ C₂ ih₁ ih₂ => simp [inf_le_of_left_le (ih₁ h), inf_le_of_right_le (ih₂ h)]
   | loop b C' => exact lfp.monotone fun Y σ ↦ by by_cases h' : b σ <;> simp_all [h σ]
-  | tick e => apply add_le_add_left h
+  | tick e => intro; simp; gcongr; apply_assumption
 
 noncomputable def wp_loop_f (b : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
   ⟨fun Y ↦ b.probOf * C'.wp Y + b.not.probOf * X,

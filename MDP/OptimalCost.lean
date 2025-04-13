@@ -33,7 +33,7 @@ theorem EC_le_succ [DecidableEq State] : M.EC c 𝒮 n s ≤ M.EC c 𝒮 (n + 1)
     · simp
       simp [Path.ECost, Path.extend_Cost, Path.extend_Prob]
       conv => right; arg 1; ext; rw [mul_comm, mul_assoc, mul_add, mul_add]
-      simp [tsum_add, ENNReal.tsum_mul_right]
+      simp [Summable.tsum_add, ENNReal.tsum_mul_right]
       apply le_add_right
       simp [mul_comm]
     · intro ⟨x, _⟩ _ ⟨y, _⟩ _ h

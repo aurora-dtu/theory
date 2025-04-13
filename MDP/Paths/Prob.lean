@@ -92,7 +92,7 @@ theorem Path_eq.tsum_add_left (f : Path[M,s',=n+1] → ENNReal) :
 @[simp]
 theorem Path.tsum_Prob_eq_one_comp (n : ℕ) (S : Set Path[M,s,=n+1]) :
     (∑' π : S, π.val.val.Prob 𝒮) + (∑' π : ↑Sᶜ, π.val.val.Prob 𝒮) = 1 := by
-  rw [tsum_add_tsum_compl (s:=S) (f:=fun π ↦ π.val.Prob 𝒮)] <;> simp
+  rw [Summable.tsum_add_tsum_compl (s:=S) (f:=fun π ↦ π.val.Prob 𝒮)] <;> simp
 
 @[simp]
 theorem Path.one_sub_tsum_ite_Prob_eq (n : ℕ) (p : Path[M,s,=n+1] → Prop) [DecidablePred p] :

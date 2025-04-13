@@ -82,7 +82,7 @@ theorem tsum_after_le (C₂ : pGCL ϖ) {f g : Conf ϖ → ENNReal}
   (h₂ : ∀ σ, g (·⟨⇓ ϖ, σ⟩) ≤ f (·⟨C₂, σ⟩))
   (h₂ : ∀ C σ, g (·⟨C, σ⟩) ≤ f (·⟨C ;; C₂, σ⟩)) :
     (∑' s, g s) ≤ ∑' s, f s :=
-  tsum_le_tsum_of_inj C₂.after C₂.after_inj (by simp_all)
+  Summable.tsum_le_tsum_of_inj C₂.after C₂.after_inj (by simp_all)
     (by rintro (_ | _ | _) <;> simp_all [after]) (by simp) (by simp)
 
 end pGCL

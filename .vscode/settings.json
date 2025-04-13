@@ -2,7 +2,7 @@
     "editor.rulers": [
         100
     ],
-    "workbench.colorTheme": "Palenight Operator",
+    "workbench.colorTheme": "Ayu Mirage",
     // Spellright
     "spellright.spellContextByClass": {
         "lean4": "comments"
