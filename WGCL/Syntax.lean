@@ -9,7 +9,7 @@ syntax "wgcl_bexpr " "{" cwgcl_bexpr "}" : term
 declare_syntax_cat cwgcl_aexpr
 syntax "wgcl_aexpr " "{" cwgcl_aexpr "}" : term
 declare_syntax_cat cwgcl_progr
-syntax "wgcl " ppHardSpace "{" cwgcl_progr "}" : term
+syntax "wgcl" ppHardSpace "{" cwgcl_progr "}" : term
 
 syntax ident : cwgcl_bexpr
 
@@ -230,5 +230,15 @@ info: wgcl {if (true) {
 -/
 #guard_msgs in
 #eval (wgcl { if (true) { ⊙1 } } : wGCL Nat Unit)
+
+#eval (wgcl {
+    x := 12 + y ;
+    if (true) { ⊙1 }
+    else {
+      while (true) {
+        { ⊙1 } ⊕ { skip }
+      }
+    }
+  } : wGCL Int String)
 
 end WGCL

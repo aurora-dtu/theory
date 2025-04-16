@@ -26,6 +26,44 @@ def Subst.substUnexpander : Unexpander
 instance [BEq α] [Hashable α] : Subst (Std.HashMap α β) α β where
   subst m x v := m.insert x v
 
+section
+
+variable (𝒲 : Type) (ℳ : Type)
+variable [Monoid 𝒲] [AddCommMonoid ℳ]
+
+alias MonoidModule := DistribMulAction
+
+variable [DistribMulAction 𝒲 ℳ] (v w : 𝒲) (a b : ℳ)
+
+/-- (1) Scalar multiplication is associative. -/
+example : (v * w) • a = v • (w • a) := MulAction.mul_smul v w a
+/-- (2) Scalar multiplication is distributive. -/
+example : v • (a + b) = (v • a) + (v • b) := DistribSMul.smul_add v a b
+/-- (3) Scalar multiplication by one is identity. -/
+example : v • (0 : ℳ) = 0 := DistribMulAction.smul_zero v
+
+variable (Var : Type)
+
+abbrev 𝕎 (ℳ : Type) (Var : Type) := Var → ℳ
+
+instance Pi.instDistribMulAction : DistribMulAction 𝒲 (ι → ℳ) where
+  smul_zero := by simp
+  smul_add := by simp
+
+instance : DistribMulAction 𝒲 (𝕎 ℳ Var) := Pi.instDistribMulAction 𝒲 ℳ
+
+instance {𝒮 : Type} [inst : Semiring 𝒮] : DistribMulAction 𝒮 𝒮 where
+  smul_zero := by simp
+  smul_add a b c := by simp [left_distrib]
+
+class OmegaCompleteSemiring (𝒮 : Type) [TopologicalSpace 𝒮] extends Semiring 𝒮 where
+  protected sum_mul_left {f : ι → 𝒮} {a : 𝒮} : ∑' x, a * f x = a * ∑' x, f x
+  protected sum_mul_right {f : ι → 𝒮} {a : 𝒮} : ∑' x, f x * a = (∑' x, f x) * a
+  protected sum_biUnion {S : Set ι} {f : α → 𝒮} {t : ι → Set α}
+    (h : S.PairwiseDisjoint t) : ∑' x : ⋃ i ∈ S, t i, f x = ∑' (i : S), ∑' (x : t i), f x
+
+end
+
 namespace List
 
 def pairs (l : List α) : List (α × α) := match l with
@@ -78,8 +116,6 @@ namespace WGCL
 
 variable {W Var : Type}
 
-abbrev Transf W Var := Mem W Var → W
-
 variable [Semiring W]
 variable [CompleteLattice W]
 
@@ -115,17 +151,17 @@ variable [DecidableEq Var]
 instance : Subst (Mem W Var) Var W where
   subst σ x v := fun y ↦ if x = y then v else σ y
 
-instance : Subst (Transf W Var) Var (AExpr Var) where
+instance : Subst (Weigting W Var) Var (AExpr Var) where
   subst f x E := fun σ ↦ f σ[x ↦ E.eval σ]
 
-theorem Transf.subst_mono {f₁ f₂ : Transf W Var} (h : f₁ ≤ f₂) (x : Var) (y : AExpr Var) :
+theorem Weigting.subst_mono {f₁ f₂ : Weigting W Var} (h : f₁ ≤ f₂) (x : Var) (y : AExpr Var) :
     f₁[x ↦ y] ≤ f₂[x ↦ y] := by
   intro σ
   exact h fun y_1 => if x = y_1 then y.eval σ else σ y_1
 
 variable [∀ (B : BExpr Var) (σ : Mem W Var), Decidable (B.eval σ)]
 
-def BExpr.iver (B : BExpr Var) : Transf W Var := fun σ ↦ if B.eval σ then 1 else 0
+def BExpr.iver (B : BExpr Var) : Weigting W Var := fun σ ↦ if B.eval σ then 1 else 0
 
 /-- A version of `OrderHom.lfp` that does not require `f` the `Monotone` upfront. -/
 protected def wp.lfp {α} [CompleteLattice α] (f : α → α) : α := sInf {a | f a ≤ a}
@@ -146,14 +182,14 @@ theorem monotone : Monotone (wp.lfp (α:=α)) := by
 
 end wp.lfp
 
-instance : Semiring (Transf W Var) := Pi.semiring
-instance : CompleteLattice (Transf W Var) := Pi.instCompleteLattice
+instance : Semiring (Weigting W Var) := Pi.semiring
+instance : CompleteLattice (Weigting W Var) := Pi.instCompleteLattice
 
 @[simp]
-instance : HMul W (Transf W Var) (Transf W Var) where
+instance : HMul W (Weigting W Var) (Weigting W Var) where
   hMul w f := fun σ ↦ w * f σ
 
-def wGCL.wp (C : wGCL W Var) (f : Transf W Var) : Transf W Var := match C with
+def wGCL.wp (C : wGCL W Var) (f : Weigting W Var) : Weigting W Var := match C with
 | wgcl { ~x := ~E }                     => f[x ↦ E]
 | wgcl { ~C₁; ~C₂ }                     => C₁.wp (C₂.wp f)
 | wgcl { if (~φ) { ~C₁ } else { ~C₂ } } => φ.iver * C₁.wp f + φ.not.iver * C₂.wp f
@@ -161,29 +197,29 @@ def wGCL.wp (C : wGCL W Var) (f : Transf W Var) : Transf W Var := match C with
 | wgcl { ⊙ ~a }                         => a * f
 | wgcl { while (~φ) { ~C' } }           => wp.lfp fun X ↦ φ.iver * C'.wp X + φ.not.iver * f
 
-@[simp] theorem wGCL.wp_assign {f : Transf W Var} :
+@[simp] theorem wGCL.wp_assign {f : Weigting W Var} :
     (wgcl{~x := ~E}).wp f = f[x ↦ E] := by simp [wp]
-@[simp] theorem wGCL.wp_seq {f : Transf W Var} :
+@[simp] theorem wGCL.wp_seq {f : Weigting W Var} :
     (wgcl{~C₁; ~C₂}).wp f = C₁.wp (C₂.wp f) := by simp [wp]
-@[simp] theorem wGCL.wp_ite {f : Transf W Var} :
+@[simp] theorem wGCL.wp_ite {f : Weigting W Var} :
     (wgcl{if (~φ) {~C₁} else {~C₂}}).wp f = φ.iver * C₁.wp f + φ.not.iver * C₂.wp f := by simp [wp]
-@[simp] theorem wGCL.wp_branch {f : Transf W Var} :
+@[simp] theorem wGCL.wp_branch {f : Weigting W Var} :
     (wgcl{{ ~C₁ } ⊕ { ~C₂ }}).wp f = C₁.wp f + C₂.wp f := by simp [wp]
-@[simp] theorem wGCL.wp_weight {f : Transf W Var} :
+@[simp] theorem wGCL.wp_weight {f : Weigting W Var} :
     (wgcl{⊙ ~a}).wp f = a * f := by simp [wp]
 
 variable [AddRightMono W] [AddLeftMono W] [MulLeftMono W]
 
 attribute [local simp] Function.swap
-instance : AddRightMono (Transf W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
-instance : AddLeftMono  (Transf W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
-instance : MulLeftMono  (Transf W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
+instance : AddRightMono (Weigting W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
+instance : AddLeftMono  (Weigting W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
+instance : MulLeftMono  (Weigting W Var) := ⟨by intro f₁ f₂ f₃ h σ; simp; gcongr; apply_assumption⟩
 
 theorem wGCL.wp_monotone (C : wGCL W Var) : Monotone C.wp := by
   induction C with (intro f₁ f₂ h; simp only [wp])
   | Branch C₁ C₂ ih₁ ih₂ => gcongr <;> (apply_assumption; assumption)
   | Weighting => gcongr
-  | Assign => apply Transf.subst_mono h
+  | Assign => apply Weigting.subst_mono h
   | Ite => gcongr <;> apply_assumption <;> assumption
   | Seq => repeat (first | apply_assumption | assumption)
   | While => exact wp.lfp.monotone fun f ↦ by gcongr
@@ -197,7 +233,10 @@ theorem wGCL.wp_while {C' : wGCL W Var} :
       exact wp_monotone _ h⟩
 := rfl
 
-def P₁ : wGCL Nat String := wgcl {
+instance {n : ℕ} : OfNat Bool n := ⟨n % 2 == 1⟩
+-- instance : Semiring Bool where
+
+def P₁ : wGCL ℕ String := wgcl {
   x := 0; y := 1;
   while (x ≠ p) {
     if (x < y) { ⊙1; x := x + 1 }
@@ -323,14 +362,14 @@ noncomputable def Paths.wgt (π : Paths W Var) : W :=
 
 variable [TopologicalSpace W]
 
-noncomputable def wGCL.op (C : wGCL W Var) (f : Transf W Var) : Transf W Var :=
+noncomputable def wGCL.op (C : wGCL W Var) (f : Weigting W Var) : Weigting W Var :=
   fun σ ↦ ∑' π : TPaths (conf ⟨~C, σ, 0, []⟩), π.val.wgt * f π.val.last.σ
 
 def Succs (C : wGCL W Var) (σ : Mem W Var) :=
   { (a, C', σ') | ∃ n β β', Op (conf ⟨~C, σ, n, β⟩) a ⟨C', σ', n+1, β'⟩ }
 
-noncomputable def wGCL.Φ (c : wGCL W Var → Transf W Var → Transf W Var) (C : wGCL W Var)
-    (f : Transf W Var) : Transf W Var :=
+noncomputable def wGCL.Φ (c : wGCL W Var → Weigting W Var → Weigting W Var) (C : wGCL W Var)
+    (f : Weigting W Var) : Weigting W Var :=
   fun σ ↦ ∑' X : Succs C σ, match X with | ⟨⟨a, some C', σ'⟩, _⟩ => a * c C' f σ' | _ => 0
 
 
@@ -566,7 +605,7 @@ theorem wGCL.op_eq_lfp_Φ : wGCL.op (W:=W) (Var:=Var) = lfp ⟨Φ, Φ_mono⟩ :=
   simp_all only [coe_mk]
   sorry
 
-theorem wGCL.op_isLeast (b : wGCL W Var → Transf W Var → Transf W Var) (h : Φ b ≤ b) : op ≤ b := by
+theorem wGCL.op_isLeast (b : wGCL W Var → Weigting W Var → Weigting W Var) (h : Φ b ≤ b) : op ≤ b := by
   sorry
 
 -- theorem wGCL.Φ_op_le_op : Φ (W:=W) (Var:=Var) op = op := by
@@ -581,7 +620,6 @@ theorem wGCL.wp_le_op : wp (W:=W) (Var:=Var) ≤ op := by
   intro C
   induction C with simp_all only
   | Branch C₁ C₂ ih₁ ih₂ =>
-
     sorry
   | Weighting => sorry
   | Assign => sorry
@@ -590,7 +628,7 @@ theorem wGCL.wp_le_op : wp (W:=W) (Var:=Var) ≤ op := by
   | While φ C ih => sorry
 
 theorem wGCL.wp.soundness :
-    op  (W:=W) (Var:=Var) = wp := by
+    op (W:=W) (Var:=Var) = wp := by
   apply le_antisymm ?_ wp_le_op
   rw [op_eq_lfp_Φ]
   exact lfp_le _ Φ_wp_le_wp
