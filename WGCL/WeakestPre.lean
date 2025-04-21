@@ -1,20 +1,21 @@
 import Mathlib.Order.OmegaCompletePartialOrder
+import Mathlib.Algebra.Order.Group.Action
 import WGCL.Subst
 
 namespace WGCL
 
-variable {D : Type} {W : Type} {Var : Type}
+variable {D : Type} {M : Type} {W : Type} {Var : Type}
 
 variable [DecidableEq Var]
 
 instance : Subst (Mem D Var) Var D where
   subst σ x v := fun y ↦ if x = y then v else σ y
 
-instance : Subst (Weighting D W Var) Var (AExpr D Var) where
+instance : Subst (Weighting D M Var) Var (AExpr D Var) where
   subst f x E := fun σ ↦ f σ[x ↦ E σ]
 
 @[simp]
-theorem Weighting.subst_mono [Preorder W] {f₁ f₂ : Weighting D W Var} (h : f₁ ≤ f₂) (x : Var)
+theorem Weighting.subst_mono [Preorder M] {f₁ f₂ : Weighting D M Var} (h : f₁ ≤ f₂) (x : Var)
     (y : AExpr D Var) : f₁[x ↦ y] ≤ f₂[x ↦ y] := by
   intro σ
   exact h fun y_1 => if x = y_1 then y σ else σ y_1
@@ -23,18 +24,26 @@ def BExpr.not (B : BExpr D Var) : BExpr D Var := fun σ ↦ ¬B σ
 
 variable [∀ (B : BExpr D Var) σ, Decidable (B σ)]
 
-def BExpr.iver [One W] [Zero W] (B : BExpr D Var) : Weighting D W Var := (if B · then 1 else 0)
+def BExpr.iver [OmegaCompletePartialOrder M] [Zero M] (B : BExpr D Var) :
+    Weighting D M Var →o Weighting D M Var :=
+  ⟨fun f σ ↦ if B σ then f σ else 0, by
+    intro f₁ f₂ h σ
+    simp
+    split_ifs <;> simp_all [h σ]⟩
 
-variable [Semiring W]
+variable [Monoid W] [AddCommMonoid M]
+variable [inst : DistribMulAction W M]
 
-variable [OmegaCompletePartialOrder W] [OrderBot W]
+instance : SMul W M := inst.toSMul
+
+variable [OmegaCompletePartialOrder M] [OrderBot M]
 
 open OmegaCompletePartialOrder
 
-def wGCL.lfp (f : Weighting D W Var →o Weighting D W Var) : Weighting D W Var :=
+def wGCL.lfp (f : Weighting D M Var →o Weighting D M Var) : Weighting D M Var :=
   ωSup ⟨(f^[·] ⊥), fun _ _ h ↦ Monotone.monotone_iterate_of_le_map f.mono (OrderBot.bot_le _) h⟩
 
-def wGCL.lfp_mono : Monotone (lfp (D:=D) (W:=W) (Var:=Var)) := by
+def wGCL.lfp_mono : Monotone (lfp (D:=D) (M:=M) (Var:=Var)) := by
   intro X₁ X₂ h σ
   simp [lfp, ωSup]
   intro i
@@ -42,25 +51,30 @@ def wGCL.lfp_mono : Monotone (lfp (D:=D) (W:=W) (Var:=Var)) := by
   suffices X₁^[i] ≤ X₂^[i] by apply this
   apply Monotone.iterate_le_of_le X₁.mono h
 
-variable [AddLeftMono W]
-variable [MulLeftMono W]
+variable [AddLeftMono M]
+variable [CovariantClass W M HSMul.hSMul LE.le]
 
 attribute [local simp] Function.swap
-instance : AddLeftMono  (Weighting D W Var) := ⟨by intro _ _ _ _ _; simp; gcongr; apply_assumption⟩
-instance : MulLeftMono  (Weighting D W Var) := ⟨by intro _ _ _ _ _; simp; gcongr; apply_assumption⟩
+instance : AddLeftMono  (Weighting D M Var) := ⟨by intro _ _ _ _ _; simp; gcongr; apply_assumption⟩
+instance : CovariantClass (𝕎 W (Mem D Var)) (Weighting D M Var) HSMul.hSMul LE.le :=
+  ⟨by intro _ _ _ _ σ; simp; gcongr; apply_assumption⟩
 
-protected def wGCL.wp' : wGCL D W Var → Weighting D W Var →o Weighting D W Var :=
+instance {𝒮 : Type} [Mul 𝒮] [Preorder 𝒮] [MulLeftMono 𝒮] :
+    CovariantClass 𝒮 𝒮 HSMul.hSMul LE.le :=
+  ⟨fun x ↦ by simp_all; exact fun {n₁ n₂} a ↦ mul_le_mul_left' a x⟩
+
+protected def wGCL.wp' : wGCL D W Var → Weighting D M Var →o Weighting D M Var :=
   have : ∀ (C C' : wGCL D W Var), WellFoundedRelation.rel C C' ↔ sizeOf C < sizeOf C' := by aesop
   have : ∀ (a b : ℕ), a < 1 + a + b := by omega
   WellFounded.fix sizeOfWFRel.wf fun C wp ↦ ⟨fun f ↦ match C with
   | wgcl { ~x := ~E }                     => f[x ↦ E]
   | wgcl { ~C₁; ~C₂ }                     => wp C₁ (by simp_all) (wp C₂ (by simp_all) f)
   | wgcl { if (~φ) { ~C₁ } else { ~C₂ } } =>
-    φ.iver * wp C₁ (by simp_all) f + φ.not.iver * wp C₂ (by simp_all) f
+    φ.iver (wp C₁ (by simp_all) f) + φ.not.iver (wp C₂ (by simp_all) f)
   | wgcl { { ~C₁ } ⊕ { ~C₂ } }            => wp C₁ (by simp_all) f + wp C₂ (by simp_all) f
-  | wgcl { ⊙ ~a }                         => a * f
+  | wgcl { ⊙ ~a }                         => a • f
   | wgcl { while (~φ) { ~C' } }           =>
-    lfp ⟨fun X ↦ φ.iver * wp C' (by simp_all) X + φ.not.iver * f, by intro X₁ X₂ h; simp; gcongr⟩,
+    lfp ⟨fun X ↦ φ.iver (wp C' (by simp_all) X) + φ.not.iver f, by intro X₁ X₂ h; simp; gcongr⟩,
   by
     intro f₁ f₂ h
     split
@@ -71,36 +85,37 @@ protected def wGCL.wp' : wGCL D W Var → Weighting D W Var →o Weighting D W V
       simp [BExpr.iver, BExpr.not]
       split_ifs <;> (simp; exact (wp _ (by simp_all)).mono h σ)
     next => simp; gcongr
-    next => simp; gcongr
-    next φ C wp => apply lfp_mono fun X σ ↦ ?_; simp; gcongr; exact h σ⟩
+    next a wp => intro σ; simp; gcongr; apply_assumption
+    next φ C wp => apply lfp_mono fun X σ ↦ ?_; simp; gcongr; apply (BExpr.iver φ.not).mono h σ⟩
 
-def wGCL.wp (C : wGCL D W Var) : Weighting D W Var →o Weighting D W Var := ⟨fun f ↦ match C with
+def wGCL.wp (C : wGCL D W Var) : Weighting D M Var →o Weighting D M Var := ⟨fun f ↦ match C with
   | wgcl { ~x := ~E }                     => f[x ↦ E]
   | wgcl { ~C₁; ~C₂ }                     => C₁.wp' (C₂.wp' f)
-  | wgcl { if (~φ) { ~C₁ } else { ~C₂ } } => φ.iver * C₁.wp' f + φ.not.iver * C₂.wp' f
+  | wgcl { if (~φ) { ~C₁ } else { ~C₂ } } => φ.iver (C₁.wp' f) + φ.not.iver (C₂.wp' f)
   | wgcl { { ~C₁ } ⊕ { ~C₂ } }            => C₁.wp' f + C₂.wp' f
-  | wgcl { ⊙ ~a }                         => a * f
-  | wgcl { while (~φ) { ~C' } }           => lfp ⟨fun X ↦ φ.iver * C'.wp' X + φ.not.iver * f, by
+  | wgcl { ⊙ ~a }                         => a • f
+  | wgcl { while (~φ) { ~C' } }           => lfp ⟨fun X ↦ φ.iver (C'.wp' X) + φ.not.iver f, by
     intro X₁ X₂ h
     simp
     gcongr⟩,
   by
     intro f₁ f₂ h
     cases C <;> (simp_all; try gcongr)
-    apply lfp_mono fun X σ ↦ ?_; simp; gcongr; exact h σ⟩
+    apply lfp_mono fun X σ ↦ ?_; simp; gcongr; exact (BExpr.not _).iver.mono h σ⟩
 
 @[simp]
-theorem wGCL.wp'_eq_wp (C : wGCL D W Var) : C.wp' = C.wp := by
+theorem wGCL.wp'_eq_wp (C : wGCL D W Var) : C.wp' (M:=M) = C.wp := by
   cases C <;> (simp_all [wp, wGCL.wp']; rw [WellFounded.fix_eq])
 
-def wGCL.Φ  (φ : BExpr D Var) (C' : wGCL D W Var) (f : Weighting D W Var) :
-    Weighting D W Var →o Weighting D W Var := ⟨fun X ↦ φ.iver * C'.wp X + φ.not.iver * f, by
+def wGCL.Φ  (φ : BExpr D Var) (C' : wGCL D W Var) (f : Weighting D M Var) :
+    Weighting D M Var →o Weighting D M Var := ⟨fun X ↦ φ.iver (C'.wp X) + φ.not.iver f, by
       intro X₁ X₂ h σ
       simp
       gcongr
-      apply (wp C').mono h⟩
+      apply φ.iver.mono <| (wp C').mono h⟩
 
-theorem wGCL.wp_loop (C' : wGCL D W Var) : wgcl { while (~φ) { ~C' } }.wp f = lfp (Φ φ C' f) := by
+theorem wGCL.wp_loop (C' : wGCL D W Var) :
+    wgcl { while (~φ) { ~C' } }.wp f = lfp (Φ (M:=M) φ C' f) := by
   rw [wp]
   simp
   rfl
@@ -108,15 +123,15 @@ theorem wGCL.wp_loop (C' : wGCL D W Var) : wgcl { while (~φ) { ~C' } }.wp f = l
 variable [∀ (B : BExpr ℕ String) σ, Decidable (B σ)]
 
 syntax "wp⟦" cwgcl_prog "⟧" : term
-syntax "wp[" term "," term "," term "]⟦" cwgcl_prog "⟧" : term
+syntax "wp[" term "," term "," term "," term "]⟦" cwgcl_prog "⟧" : term
 syntax "wp⟦" cwgcl_prog "⟧(" cwgcl_wght ")" : term
-syntax "wp[" term "," term "," term "]⟦" cwgcl_prog "⟧(" cwgcl_wght ")" : term
+syntax "wp[" term "," term "," term "," term "]⟦" cwgcl_prog "⟧(" cwgcl_wght ")" : term
 
 macro_rules
 | `(wp⟦$c⟧) => `(wgcl{$c}.wp)
-| `(wp[$D,$W,$Var]⟦$c⟧) => `((wgcl{$c} : wGCL $D $W $Var).wp)
+| `(wp[$D,$M,$W,$Var]⟦$c⟧) => `((wgcl{$c} : wGCL $D $W $Var).wp (M:=$M))
 | `(wp⟦$c⟧($f)) => `(wgcl{$c}.wp wght{$f})
-| `(wp[$D,$W,$Var]⟦$c⟧($f)) => `((wgcl {$c} : wGCL $D $W $Var).wp wght{$f})
+| `(wp[$D,$M,$W,$Var]⟦$c⟧($f)) => `((wgcl {$c} : wGCL $D $W $Var).wp (M:=$M) wght{$f})
 
 section
 
