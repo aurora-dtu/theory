@@ -186,11 +186,10 @@ scoped instance : DistribMulAction (List Γ) (Language Γ) where
   mul_smul w₁ w₂ S := by ext w; simp; rw [Set.mem_image, Set.mem_image]; simp
   smul_zero w := by simp; apply Set.image_empty
   smul_add w S₁ S₂ := by
-    ext w'; simp
-    rw [Set.mem_image, Set.mem_union, Set.mem_image, Set.mem_image]; aesop
+    ext w'; simp; rw [Set.mem_image, Set.mem_union, Set.mem_image, Set.mem_image]; aesop
 
-scoped instance : CovariantClass (List Γ) (Language Γ) HSMul.hSMul LE.le := ⟨fun _ _ _ _ _ ↦ by
-  aesop⟩
+scoped instance : CovariantClass (List Γ) (Language Γ) HSMul.hSMul LE.le :=
+  ⟨fun _ _ _ _ _ ↦ by aesop⟩
 
 @[simp] scoped instance : Coe (List Γ) (𝕎 (List Γ) (Mem ℕ Var)) := ⟨fun S _ ↦ S⟩
 @[simp] scoped instance : Singleton (List Γ) (Weighting ℕ (Language Γ) Var) := ⟨fun S _ ↦ {S}⟩

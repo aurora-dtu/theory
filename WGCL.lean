@@ -1,1 +1,2 @@
-import WGCL.Syntax
+import WGCL.Instances
+import WGCL.Soundness

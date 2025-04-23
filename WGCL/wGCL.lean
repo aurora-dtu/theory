@@ -85,6 +85,7 @@ syntax ident : cwgcl_var
 syntax ident : cwgcl_bexp
 
 syntax num : cwgcl_aexp
+syntax:50 cwgcl_aexp:50 " + " cwgcl_aexp:51 : cwgcl_aexp
 
 syntax num : cwgcl_wght
 syntax ident : cwgcl_wght
@@ -115,7 +116,8 @@ macro_rules
 | `(wgcl_bexp { false }) => `(term|fun _ ↦ False)
 -- aexp
 | `(wgcl_aexp { ~ $x }) => `($x)
-| `(wgcl_aexp { $n:num }) => `($n)
+| `(wgcl_aexp { $n:num }) => `(($n : AExpr _ _))
+| `(wgcl_aexp { $l + $r }) => `(wgcl_aexp {$l} + wgcl_aexp {$r})
 -- wght
 | `(wght { ~ $x }) => `($x)
 | `(wght { $x:num }) => `($x)
@@ -179,8 +181,12 @@ def wGCL.unexpandBExpr : TSyntax `term → UnexpandM (TSyntax `cwgcl_bexp)
 | `(fun $_ ↦ True) => let i := mkIdent <| Name.mkSimple "true"; `(cwgcl_bexp| $i:ident)
 | `(fun $_ ↦ False) => let i := mkIdent <| Name.mkSimple "false"; `(cwgcl_bexp| $i:ident)
 | c => `(cwgcl_bexp| ~ $c)
-def wGCL.unexpandAExpr : TSyntax `term → UnexpandM (TSyntax `cwgcl_aexp)
+partial def wGCL.unexpandAExpr : TSyntax `term → UnexpandM (TSyntax `cwgcl_aexp)
 | `($a:num) => `(cwgcl_aexp| $a:num)
+| `($a + $b) => do
+  let a ← wGCL.unexpandAExpr a
+  let b ← wGCL.unexpandAExpr b
+  `(cwgcl_aexp| $a + $b)
 | c => `(cwgcl_aexp| ~ $c)
 @[app_unexpander wGCL.Ite]
 def wGCL.unexpandIte : Unexpander
@@ -206,6 +212,9 @@ def wGCL.unexpandAssign : Unexpander
   let E ← unexpandAExpr E
   let name := mkIdent <| Name.mkSimple x.getString
   `(wgcl { $name:ident := $E })
+| `($(_) $x $E) => do
+  let E ← unexpandAExpr E
+  `(wgcl { ~$x := $E })
 | _ => throw ()
 
 /-- info: wgcl {skip; x := 0} : wGCL ?_ ?_ String -/
@@ -231,6 +240,10 @@ info: wgcl {if (false) {
 /-- info: wgcl {⊙x} : wGCL ?_ ?_ String -/
 #guard_msgs in
 #check wgcl {⊙ x}
+
+/-- info: fun x ↦ wgcl {~x := 1 + ~x} : (x : ?_) → wGCL (?_ x) (?_ x) ?_ -/
+#guard_msgs in
+#check fun x ↦ wgcl {~x := 1 + ~x}
 
 end Syntax
 
