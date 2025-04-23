@@ -4,6 +4,7 @@ import Mathlib.Data.ENat.Lattice
 import Mathlib.Data.EReal.Basic
 import Mathlib.Order.OmegaCompletePartialOrder
 import WGCL.WeakestPre
+import WGCL.Park
 
 namespace WGCL
 
@@ -57,8 +58,8 @@ instance : Add Boolean := ⟨fun a b ↦ a || b⟩
 instance : Mul Boolean := ⟨fun a b ↦ a && b⟩
 instance : Zero Boolean := ⟨⊥⟩
 
-@[simp] theorem Boolean.add_eq_sup (a b : Boolean) : a + b = (a || b) := rfl
-@[simp] theorem Boolean.mul_eq_inf (a b : Boolean) : a * b = (a && b) := rfl
+@[simp] theorem Boolean.add_eq_inf (a b : Boolean) : a + b = (a || b) := rfl
+@[simp] theorem Boolean.mul_eq_add (a b : Boolean) : a * b = (a && b) := rfl
 @[simp] theorem Boolean.bot_or (a : Boolean) : (⊥ || a) = a := rfl
 @[simp] theorem Boolean.or_bot (a : Boolean) : (a || ⊥) = a := by rw [Bool.or_comm]; rfl
 @[simp] theorem Boolean.bot_le (a : Boolean) : ⊥ ≤ a := OrderBot.bot_le a
@@ -109,6 +110,93 @@ example : wp[ℕ,ℕ∞,ℕ∞,String]⟦x := 1; {⊙ x} ⊕ {⊙2}⟧(1) = wght
 
 end Combinatorics
 
+noncomputable section ENat
+
+/-- A version of ℕ∞ where `a + b = a ⊓ b` and `a * b = a + b`. -/
+def ENat' := ℕ∞
+
+instance : PartialOrder ENat' := inferInstanceAs (PartialOrder ℕ∞)
+instance : OrderBot ENat' := inferInstanceAs (OrderBot ℕ∞)
+instance : OrderTop ENat' := inferInstanceAs (OrderTop ℕ∞)
+instance : OmegaCompletePartialOrder ENat' := inferInstanceAs (OmegaCompletePartialOrder ℕ∞)
+instance : Min ENat' := inferInstanceAs (Min ℕ∞)
+
+instance : Add ENat' := ⟨fun a b ↦ a ⊓ b⟩
+instance : Mul ENat' := ⟨fun a b ↦
+  let a' : ℕ∞ := a
+  let b' : ℕ∞ := b
+  a' + b'⟩
+instance : Zero ENat' := ⟨⊤⟩
+instance : One ENat' := ⟨⊥⟩
+
+@[simp] theorem ENat'.add_eq_inf (a b : ENat') : a + b = (a ⊓ b) := rfl
+@[simp] theorem ENat'.mul_eq_add (a b : ENat') : a * b =
+  let a' : ℕ∞ := a
+  let b' : ℕ∞ := b
+  a' + b' := rfl
+@[simp] theorem ENat'.bot_le (a : ENat') : ⊥ ≤ a := OrderBot.bot_le a
+@[simp] theorem ENat'.le_top (a : ENat') : a ≤ ⊤ := OrderTop.le_top a
+@[simp] theorem ENat'.zero_eq_top : (0 : ENat') = ⊤ := rfl
+@[simp] theorem ENat'.one_eq_zero : (1 : ENat') = (0 : ℕ∞) := rfl
+
+instance : Semiring ENat' where
+  add_assoc a b c := by simp [inf_assoc]
+  zero_add := by simp
+  add_zero := by simp
+  nsmul n x := if n = 0 then ⊤ else x
+  add_comm := by simp [inf_comm]
+  left_distrib a b c := by simp [add_min]
+  right_distrib := by simp [min_add]
+  zero_mul _ := by rfl
+  mul_zero _ := by simp
+  mul_assoc := by simp [add_assoc]
+  one_mul _ := by simp
+  mul_one _ := by simp
+  nsmul_zero := by simp
+  nsmul_succ n := by simp; split_ifs <;> simp_all
+
+instance : AddLeftMono ENat' := ⟨fun b₁ b₂ b₃ h n ↦ by
+  simp_all; intro h''
+  have : (none : ℕ∞) = (⊤ : ℕ∞) := rfl
+  if b₁ = ⊤ then
+    subst_eqs
+    simp_all
+    rcases b₂ with _ | b₂ <;> try simp_all
+    · exact h n rfl
+    · exact h n rfl
+  else
+    rcases b₂ with _ | b₂ <;> rcases b₁ with _ | b₁ <;> rcases b₃ with _ | b₃ <;> simp_all
+    · have : b₁ = n := ENat.coe_inj.mp h''
+      subst_eqs
+      exists n ⊓ b₂
+      simp_all
+      rfl
+    · suffices n = b₁ ⊓ b₃ by
+        simp_all
+        subst_eqs
+        exists b₁ ⊓ b₂ ⊓ b₃
+        simp_all
+        have : b₂ ≤ b₃ := ENat.coe_le_coe.mp h
+        have : b₂ ⊓ b₃ = b₂ := by simp_all
+        simp_all
+        rfl
+      refine ENat.coe_inj.mp ?_
+      symm at h''
+      simp_all
+      rfl⟩
+instance : MulLeftMono ENat' := ⟨fun b₁ b₂ b₃ h ↦ by
+  simp_all
+  have : ∀ {b₁ b₂ b₃ : ℕ∞} (h : b₂ ≤ b₃), b₁ + b₂ ≤ b₁ + b₃ := fun h ↦ add_le_add_left h _
+  apply this h⟩
+
+open scoped Classical in
+/- **Combinatorics** via the (extended) **Natural Numbers semiring** -/
+example : wp[ℕ,ENat',ENat',String]⟦x := 1; {⊙ x} ⊕ {⊙2}⟧(1) = wght {3} := by
+  simp [wGCL.wp, Subst.subst]
+  norm_cast
+
+end ENat
+
 section Bottleneck
 
 def Bottleneck := EReal
@@ -124,8 +212,8 @@ noncomputable instance : Add Bottleneck := ⟨fun a b ↦ a ⊔ b⟩
 noncomputable instance : Mul Bottleneck := ⟨fun a b ↦ a ⊓ b⟩
 noncomputable instance : Zero Bottleneck := ⟨⊥⟩
 
-@[simp] theorem Bottleneck.add_eq_sup (a b : Bottleneck) : a + b = a ⊔ b := rfl
-@[simp] theorem Bottleneck.mul_eq_inf (a b : Bottleneck) : a * b = a ⊓ b := rfl
+@[simp] theorem Bottleneck.add_eq_inf (a b : Bottleneck) : a + b = a ⊔ b := rfl
+@[simp] theorem Bottleneck.mul_eq_add (a b : Bottleneck) : a * b = a ⊓ b := rfl
 @[simp] theorem Bottleneck.bot_le (a : Bottleneck) : ⊥ ≤ a := OrderBot.bot_le a
 @[simp] theorem Bottleneck.le_top (a : Bottleneck) : a ≤ ⊤ := OrderTop.le_top a
 @[simp] theorem Bottleneck.zero_eq_bot : (0 : Bottleneck) = ⊥ := rfl
@@ -272,12 +360,44 @@ noncomputable instance : OmegaCompletePartialOrder (Tropical ℕ∞) where
 
 /- **Optimization** via the **Tropical semiring** -/
 open scoped Classical in
-example : wp[ℕ,Tropical ℕ∞,Tropical ℕ∞,Var]⟦if (~(· x < 2)) { ⊙ 1 } else { ⊙ 2 }⟧(1) ≤ wght {2} := by
+example : wp[ℕ,Tropical ℕ∞,Tropical ℕ∞,Var]⟦if (~(· x < 2)) {⊙ 1} else {⊙ 2}⟧(1) ≤ wght {2} := by
   intro σ
   simp [wGCL.wp, Subst.subst, BExpr.iver, BExpr.not]
   if h : σ x < 2 then simp_all [Nat.not_le_of_lt]; norm_cast
   else simp_all [Nat.not_lt.mpr]
 
 end Tropical
+
+def SkiRental (n : Var) (y : Var) [∀ n, OfNat W n] : wGCL ℕ W Var := wgcl {
+  while (~(0 < · n)) {
+    ~n := ~(· n - 1) ;
+    {⊙ 1} ⊕ { ⊙ ~(OfNat.ofNat <| · y); ~n := 0 }
+  }
+}
+
+variable [DecidableEq Var]
+variable [(B : BExpr ℕ String) → (σ : Mem ℕ String) → Decidable (B σ)]
+
+@[simp] noncomputable instance {n : ℕ} : OfNat ENat' n := ⟨n⟩
+
+example :
+    wp[ℕ,ENat',ENat',String]⟦~(SkiRental n y)⟧(1) ≤ fun σ ↦ (σ n : ENat') + σ y := by
+  simp [SkiRental]
+  apply wGCL.wp_le_of_le
+  intro σ
+  simp [wGCL.Φ, BExpr.iver, BExpr.not, wGCL.wp, Subst.subst]
+  split_ifs with h₁ h₂ h₃ <;> subst_eqs <;> (try simp_all) <;> norm_cast
+  · left
+    generalize h : σ n = m
+    rw [h] at h₃
+    rcases m with _ | m
+    · simp
+    · simp_all
+      clear h
+      sorry
+  · left; left; left
+    sorry
+  · right
+    sorry
 
 end WGCL
