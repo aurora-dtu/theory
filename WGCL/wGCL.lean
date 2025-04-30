@@ -11,12 +11,29 @@ alias MonoidModule := DistribMulAction
 
 variable [DistribMulAction W M] (v w : W) (a b : M)
 
+@[inherit_doc] infixr:73 " ⊙ " => HMul.hMul
+@[inherit_doc] infixl:70 " ⊗ "   => HSMul.hSMul
+
+@[inherit_doc HSMul.hSMul]
+macro_rules | `($x ⊙ $y) => `(leftact% HMul.hMul $x $y)
+@[inherit_doc HMul.hMul]
+macro_rules | `($x ⊗ $y)   => `(binop% HSMul.hSMul $x $y)
+
+/-- info: v ⊙ w : W -/
+#guard_msgs in
+#check v ⊙ w
+/-- info: v ⊙ w ⊗ a : M -/
+#guard_msgs in
+#check (v ⊙ w) ⊗ a
+
 /-- (1) Scalar multiplication is associative. -/
-example : (v * w) • a = v • (w • a) := MulAction.mul_smul v w a
+example : (v ⊙ w) ⊗ a = v ⊗ (w ⊗ a) := MulAction.mul_smul v w a
 /-- (2) Scalar multiplication is distributive. -/
-example : v • (a + b) = (v • a) + (v • b) := DistribSMul.smul_add v a b
-/-- (3) Scalar multiplication by one is identity. -/
-example : v • (0 : M) = 0 := DistribMulAction.smul_zero v
+example : v ⊗ (a + b) = (v ⊗ a) + (v ⊗ b) := DistribSMul.smul_add v a b
+/-- (3a) Scalar multiplication by one is identity. -/
+example : 1 ⊗ a = a := one_nsmul a
+/-- (3b) Scalar multiplication with zero annihilates. -/
+example : v ⊗ (0 : M) = 0 := DistribMulAction.smul_zero v
 
 variable (Var : Type)
 

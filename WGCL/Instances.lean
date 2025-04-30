@@ -110,92 +110,182 @@ example : wp[ℕ,ℕ∞,ℕ∞,String]⟦x := 1; {⊙ x} ⊕ {⊙2}⟧(1) = wght
 
 end Combinatorics
 
-noncomputable section ENat
+noncomputable section TNat
 
-/-- A version of ℕ∞ where `a + b = a ⊓ b` and `a * b = a + b`. -/
-def ENat' := ℕ∞
+def TNat := ℕ∞
 
-instance : PartialOrder ENat' := inferInstanceAs (PartialOrder ℕ∞)
-instance : OrderBot ENat' := inferInstanceAs (OrderBot ℕ∞)
-instance : OrderTop ENat' := inferInstanceAs (OrderTop ℕ∞)
-instance : OmegaCompletePartialOrder ENat' := inferInstanceAs (OmegaCompletePartialOrder ℕ∞)
-instance : Min ENat' := inferInstanceAs (Min ℕ∞)
+@[simp] def TNat.ofENat (n : ℕ∞) : TNat := n
+@[simp] def TNat.toENat (n : TNat) : ℕ∞ := n
 
-instance : Add ENat' := ⟨fun a b ↦ a ⊓ b⟩
-instance : Mul ENat' := ⟨fun a b ↦
-  let a' : ℕ∞ := a
-  let b' : ℕ∞ := b
-  a' + b'⟩
-instance : Zero ENat' := ⟨⊤⟩
-instance : One ENat' := ⟨⊥⟩
+@[simp] instance : LE TNat where le a b := a.toENat ≤ b
 
-@[simp] theorem ENat'.add_eq_inf (a b : ENat') : a + b = (a ⊓ b) := rfl
-@[simp] theorem ENat'.mul_eq_add (a b : ENat') : a * b =
-  let a' : ℕ∞ := a
-  let b' : ℕ∞ := b
-  a' + b' := rfl
-@[simp] theorem ENat'.bot_le (a : ENat') : ⊥ ≤ a := OrderBot.bot_le a
-@[simp] theorem ENat'.le_top (a : ENat') : a ≤ ⊤ := OrderTop.le_top a
-@[simp] theorem ENat'.zero_eq_top : (0 : ENat') = ⊤ := rfl
-@[simp] theorem ENat'.one_eq_zero : (1 : ENat') = (0 : ℕ∞) := rfl
+@[simp] instance : Bot TNat := ⟨TNat.ofENat 0⟩
+@[simp] instance : Top TNat := ⟨TNat.ofENat ⊤⟩
+instance : OrderBot TNat where
+  bot_le a := by simp
 
-instance : Semiring ENat' where
-  add_assoc a b c := by simp [inf_assoc]
-  zero_add := by simp
-  add_zero := by simp
-  nsmul n x := if n = 0 then ⊤ else x
-  add_comm := by simp [inf_comm]
-  left_distrib a b c := by simp [add_min]
-  right_distrib := by simp [min_add]
-  zero_mul _ := by rfl
-  mul_zero _ := by simp
-  mul_assoc := by simp [add_assoc]
-  one_mul _ := by simp
-  mul_one _ := by simp
-  nsmul_zero := by simp
-  nsmul_succ n := by simp; split_ifs <;> simp_all
-
-instance : AddLeftMono ENat' := ⟨fun b₁ b₂ b₃ h n ↦ by
-  simp_all; intro h''
-  have : (none : ℕ∞) = (⊤ : ℕ∞) := rfl
-  if b₁ = ⊤ then
-    subst_eqs
+instance : PartialOrder TNat where
+  le_refl a := by simp
+  le_trans a b c := by
+    intro x hx
+    have := le_trans (a:=a.toENat) (b:=b.toENat) (c:=c.toENat)
     simp_all
-    rcases b₂ with _ | b₂ <;> try simp_all
-    · exact h n rfl
-    · exact h n rfl
-  else
-    rcases b₂ with _ | b₂ <;> rcases b₁ with _ | b₁ <;> rcases b₃ with _ | b₃ <;> simp_all
-    · have : b₁ = n := ENat.coe_inj.mp h''
-      subst_eqs
-      exists n ⊓ b₂
+  le_antisymm a b := by
+    simp_all
+    intro x hx
+    have := le_antisymm (a:=a.toENat) (b:=b.toENat)
+    simp_all
+
+instance : SemilatticeInf TNat where
+  inf a b := if a ≤ b then a else b
+  inf_le_left a b := by
+    split_ifs with h
+    · simp_all
+    · have := inf_le_left (a:=a.toENat) (b:=b.toENat)
       simp_all
-      rfl
-    · suffices n = b₁ ⊓ b₃ by
-        simp_all
-        subst_eqs
-        exists b₁ ⊓ b₂ ⊓ b₃
-        simp_all
-        have : b₂ ≤ b₃ := ENat.coe_le_coe.mp h
-        have : b₂ ⊓ b₃ = b₂ := by simp_all
-        simp_all
-        rfl
-      refine ENat.coe_inj.mp ?_
-      symm at h''
+      exact h.le
+  inf_le_right a b := by
+    split_ifs with h
+    · simp_all
+    · have := inf_le_left (a:=a.toENat) (b:=b.toENat)
       simp_all
-      rfl⟩
-instance : MulLeftMono ENat' := ⟨fun b₁ b₂ b₃ h ↦ by
-  simp_all
-  have : ∀ {b₁ b₂ b₃ : ℕ∞} (h : b₂ ≤ b₃), b₁ + b₂ ≤ b₁ + b₃ := fun h ↦ add_le_add_left h _
-  apply this h⟩
+  le_inf a b c hab hac := by
+    simp_all
+    split_ifs
+    · simp_all
+    · simp_all
+
+instance : OmegaCompletePartialOrder TNat := inferInstanceAs (OmegaCompletePartialOrder ℕ∞)
+
+@[simp] instance : One TNat := ⟨TNat.ofENat 0⟩
+@[simp] instance : Zero TNat := ⟨TNat.ofENat ⊤⟩
+@[simp] instance : Add TNat := ⟨fun x y ↦ x.toENat ⊓ y.toENat⟩
+@[simp] instance : Mul TNat := ⟨fun x y ↦ x.toENat + y.toENat⟩
+
+instance : Monoid TNat where
+  mul_assoc a b c := by simp_all [HMul.hMul, add_assoc]
+  one_mul a := by show (TNat.ofENat 0) * a = a; simp [HMul.hMul]
+  mul_one a := by show a * (TNat.ofENat 0) = a; simp [HMul.hMul]
+
+@[simp] theorem TNat.add_eq_inf {a b : TNat} : a + b = a ⊓ b := rfl
+@[simp] theorem TNat.mul_eq_add {a b : TNat} : a * b = a.toENat + b.toENat := rfl
+@[simp] theorem TNat.zero_eq : (0 : TNat) = TNat.ofENat ⊤ := rfl
+@[simp] theorem TNat.one_eq : (1 : TNat) = TNat.ofENat 0 := rfl
+@[simp] theorem TNat.top_eq : (⊤ : TNat) = TNat.ofENat ⊤ := rfl
+@[simp] theorem TNat.bot_eq : (⊥ : TNat) = TNat.ofENat ⊥ := rfl
+
+instance : AddCommMonoid TNat where
+  add_assoc a b c := by simp_all [HAdd.hAdd, inf_assoc]
+  zero_add a := by
+    simp_all [HAdd.hAdd, inf_assoc]
+    show a ≤ TNat.ofENat ⊤; simp
+  add_zero a := by
+    simp_all [HAdd.hAdd, inf_assoc]
+    show a ≤ TNat.ofENat ⊤; simp
+  add_comm := by simp [HAdd.hAdd, inf_comm]
+  nsmul n a := if n = 0 then 0 else a
+  nsmul_zero := by simp
+  nsmul_succ n a := by
+    simp [HAdd.hAdd]; split_ifs
+    · show a ≤ TNat.ofENat ⊤; simp
+    · simp_all
+
+instance : AddLeftMono TNat := ⟨fun _ ↦ by simp_all [inf_le_of_right_le]⟩
+
+instance : CovariantClass TNat TNat HSMul.hSMul LE.le := ⟨fun _ ↦ by simp_all [add_le_add_left]⟩
+
+instance : Semiring TNat where
+  left_distrib a b c := by
+    simp_all
+    if h : b ≤ c then
+      simp_all
+      show a.toENat + b.toENat ≤ a.toENat + c.toENat
+      exact add_le_add_left h a.toENat
+    else
+      simp_all
+      replace h := h.le
+      simp_all
+      show a.toENat + c.toENat ≤ a.toENat + b.toENat
+      exact add_le_add_left h a.toENat
+  right_distrib a b c := by
+    simp_all
+    if h : a ≤ b then
+      simp_all
+      show a.toENat + c.toENat ≤ b.toENat + c.toENat
+      exact add_le_add_right h c.toENat
+    else
+      simp_all
+      replace h := h.le
+      simp_all
+      show b.toENat + c.toENat ≤ a.toENat + c.toENat
+      exact add_le_add_right h c.toENat
+  zero_mul a := by rfl
+  mul_zero a := by show a.toENat + ⊤ = ⊤; exact add_top a.toENat
+
+@[simp]
+theorem ahsjdahsd : @min TNat SemilatticeInf.toMin x (@Top.top ℕ∞ WithTop.top) = x := by
+  simp
+  cases x
+  · rfl
+  · exact right_eq_inf.mp rfl
+
+@[simp]
+theorem TNat.le_top {x : ℕ∞} : @LE.le TNat Preorder.toLE x ⊤ := by
+  show x ≤ ⊤; exact OrderTop.le_top x
 
 open scoped Classical in
-/- **Combinatorics** via the (extended) **Natural Numbers semiring** -/
-example : wp[ℕ,ENat',ENat',String]⟦x := 1; {⊙ x} ⊕ {⊙2}⟧(1) = wght {3} := by
-  simp [wGCL.wp, Subst.subst]
-  norm_cast
+example :
+    wp[ℕ,TNat,TNat,Var]⟦
+      if (~(· x > 0)) {
+        ⊙ ~fun _ ↦ .ofENat 1;
+        ⊙ ~fun _ ↦ .ofENat 1
+      } else {
+        {⊙ ~fun _ ↦ .ofENat 2} ⊕ {⊙ ~fun _ ↦ .ofENat 3}
+      }
+    ⟧(~fun _ ↦ 1) = fun _ ↦ .ofENat 2 := by
+  ext σ
+  have : (1 : ℕ∞) + 1 = 2 := rfl
+  simp [wGCL.wp, BExpr.iver, BExpr.not, HMul.hMul, Mul.mul, instENatTop, this]
+  simp only [HAdd.hAdd, Add.add, instENatTop]
+  have : (2 : ℕ∞) ⊓ 3 = 2 := rfl
+  if 0 < σ x then
+    have : ¬σ x = 0 := by omega
+    simp_all
+  else
+    simp_all
+    apply TNat.le_top
 
-end ENat
+def SkiRental (n : Var) (y : Var) : wGCL ℕ TNat Var := wgcl {
+  while (~(0 < · n)) {
+    ~n := ~(· n - 1) ;
+    {⊙ ~fun _ ↦ .ofENat 1} ⊕ { ⊙ ~(.ofENat <| · y); ~n := 0 }
+  }
+}
+
+open scoped Classical in
+example :
+  wp[ℕ,TNat,TNat,Var]⟦~(SkiRental n y)⟧(~fun _ ↦ .ofENat 1) ≤ fun σ ↦ .ofENat (σ n * σ y)
+:= by
+  simp [SkiRental]
+  apply wGCL.wp_le_of_le
+  intro σ
+  simp [wGCL.Φ, BExpr.iver, BExpr.not, wGCL.wp, Subst.subst, instENatTop]
+
+  split_ifs <;> (try omega) <;> subst_eqs <;> try simp_all
+  · generalize h : σ n = u
+    have : 0 < u := by omega
+    clear! n
+    sorry
+  · generalize hu : σ n = u
+    generalize hv : σ y = v
+    have : 0 < u := by omega
+    clear! n y
+    sorry
+  · generalize hv : σ y = v
+    clear! n y
+    sorry
+
+end TNat
 
 section Bottleneck
 
@@ -288,7 +378,7 @@ scoped instance : CovariantClass (List Γ) (Language Γ) HSMul.hSMul LE.le :=
 @[simp] theorem Language.mem_insert_iff {S : Language Γ} : a ∈ insert b S ↔ a = b ∨ a ∈ S :=
   Set.mem_insert_iff
 
-/- **Model Checking** via the **Formal languages semiring** -/
+/- **Model Checking** via the **Formal languages module** -/
 open scoped Classical in
 example {a b c d : Γ} :
     wp[ℕ,Language Γ,List Γ,Var]⟦
@@ -299,7 +389,7 @@ example {a b c d : Γ} :
     ⟧(~{ε}) = {[a,b,c], [a,b,d]} := by
   ext σ w; simp [wGCL.wp]; rw [Set.mem_image]; aesop
 
-/- **Model Checking** via the **Formal languages semiring** -/
+/- **Model Checking** via the **Formal languages module** -/
 open scoped Classical in
 example {a b c: Γ} :
     wp[ℕ,Language Γ,List Γ,Var]⟦
@@ -374,30 +464,5 @@ def SkiRental (n : Var) (y : Var) [∀ n, OfNat W n] : wGCL ℕ W Var := wgcl {
     {⊙ 1} ⊕ { ⊙ ~(OfNat.ofNat <| · y); ~n := 0 }
   }
 }
-
-variable [DecidableEq Var]
-variable [(B : BExpr ℕ String) → (σ : Mem ℕ String) → Decidable (B σ)]
-
-@[simp] noncomputable instance {n : ℕ} : OfNat ENat' n := ⟨n⟩
-
-example :
-    wp[ℕ,ENat',ENat',String]⟦~(SkiRental n y)⟧(1) ≤ fun σ ↦ (σ n : ENat') + σ y := by
-  simp [SkiRental]
-  apply wGCL.wp_le_of_le
-  intro σ
-  simp [wGCL.Φ, BExpr.iver, BExpr.not, wGCL.wp, Subst.subst]
-  split_ifs with h₁ h₂ h₃ <;> subst_eqs <;> (try simp_all) <;> norm_cast
-  · left
-    generalize h : σ n = m
-    rw [h] at h₃
-    rcases m with _ | m
-    · simp
-    · simp_all
-      clear h
-      sorry
-  · left; left; left
-    sorry
-  · right
-    sorry
 
 end WGCL

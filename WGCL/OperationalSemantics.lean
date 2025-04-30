@@ -209,6 +209,11 @@ def TPath.nonempty {κ₀ : Conf D W Var} (π : TPath κ₀) : ¬π.val.confs = 
 def TPath.getLast {κ₀ : Conf D W Var} (π : TPath κ₀) : Conf D W Var :=
   π.val.confs.getLast (by simp)
 
+def wGCL.terminatesCertainlyOn (C : wGCL D W Var) (σ : Mem D Var) : Prop :=
+  ∃ n : ℕ, ∀ π : Path D W Var, π.confs[0]? = some (conf ⟨~C,σ,0,[]⟩) ∧ π.confs.length ≤ n
+
+def wGCL.terminatesCertainly (C : wGCL D W Var) : Prop := ∀ σ, C.terminatesCertainlyOn σ
+
 variable [TopologicalSpace M]
 
 noncomputable def op (C : wGCL D W Var) : Weighting D M Var → Weighting D M Var :=
