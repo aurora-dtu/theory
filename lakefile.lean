@@ -32,8 +32,7 @@ package «pGCL» where
   -- NOTE: if we want to disable the lints in the editor, we can do this
   -- ] ++ linters.map fun s ↦ { s with name := `weak ++ s.name }
 
-require mathlib from git
-  "https://github.com/leanprover-community/mathlib4.git"
+require "leanprover-community" / "mathlib"
 
 @[default_target]
 lean_lib «PGCL» where

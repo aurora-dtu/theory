@@ -380,12 +380,11 @@ theorem induction_on
           intro i hi
           have := progress i (by simp_all; omega)
           simp [List.getElem_append] at this
-          split_ifs at this <;> try omega
-          exact this⟩ s'
+          split_ifs at this <;> try omega⟩ s'
       · simp_all
         have := progress (l.length - 1) (by simp_all [List.length_pos_iff])
         simp [List.getElem_append] at this
-        split_ifs at this <;> (try omega) <;> simp_all
+        split_ifs at this <;> (try omega); simp_all
       · apply ih; simp_all [List.getElem_append, List.length_pos_iff]
 
 end MDP.Path

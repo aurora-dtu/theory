@@ -105,7 +105,10 @@ variable {f : pGCL ϖ → Exp ϖ → Exp ϖ}
 @[simp] theorem ς.tick : ς f (.tick r) = fun X ↦ r + f .skip X := by
   simp_all [ς, 𝒬.tsum_succs_univ']; rfl
 @[simp] theorem ς.prob : ς f (.prob C₁ p C₂) = fun X ↦ p.pick (f C₁ X) (f C₂ X) := by
-  simp_all [ς, 𝒬.tsum_succs_univ']
+  simp only [ς]
+  simp only [Φ_simp, cost_X_of_pGCL, P_eq, SmallStep.tsum_p, tsum_succs_univ', succs_univ_eq,
+    Set.mem_setOf_eq, coe_mk, cost, SmallStep.act_prob, Set.mem_singleton_iff, SmallStep.prob_iff,
+    exists_and_left, exists_eq_left, dite_eq_ite, iInf_iInf_eq_left, true_and, zero_add]
   ext X σ
   rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₁,σ⟩), ENNReal.tsum_eq_add_tsum_ite (·⟨C₂,σ⟩)]
   by_cases C₁ = C₂ <;> simp_all [eq_comm, ite_and]
