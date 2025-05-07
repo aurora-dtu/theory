@@ -458,11 +458,11 @@ example : wp[ℕ,Tropical ℕ∞,Tropical ℕ∞,Var]⟦if (~(· x < 2)) {⊙ 1}
 
 end Tropical
 
-def SkiRental (n : Var) (y : Var) [∀ n, OfNat W n] : wGCL ℕ W Var := wgcl {
-  while (~(0 < · n)) {
-    ~n := ~(· n - 1) ;
-    {⊙ 1} ⊕ { ⊙ ~(OfNat.ofNat <| · y); ~n := 0 }
-  }
-}
+-- def SkiRental (n : Var) (y : Var) [∀ n, OfNat W n] : wGCL ℕ W Var := wgcl {
+--   while (~(0 < · n)) {
+--     ~n := ~(· n - 1) ;
+--     {⊙ 1} ⊕ { ⊙ ~(OfNat.ofNat <| · y); ~n := 0 }
+--   }
+-- }
 
 end WGCL
