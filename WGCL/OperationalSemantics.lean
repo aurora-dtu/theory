@@ -101,6 +101,7 @@ decreasing_by
 attribute [simp] Conf.wgt
 attribute [simp] Conf.succ
 
+set_option maxHeartbeats 0 in
 theorem Conf.exists_a_iff {κ κ' : Conf D W Var} : (∃ a, Op κ a κ') ↔ Op κ (κ.wgt κ') κ' := by
   rcases κ with ⟨(_ | C), σ, n, β⟩
   · constructor

@@ -19,8 +19,7 @@ theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
   apply le_iSup_of_le Z
   induction Z using Finset.induction with
   | empty => simp
-  | insert h ih =>
-    rename_i s₀ Z
+  | insert s₀ Z h ih =>
     simp_all
     apply le_trans <| add_le_add (by rfl) ih; clear ih
     refine ENNReal.iSup_add_iSup_le fun i j ↦ ENNReal.iSup_add_iSup_le fun 𝒮₁ 𝒮₂ ↦ ?_

@@ -142,7 +142,7 @@ variable {𝒮 : 𝔖[M 𝓅]}
 @[simp] theorem succs_univ_s₂ : (M 𝓅).succs_univ .s₂ = {.s₃} := by simp [M]
 @[simp] theorem succs_univ_s₃ : (M 𝓅).succs_univ .s₃ = {.s₃} := by simp [M]
 
-def ℒ_a (a : ℕ) : 𝔏[M 𝓅] := ⟨⟨
+noncomputable def ℒ_a (a : ℕ) : 𝔏[M 𝓅] := ⟨⟨
   fun π ↦ if π.last = .s₁ then a else 0,
   fun π ↦ by simp_all⟩,
   by constructor; intro π; simp⟩
@@ -158,7 +158,7 @@ noncomputable def 𝒮_len (a : ℕ) : 𝔖[M 𝓅] := ⟨
     set s := π.last with h
     symm at h; rcases s <;> simp_all⟩
 
-abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[M 𝓅]) := 𝒮 {.s₁}
+noncomputable abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[M 𝓅]) := 𝒮 {.s₁}
 
 @[simp] theorem EC_succ_s₃ : (M 𝓅).EC M.cost 𝒮 n .s₃ = 0 := by
   induction n generalizing 𝒮 with
@@ -308,7 +308,6 @@ theorem ge_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] =
     · have := π.property i (by simp_all; omega)
       simp_all [add_comm]
     · omega
-    · omega
 
 theorem lt_of_s₂_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : j < i) :
     π[j]'(by omega) = State.s₁ := by
@@ -350,8 +349,7 @@ theorem s₂_mem_of_s₁_s₃_mem (π : (M 𝓅).Path) (hs₁ : .s₁ ∈ π) (h
   | succ d ih =>
     if π[i₁ + 1] = State.s₁ then
       apply ih (i₁ + 1) <;> try omega
-      · simp_all
-      · rw [← h₃]; congr! 1; simp; omega
+      rw [← h₃]; congr! 1; simp; omega
     else
       have := π.property i₁ (by simp_all; omega)
       simp_all
