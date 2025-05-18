@@ -11,6 +11,7 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Topology.Order.Real
 import Mathlib.MeasureTheory.OuterMeasure.OfAddContent
 import Mathlib.MeasureTheory.SetAlgebra
+import Canonical
 
 set_option grind.warning false
 
@@ -193,41 +194,152 @@ def B_b (b : Set H[F]) := {c : Set H[F] | b ⊆ c}
 notation "B[" h "]" => B_h h
 notation "B{" b "}" => B_b b
 
+def ℬ_b (b : Set H[F]) := generateSetAlgebra {B[h] | h ∈ b}
+notation "ℬ{" b "}" => ℬ_b b
+
+def ℘ω (X : Set α) := {Y ⊆ X | Y.Finite}
+
 section Lemma1
+
+omit [DecidableEq F]
 
 example : B[h] = B{{h}} := by simp [B_h, B_b]
 
-example {b c : Set H[F]} : b ⊆ c ↔ B{c} ⊆ B{b} := by
+@[simp]
+theorem B_b_subset_iff {b c : Set H[F]} : B{c} ⊆ B{b} ↔ b ⊆ c := by
   simp_all [B_b]
   constructor
-  · intro h d h'
-    exact h.trans h'
   · intro h
     exact h c (by rfl)
+  · intro h d h'
+    exact h.trans h'
 
-example {b c : Set H[F]} : B{b} ∩ B{c} = B{b ∪ c} := by ext d; simp_all [B_b]
+@[simp]
+theorem B_b_union {b c : Set H[F]} : B{b ∪ c} = B{b} ∩ B{c} := by ext d; simp_all [B_b]
 
--- NOTE: this is different from the notes, they have `B{∅} = 2^H` but it seems to be `B{∅} = 2^2^H`.
-example : B{∅} = (Set.univ : Set (Set H[F])) := by simp [B_b]
+@[simp]
+theorem B_b_empty : B{∅} = (Set.univ : Set (Set H[F])) := by simp [B_b]
+
+-- NOTE: this is not a nice proof to do, as one needs to do the closure and show that that is finite
+-- open scoped Classical in
+-- example {b : Set H[F]} (h : b.Finite) : (generateSetAlgebra ℬ{b}).Finite := by
+--   let S : Finset (Set (Set H[F])) := {{b, {}, bᶜ}}
+--   refine Set.Finite.ofFinset S fun x => ?_
+--   simp [S]
+--   constructor
+--   · rintro (⟨_⟩ | ⟨_⟩ | ⟨_⟩)
+--     · apply generateSetAlgebra.base _ (by simp_all)
+--     · simp_all; apply generateSetAlgebra.empty
+--     · simp_all; apply generateSetAlgebra.compl _ (generateSetAlgebra.base _ (by simp))
+--   · intro h
+--     sorry
+
+-- NOTE: MeasureTheory.Measure.MeasureDense.of_generateFrom_isSetAlgebra_finite !!!
+
+theorem ℬ_b_eq_iUnion : ℬ{(Set.univ : Set H[F])} = ⋃ b ∈ ℘ω Set.univ, ℬ{b} := by
+  ext A
+  simp only [℘ω, Set.subset_univ, true_and, Set.mem_setOf_eq, Set.mem_iUnion, exists_prop]
+  constructor
+  · intro h
+    induction h with
+    | base B hB =>
+      obtain ⟨h, hh⟩ := hB
+      use {h}, Set.finite_singleton h
+      exact generateSetAlgebra.base _ (by simp_all)
+    | empty => use {}; simp; exact generateSetAlgebra.empty
+    | compl B hB ih =>
+      obtain ⟨C, hC, hC'⟩ := ih
+      use C, hC
+      exact generateSetAlgebra.compl _ hC'
+    | union B C hB hC ihB ihC =>
+      replace hB : B ∈ ℬ{Set.univ} := hB
+      replace hC : C ∈ ℬ{Set.univ} := hC
+      obtain ⟨X, hX₁, hX₂⟩ := ihB
+      obtain ⟨Y, hY₁, hY₂⟩ := ihC
+      use X ∪ Y
+      constructor
+      · exact Set.Finite.union hX₁ hY₁
+      · apply generateSetAlgebra.union _ _ <;> show _ ∈ ℬ{X ∪ Y}
+        · apply generateSetAlgebra_mono _ hX₂
+          simp_all only [Set.mem_union, Set.setOf_subset_setOf, forall_exists_index, and_imp,
+            forall_apply_eq_imp_iff₂]
+          intro h hh; use h
+          simp_all only [true_or, and_self]
+        · apply generateSetAlgebra_mono _ hY₂
+          simp_all only [Set.mem_union, Set.setOf_subset_setOf, forall_exists_index, and_imp,
+            forall_apply_eq_imp_iff₂]
+          intro h hh; use h
+          simp_all only [or_true, and_self]
+  · rintro ⟨B, hB, hB'⟩; apply MeasureTheory.generateSetAlgebra_mono (by simp) hB'
 
 end Lemma1
 
 example : CompletePartialOrder (Set H[F]) := inferInstance
 noncomputable example : CompletePartialOrder ENNReal := inferInstance
 
-instance 𝒪.topology : TopologicalSpace (Set H[F]) := Topology.scott _ Set.univ
-def 𝒪 : Set (Set (Set H[F])) := 𝒪.topology.IsOpen
-instance 𝒪.IsScott : @Topology.IsScott (Set H[F]) Set.univ _ 𝒪.topology := ⟨rfl⟩
+def cool : Set (Set (Set H[F])) := {B[h] | h ∈ Set.univ}
 
-@[simp] theorem 𝒪.mem_iff : S ∈ 𝒪 ↔ @IsOpen _ (Topology.scott _ Set.univ) S := by rfl
+omit [DecidableEq F] in
+theorem cool_eq : cool (F:=F) = Set.range (B[·]) := by
+  simp [cool]; rfl
+
+def cool_topo : TopologicalSpace (Set H[F]) := Topology.scott _ cool
+
+instance cool_topo_IsScott : @Topology.IsScott _ cool _ (cool_topo (F:=F)) :=
+  let _ : TopologicalSpace (Set (H F)) := cool_topo
+  ⟨rfl⟩
+
+instance 𝒪.topology : TopologicalSpace (Set H[F]) := Topology.scott _ cool
+def 𝒪 : Set (Set (Set H[F])) := 𝒪.topology.IsOpen
+instance 𝒪.IsScott : @Topology.IsScott (Set H[F]) cool _ 𝒪.topology := ⟨rfl⟩
+
+@[simp]
+theorem B_h_nonempty : B[a].Nonempty := by simp [B_h]; exact Set.nonempty_of_mem rfl
+@[simp]
+theorem B_h_directed : DirectedOn (· ⊆ ·) B[a] := by
+  intro A hA B hB
+  simp_all [B_h]
+  exists A ∪ B
+  simp_all
+
+-- example : cool_topo (F:=F) = 𝒪.topology := by
+--   simp [cool_topo, 𝒪.topology]
+--   refine TopologicalSpace.ext ?_
+--   ext S
+--   simp_all only [@Topology.IsScott.isOpen_iff_isUpperSet_and_dirSupInaccOn _ _ _ cool_topo _
+--       cool_topo_IsScott]
+--   simp_all only [@Topology.IsScott.isOpen_iff_isUpperSet_and_dirSupInaccOn _ _ _ 𝒪.topology _
+--       𝒪.IsScott]
+--   simp_all only [and_congr_right_iff]
+--   intro hSU
+--   simp only [cool, Set.mem_univ, true_and]
+--   constructor
+--   · intro h
+--     simp [DirSupInaccOn,] at h ⊢
+--     intro X hX hXD A hXA hAS
+--     suffices ∃ a, B[a] = X by
+--       obtain ⟨a, ha⟩ := this
+--       subst_eqs
+--       exact h a hXA hAS
+--     simp [B_h]
+--     simp [IsLUB, IsLeast, upperBounds, lowerBounds] at hXA
+--     obtain ⟨h₁, h₂⟩ := hXA
+--     sorry
+--   · intro h
+--     simp [DirSupInaccOn,] at h ⊢
+--     intro a A haA hAS
+--     exact h (d:=B[a]) (by simp) (by simp) (a:=A) haA hAS
+
+
+@[simp] theorem 𝒪.mem_iff : S ∈ 𝒪 ↔ @IsOpen _ (Topology.scott _ cool) S := by rfl
 -- omit [DecidableEq F] in
 -- @[simp] theorem 𝒪.isOpen_iff {S : Set (Set H[F])} :
---     @IsOpen _ (Topology.scott _ Set.univ) S ↔ IsUpperSet S ∧ DirSupInacc S := by
+--     @IsOpen _ (Topology.scott _ cool) S ↔ IsUpperSet S ∧ DirSupInacc S := by
 --   simp [@Topology.IsScott.isOpen_iff_isUpperSet_and_dirSupInaccOn (s:=S) _ _ _ _ 𝒪.IsScott]
-omit [DecidableEq F] in
-@[simp] theorem 𝒪.isClosed_iff {S : Set (Set H[F])} :
-    @IsClosed _ (Topology.scott _ Set.univ) S ↔ IsLowerSet S ∧ DirSupClosed S := by
-  simp [Topology.IsScott.isClosed_iff_isLowerSet_and_dirSupClosed]
+-- omit [DecidableEq F] in
+-- @[simp] theorem 𝒪.isClosed_iff {S : Set (Set H[F])} :
+--     @IsClosed _ (Topology.scott _ cool) S ↔ IsLowerSet S ∧ DirSupClosed S := by
+--   simp [Topology.IsScott.isClosed_iff_isLowerSet_and_dirSupClosed]
 
 -- /-- The sets `B[h]` and `∼B[h]` are the subbasic open sets of the Cantor space topology on 2H. -/
 -- instance 𝒞.topology : TopologicalSpace (Set H[F]) :=
@@ -237,6 +349,12 @@ omit [DecidableEq F] in
   smallest σ-algebra generated by the Scott-open sets. -/
 instance ℬ.measurableSpace : MeasurableSpace (Set H[F]) := @borel _ 𝒪.topology
 def ℬ : Set (Set (Set H[F])) := ℬ.measurableSpace.MeasurableSet'
+
+-- instance ℬ.measurableSpace_eq : MeasurableSpace.generateFrom ℬ{Set.univ} = ℬ.measurableSpace (F:=F) := by
+--   symm
+--   simp [ℬ_b, Set.mem_univ, true_and, generateFrom_generateSetAlgebra_eq, measurableSpace]
+
+--   sorry
 
 instance : BorelSpace (Set H[F]) := ⟨rfl⟩
 
@@ -271,6 +389,46 @@ instance : BorelSpace (Set H[F]) := ⟨rfl⟩
 @[simp]
 instance ℬ.measurableSpace_eq : ℬ.measurableSpace (F:=F) = @borel _ 𝒪.topology := by
   simp [measurableSpace]
+
+theorem ℬ_b_OpensMeasurableSpace :
+    @OpensMeasurableSpace _ 𝒪.topology
+      (MeasurableSpace.generateFrom (ℬ{Set.univ} : Set (Set (Set H[F])))) := by
+  simp [opensMeasurableSpace_iff_forall_measurableSet, ℬ_b_eq_iUnion, ℘ω]
+  intro s hs
+  refine MeasurableSpace.measurableSet_generateFrom ?_
+  sorry
+
+@[simp]
+theorem B_h_IsOpen (w : H[F]) : @IsOpen _ 𝒪.topology B[w] := by
+  sorry
+@[simp]
+theorem B_h_MeasurableSet (w : H[F]) : MeasurableSet B[w] :=
+  MeasurableSpace.measurableSet_generateFrom (B_h_IsOpen w)
+@[simp]
+theorem ℬ_b_of_IsOpen {S : Set (Set H[F])} (h : @IsOpen _ 𝒪.topology S) : S ∈ ℬ{Set.univ} := by
+  replace h := (@Topology.IsScott.isOpen_iff_isUpperSet_and_dirSupInaccOn _ _ _ 𝒪.topology _ 𝒪.IsScott).mp h
+  simp_all [IsUpperSet, DirSupInaccOn, cool]
+  sorry
+
+-- TODO: **The connection between the Cantor generated measurable space and the Scott**
+@[simp]
+theorem ℬ_b_measurableSpace_is_ℬ :
+    MeasurableSpace.generateFrom ℬ{Set.univ} = ℬ.measurableSpace (F:=F) := by
+  apply le_antisymm _ ?_ -- ℬ_b_OpensMeasurableSpace.borel_le
+  · refine MeasurableSpace.generateFrom_le ?_
+    simp [ℬ_b_eq_iUnion, ℘ω]
+    intro t x hx htx
+    induction htx with
+    | base s hs => obtain ⟨_, _, _, _⟩ := hs; simp
+    | empty => simp
+    | compl => simp_all
+    | union => simp_all
+  · simp
+    rw [borel_eq_generateFrom_isClosed]
+    refine MeasurableSpace.generateFrom_mono ?_
+    intro S
+    simp [ℬ_b_eq_iUnion, ℘ω]
+    sorry
 
 open ProbabilityTheory
 
@@ -334,45 +492,10 @@ theorem 𝒪.setAlgebraIsPiSystem : _root_.IsPiSystem (𝒪.setAlgebra (F:=F)) :
     simp [setAlgebra]
     exact IsSetRing.inter_mem (IsSetAlgebra.isSetRing isSetAlgebra_generateSetAlgebra) hA hB
 
-theorem ashjdas (μ ν : ProbabilityMeasure (Set H[F])) :
-    (∀ B ∈ 𝒪.setAlgebra, μ B ≤ ν B) ↔ (∀ B ∈ 𝒪, μ B ≤ ν B) := by
-  constructor
-  · intro h B hB
-    simp_all [𝒪.setAlgebra]
-    apply h B (self_subset_generateSetAlgebra hB)
-  · intro h B hB
-    replace hB : generateSetAlgebra 𝒪 B := hB
-    have := generateSetAlgebra.rec (𝒜:=(𝒪 (F:=F))) (motive := fun X _ ↦ μ X ≤ ν X)
-    apply this <;> clear this
-    · simp_all only [𝒪.mem_iff, implies_true]
-    · simp_all only [𝒪.mem_iff, isOpen_empty]
-    · sorry
-    · sorry
-    · exact hB
-    -- induction hB generalizing μ ν h with
-    -- | base => simp_all
-    -- | empty => simp_all
-    -- | union s t => sorry
-    -- | compl s h' ih =>
-    --   have : MeasurableSet s := by
-    --     have := MeasurableSpace.measurableSet_generateFrom h'
-    --     simp_all only [generateFrom_generateSetAlgebra_eq, ℬ.measurableSpace_eq]
-    --   have h₁ := MeasureTheory.measure_compl this (measure_ne_top μ s)
-    --   have h₂ := MeasureTheory.measure_compl this (measure_ne_top ν s)
-    --   simp_all only [ℬ.measurableSpace_eq, measure_univ, ge_iff_le]
-    --   replace h₁ : μ sᶜ = 1 - μ s := sorry
-    --   replace h₂ : ν sᶜ = 1 - ν s := sorry
-    --   simp_all only [ge_iff_le]; clear h₁ h₂
-    --   gcongr
-    --   apply ih ν μ ?_
-
-    --   sorry
-
-
 @[simp]
 noncomputable instance : PartialOrder (ProbabilityMeasure (Set H[F])) where
-  le μ ν := ∀ B ∈ 𝒪.setAlgebra, μ B ≤ ν B
-  lt μ ν := (∀ B ∈ 𝒪.setAlgebra, μ B ≤ ν B) ∧ ¬∀ B ∈ 𝒪.setAlgebra, ν B ≤ μ B
+  le μ ν := ∀ B ∈ 𝒪, μ B ≤ ν B
+  lt μ ν := (∀ B ∈ 𝒪, μ B ≤ ν B) ∧ ¬∀ B ∈ 𝒪, ν B ≤ μ B
   le_refl := by simp
   le_trans _ _ _ h₁ h₂ B a := (h₁ B a).trans (h₂ B a)
   le_antisymm := by
@@ -381,32 +504,121 @@ noncomputable instance : PartialOrder (ProbabilityMeasure (Set H[F])) where
     obtain ⟨ν, hν⟩ := ν
     simp_all only [ProbabilityMeasure.mk_apply, ne_eq, measure_ne_top,
       not_false_eq_true, ENNReal.toNNReal_le_toNNReal]
-    have h : ∀ B ∈ 𝒪.setAlgebra, μ B = ν B := fun B h ↦ (hμν B h).antisymm (hνμ B h)
+    have h : ∀ B ∈ 𝒪, μ B = ν B := fun B h ↦ (hμν B h).antisymm (hνμ B h)
     simp_all only [𝒪.mem_iff, le_refl, implies_true]
     suffices μ = ν by apply ProbabilityMeasure.eq_of_forall_toMeasure_apply_eq_iff.mpr (by simp_all)
-    apply MeasureTheory.ext_of_generate_finite _ (by simp [𝒪.setAlgebra]; rfl)
-      𝒪.setAlgebraIsPiSystem h (by simp)
+    apply MeasureTheory.ext_of_generate_finite _ rfl 𝒪.IsPiSystem h (by simp)
 
-noncomputable def 𝒪.IsSetRing : IsSetRing (𝒪 (F:=F)) where
-  empty_mem := by simp
-  union_mem := by
+def gens : Set (Set (Set H[F])) := (B{·}) '' {b : Set H[F] | b.Finite}
+def setAlg := (generateSetAlgebra (gens (F:=F)))
+
+-- TODO: This should probably be for `{B[b] | Finite b}` not all of `𝒪`
+-- TODO: After trying this, I think it must be an algebra, which us closed under difference
+noncomputable def 𝒪.IsSetSemiring_f : IsSetSemiring (setAlg (F:=F)) where
+  empty_mem := by simp [gens, setAlg]; refine IsSetAlgebra.empty_mem isSetAlgebra_generateSetAlgebra
+  inter_mem _ h _ _ := IsSetAlgebra.inter_mem isSetAlgebra_generateSetAlgebra h (by simp_all)
+  diff_eq_sUnion' A hA B hB := by
+    use {A \ B}
     simp
-    intro A B hA hB
-    exact IsOpen.union hA hB
-  diff_mem := by
-    intro A B hA hB
-    simp_all
-    have hA' : A ∈ setAlgebra := sorry
-    have hB' : B ∈ setAlgebra := sorry
-    sorry
+    refine IsSetAlgebra.diff_mem ?_ hA hB
+    exact isSetAlgebra_generateSetAlgebra
+
+noncomputable def 𝒪.IsSetSemiring : IsSetSemiring (𝒪 (F:=F)) where
+  empty_mem := by simp
+  inter_mem _ h _ := by simp; exact IsOpen.inter h
+  diff_eq_sUnion' A hA B hB := by
+
+    exists {A \ B}
+    simp_all only [mem_iff, Finset.coe_singleton, Set.singleton_subset_iff,
+      Set.pairwiseDisjoint_singleton, Set.sUnion_singleton, and_self, and_true]
+    simp_all only [@Topology.IsScott.isOpen_iff_isUpperSet_and_dirSupInaccOn _ _ _ 𝒪.topology _
+        𝒪.IsScott]
+    simp_all only [cool_eq]
+    constructor
+    ·
+      sorry
+    · intro X hX hXN hXD x hXx hxAB
+      sorry
+      -- simp_all
+      -- obtain ⟨w, _, _⟩ := hX
+      -- simp_all
+      -- exists {w}
+      -- simp_all [B_h]
+      -- have : w ∈ x := by
+      --   have := hXx.left
+      --   exact this (a:={w}) (by simp) rfl
+      -- constructor
+      -- · replace hA := hA.right
+      --   simp [DirSupInaccOn] at hA
+      --   replace := hA w B_h_nonempty B_h_directed hXx hxAB.left
+
+      --   simp_all
+
+
+
+    -- simp_all only [mem_iff, Finset.coe_singleton, Set.singleton_subset_iff,
+    --   Set.pairwiseDisjoint_singleton, Set.sUnion_singleton, and_self, and_true]
+    -- simp
+    -- intro D hD hDD x hX
+    -- simp_all
+    -- refine isLUB_iff_le_iff.mpr ?_
+    -- simp_all [IsLUB, IsLeast, upperBounds]
+    -- intro p
+    -- constructor
+    -- · intro h p' S hS hS' hp'
+    --   simp_all
+    --   sorry
+    -- · intro h h' h''
+    --   simp_all [IsLUB]
+    --   simp_all
+
 noncomputable def 𝒪.IsSetRing' := (𝒪.isSetAlgebra (F:=F)).isSetRing
 
-noncomputable def 𝒪.IsSetSemiring : IsSetSemiring (𝒪 (F:=F)) := 𝒪.IsSetRing.isSetSemiring
+-- noncomputable def 𝒪.IsSetSemiring : IsSetSemiring (𝒪 (F:=F)) := 𝒪.IsSetRing.isSetSemiring
 noncomputable def 𝒪.IsSetSemiring' := (𝒪.IsSetRing' (F:=F)).isSetSemiring
 
+open scoped Classical in
+noncomputable def 𝒪.AddContent (D : Set (ProbabilityMeasure (Set H[F])))
+    (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) : AddContent (𝒪 (F:=F)) where
+  toFun S := ⨆ μ ∈ D, μ S
+  empty' := by simp
+  sUnion' := by
+    simp only [mem_iff, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure]
+    intro S hS hdis hUO
+    conv =>
+      left
+      arg 1
+      ext μ
+      rw [MeasureTheory.measure_sUnion (Finset.countable_toSet S) hdis
+          (fun _ ↦ (MeasurableSpace.measurableSet_generateFrom <| hS ·))]
+    simp only [Finset.coe_sort_coe, Finset.tsum_subtype]
+    symm
+    rw [← Finset.sum_attach]
+    conv => right; arg 1; ext; rw [← Finset.sum_attach]
+    have := ENNReal.finsetSum_iSup (s:=S.attach) (ι:=D) (f:=fun B μ ↦ μ.val B) ?_
+    · convert this <;> simp [iSup_subtype']
+    simp_all only [instPartialOrderProbabilityMeasureSetH, mem_iff, not_forall, Classical.not_imp,
+      not_le, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, Subtype.forall, Subtype.exists,
+      exists_prop]
+    intro μ hμ ν hν
+    have ⟨m, hmD, hm⟩ := hD μ hμ ν hν
+    use m, hmD
+    intro B hB
+    have hl := hm.left B (hS hB)
+    have hr := hm.right B (hS hB)
+    have hμ_top : μ.val B ≠ ⊤ := by
+      simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    have hν_top : ν.val B ≠ ⊤ := by
+      simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    have hm_top : m.val B ≠ ⊤ := by
+      simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    constructor
+    · exact (ENNReal.toNNReal_le_toNNReal hμ_top hm_top).mp hl
+    · exact (ENNReal.toNNReal_le_toNNReal hν_top hm_top).mp hr
+
 -- open scoped Classical in
--- noncomputable def 𝒪.AddContent (D : Set (ProbabilityMeasure (Set H[F])))
---     (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) : AddContent (𝒪 (F:=F)) where
+-- noncomputable def 𝒪.AddContent_f (D : Set (ProbabilityMeasure (Set H[F])))
+--     (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) : MeasureTheory.AddContent (setAlg (F:=F)) where
 --   toFun S := ⨆ μ ∈ D, μ S
 --   empty' := by simp
 --   sUnion' := by
@@ -416,8 +628,9 @@ noncomputable def 𝒪.IsSetSemiring' := (𝒪.IsSetRing' (F:=F)).isSetSemiring
 --       left
 --       arg 1
 --       ext μ
---       rw [MeasureTheory.measure_sUnion (Finset.countable_toSet S) hdis
---           (fun _ ↦ (MeasurableSpace.measurableSet_generateFrom <| hS ·))]
+--       rw [MeasureTheory.measure_sUnion (Finset.countable_toSet S) hdis (by
+--         simp_all [setAlg, gens]
+--         sorry)]
 --     simp only [Finset.coe_sort_coe, Finset.tsum_subtype]
 --     symm
 --     rw [← Finset.sum_attach]
@@ -444,8 +657,56 @@ noncomputable def 𝒪.IsSetSemiring' := (𝒪.IsSetRing' (F:=F)).isSetSemiring
 --     · exact (ENNReal.toNNReal_le_toNNReal hν_top hm_top).mp hr
 
 open scoped Classical in
+noncomputable def 𝒪.AddContentℬ (D : Set (ProbabilityMeasure (Set H[F])))
+    (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) : MeasureTheory.AddContent (ℬ{Set.univ} : Set (Set (Set H[F]))) where
+  toFun S := ⨆ μ ∈ D, μ S
+  empty' := by simp
+  sUnion' := by
+    simp_all only [mem_iff, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure]
+    intro I hI hID hIU
+    conv =>
+      left; arg 1; ext μ
+      rw [MeasureTheory.measure_sUnion (Finset.countable_toSet I) hID (by
+        simp_all [setAlg, gens]
+        -- TODO: this is doable
+        sorry)]
+    simp only [Finset.coe_sort_coe, Finset.tsum_subtype]
+    simp_all only [ℬ_b_eq_iUnion, ℘ω, Set.subset_univ, true_and, Set.mem_setOf_eq, Set.mem_iUnion,
+      exists_prop]
+    obtain ⟨G, hG, hIG⟩ := hIU
+    clear! hI hID hIG
+    symm
+    induction I using Finset.induction with
+    | empty => simp
+    | insert s I hsI ih =>
+      simp_all only [not_false_eq_true, Finset.sum_insert]
+      simp [iSup_subtype']
+      have : IsDirected (Subtype (Membership.mem D)) fun x1 x2 => ∀ B ∈ 𝒪, x1.val B ≤ x2.val B := by
+        simp_all
+        sorry
+      rw [ENNReal.iSup_add_iSup_of_monotone]
+      · simp
+        intro μ ν h
+        simp
+        sorry
+      · intro μ ν h
+        simp
+        gcongr
+        sorry
+
+-- open scoped Classical in
+-- noncomputable def 𝒪.AddContent_no (D : Set (ProbabilityMeasure (Set H[F])))
+--     (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) :
+--     MeasureTheory.AddContent (𝒪.setAlgebra (F:=F)) := by apply?
+
+-- example {a b : Set α} (h : ¬Disjoint a b) : ∃ t, Disjoint (a \ t) (b \ t)  := by
+--   use a ∩ b
+--   simp_all
+--   exact disjoint_sdiff_sdiff
+
+open scoped Classical in
 noncomputable def 𝒪.AddContent' (D : Set (ProbabilityMeasure (Set H[F])))
-    (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) :
+    (hD : DirectedOn (∀ B ∈ 𝒪.setAlgebra, · B ≤ · B) D) :
     MeasureTheory.AddContent (𝒪.setAlgebra (F:=F)) where
   toFun S := ⨆ μ ∈ D, μ S
   empty' := by simp
@@ -471,7 +732,44 @@ noncomputable def 𝒪.AddContent' (D : Set (ProbabilityMeasure (Set H[F])))
     have ⟨m, hmD, hm⟩ := hD μ hμ ν hν
     use m, hmD
     intro B hB
-    simp_all only [setAlgebra]
+    -- simp_all only [setAlgebra]
+    -- have := (hS hB : generateSetAlgebra 𝒪 B)
+    -- clear! S
+    -- induction this generalizing μ ν m with
+    -- | base B hB' =>
+    --   have hl := hm.left B hB'; have hr := hm.right B hB'; clear hm
+    --   have hμ_top : μ.val B ≠ ⊤ := by
+    --     simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    --   have hν_top : ν.val B ≠ ⊤ := by
+    --     simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    --   have hm_top : m.val B ≠ ⊤ := by
+    --     simp_all only [ProbabilityMeasure.val_eq_to_measure, ne_eq, measure_ne_top, not_false_eq_true]
+    --   constructor
+    --   · exact (ENNReal.toNNReal_le_toNNReal hμ_top hm_top).mp hl
+    --   · exact (ENNReal.toNNReal_le_toNNReal hν_top hm_top).mp hr
+    -- | empty => simp_all only [measure_empty, le_refl, and_self]
+    -- | union s t hs ht ihs iht =>
+    --   sorry
+    --   -- if hDis : Disjoint s t then
+    --   --   have hMs : MeasurableSet s := sorry
+    --   --   have hMt : MeasurableSet t := sorry
+    --   --   simp_all only [ℬ.measurableSpace_eq, measure_union]
+    --   --   constructor
+    --   --   · gcongr <;> simp_all
+    --   --   · gcongr <;> simp_all
+    --   -- else
+    --   --   simp_all only [Set.not_disjoint_iff]
+    --   --   sorry
+    -- | compl B h ih =>
+    --   simp only [MeasureTheory.measure_compl sorry sorry, measure_univ]
+    --   constructor
+    --   · gcongr
+
+    --     sorry
+    --   · gcongr
+    --     sorry
+
+    -- TODO : we need IsOpen B of B ∈ S. idk how
     have hl := hm.left B (hS hB); have hr := hm.right B (hS hB); clear hm
     clear! S
     have hμ_top : μ.val B ≠ ⊤ := by
@@ -484,14 +782,17 @@ noncomputable def 𝒪.AddContent' (D : Set (ProbabilityMeasure (Set H[F])))
     · exact (ENNReal.toNNReal_le_toNNReal hμ_top hm_top).mp hl
     · exact (ENNReal.toNNReal_le_toNNReal hν_top hm_top).mp hr
 
--- @[simp] theorem 𝒪.AddContent_apply : 𝒪.AddContent D hD S = ⨆ μ ∈ D, (μ S : ENNReal) := by rfl
+@[simp] theorem 𝒪.AddContent_apply : 𝒪.AddContent D hD S = ⨆ μ ∈ D, (μ S : ENNReal) := by rfl
 @[simp] theorem 𝒪.AddContent'_apply : 𝒪.AddContent' D hD S = ⨆ μ ∈ D, (μ S : ENNReal) := by rfl
+@[simp] theorem 𝒪.AddContentℬ_apply : 𝒪.AddContentℬ D hD S = ⨆ μ ∈ D, (μ S : ENNReal) := by rfl
 
--- theorem 𝒪.AddContent_IsSigmaSubadditive : (𝒪.AddContent D hD).IsSigmaSubadditive := by
---   refine isSigmaSubadditive_of_addContent_iUnion_eq_tsum 𝒪.IsSetRing ?_
---   intro f h₁ h₂ h₃
---   simp only [AddContent_apply, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure]
---   sorry
+theorem 𝒪.AddContent_IsSigmaSubadditive : (𝒪.AddContent D hD).IsSigmaSubadditive := by
+  intro f h₁ h₂
+  simp only [AddContent_apply, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, iSup_le_iff]
+  intro μ hμ
+  apply le_trans (measure_iUnion_le (μ:=μ.val) (s:=f))
+  gcongr with i
+  apply le_iSup₂_of_le μ hμ; rfl
 theorem 𝒪.AddContent'_IsSigmaSubadditive : (𝒪.AddContent' D hD).IsSigmaSubadditive := by
   refine isSigmaSubadditive_of_addContent_iUnion_eq_tsum 𝒪.IsSetRing' ?_
   intro f h₁ h₂ h₃
@@ -532,13 +833,24 @@ theorem 𝒪.AddContent'_IsSigmaSubadditive : (𝒪.AddContent' D hD).IsSigmaSub
   constructor
   · exact (ENNReal.toNNReal_le_toNNReal hμ_top hm_top).mp hl
   · exact (ENNReal.toNNReal_le_toNNReal hν_top hm_top).mp hr
+theorem 𝒪.AddContentℬ_IsSigmaSubadditive : (𝒪.AddContentℬ D hD).IsSigmaSubadditive := by
+  intro f h₁ h₂
+  simp only [AddContentℬ_apply, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, iSup_le_iff]
+  intro μ hμ
+  apply le_trans (measure_iUnion_le (μ:=μ.val) (s:=f))
+  gcongr with i
+  apply le_iSup₂_of_le μ hμ; rfl
 
--- noncomputable def 𝒪.measure (D : Set (ProbabilityMeasure (Set H[F])))
---     (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) :=
---   (𝒪.AddContent D hD).measure 𝒪.IsSetSemiring (by rfl) 𝒪.AddContent_IsSigmaSubadditive
+noncomputable def 𝒪.measure (D : Set (ProbabilityMeasure (Set H[F])))
+    (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) :=
+  (𝒪.AddContent D hD).measure 𝒪.IsSetSemiring (by rfl) 𝒪.AddContent_IsSigmaSubadditive
 noncomputable def 𝒪.measure' (D : Set (ProbabilityMeasure (Set H[F])))
-    (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) :=
+    (hD : DirectedOn (∀ B ∈ 𝒪.setAlgebra, · B ≤ · B) D) :=
   (𝒪.AddContent' D hD).measure 𝒪.IsSetSemiring' (by simp [setAlgebra]; rfl) 𝒪.AddContent'_IsSigmaSubadditive
+noncomputable def 𝒪.measureℬ (D : Set (ProbabilityMeasure (Set H[F])))
+    (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) :=
+  (𝒪.AddContentℬ D hD).measure (isSetAlgebra_generateSetAlgebra.isSetRing.isSetSemiring)
+    (by simp) 𝒪.AddContentℬ_IsSigmaSubadditive
 
 -- @[simp]
 -- theorem 𝒪.measure_apply (h : @IsOpen _ 𝒪.topology S) : 𝒪.measure D hD S = 𝒪.AddContent D hD S :=
@@ -550,16 +862,16 @@ theorem 𝒪.measure'_apply (h : @IsOpen _ 𝒪.topology S) : 𝒪.measure' D hD
 @[simp]
 theorem 𝒪.measure'_apply' (h : S ∈ 𝒪.setAlgebra) : 𝒪.measure' D hD S = 𝒪.AddContent' D hD S :=
   MeasureTheory.AddContent.measure_eq _ _ (by simp [setAlgebra]; rfl) _ h
+@[simp]
+theorem 𝒪.measureℬ_apply' {S : Set (Set (H F))} (h : S ∈ 𝒪) : 𝒪.measureℬ D hD S = 𝒪.AddContentℬ D hD S :=
+  MeasureTheory.AddContent.measure_eq _ _ (by simp) _ (by simp_all)
 
 open scoped Classical in
 @[simp]
 noncomputable def my_sSup (D : Set (ProbabilityMeasure (Set H[F])))
-    (hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D) : ProbabilityMeasure (Set H[F]) :=
-  ⟨𝒪.measure' D hD,
-    by
-      simp [isProbabilityMeasure_iff]
-      sorry
-  ⟩
+    (hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D) : ProbabilityMeasure (Set H[F]) :=
+  ⟨if D.Nonempty then 𝒪.measureℬ D hD else dirac {},
+    by split_ifs <;> simp_all [isProbabilityMeasure_iff, biSup_const]⟩
 
 @[simp]
 theorem IsUpperSet.eq_univ_of_empty_mem {S : Set (Set α)} (hS : IsUpperSet S) (h : ∅ ∈ S) :
@@ -574,108 +886,60 @@ theorem History.eq_univ_of_empty_mem (hS : S ∈ 𝒪) (h : ∅ ∈ S) : S = Set
   simp_all [Topology.IsScott.isUpperSet_of_isOpen]
   exact @Topology.IsScott.isUpperSet_of_isOpen _ _ _ _ _ 𝒪.IsScott hS _ _ (Set.empty_subset A) h
 
+omit [DecidableEq F] in
+@[simp]
+theorem dirac_bot (μ : ProbabilityMeasure (Set H[F])) : ∀ B ∈ 𝒪, dirac {} B ≤ μ B := by
+  intro B hB
+  simp [dirac_apply', MeasurableSpace.measurableSet_generateFrom hB, Set.indicator]
+  split_ifs <;> simp_all
+
 open scoped Classical in
-noncomputable instance : CompletePartialOrder (ProbabilityMeasure (Set H[F])) := {instPartialOrderProbabilityMeasureSetH with
-  sSup D :=
-    if hD : DirectedOn instPartialOrderProbabilityMeasureSetH.le D then
-      my_sSup D hD
-    else
-      default
-  lubOfDirected := by
-    intro D h
-    simp_all only [instPartialOrderProbabilityMeasureSetH, not_forall, Classical.not_imp, not_le,
-      my_sSup, dite_true]
-    apply isLUB_iff_le_iff.mpr
-    intro μ
-    simp only [instPartialOrderProbabilityMeasureSetH, not_forall, Classical.not_imp, not_le,
-      ProbabilityMeasure.mk_apply, upperBounds, Set.mem_setOf_eq]
-    constructor
-    · intro h ν hν B hB
-      apply le_trans _ (h B hB)
-      have := le_iSup (α:=ENNReal) (ι:=D) (fun μ ↦ μ.val B) ⟨ν, hν⟩
-      simp_all only [𝒪.measure'_apply', 𝒪.AddContent'_apply,
-        ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, ge_iff_le]
-      refine ENNReal.coe_le_coe.mp ?_
-      convert this
-      · simp only [ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure]
-      · sorry
-    · intro h B hB
-      simp_all
-      suffices ⨆ μ ∈ D, μ B ≤ μ B by sorry
-      have := iSup_le (ι:=D) (a:=ENNReal.ofNNReal (μ B)) (f := fun μ ↦ ENNReal.ofNNReal (μ.val B)) ?_
-      · sorry
-      · simp
-        intro ν hν
-        have := h hν B hB
-        sorry
-  }
-
-
-    -- -- NOTE: v1 using `sUnion`
-    -- let T : Set (Set (Set H[F])) := sorry
-    -- have h_sub : T ⊆ 𝒪 := sorry
-    -- have hc : T.Countable := sorry
-    -- have hU : ⋃₀ T = Set.univ := sorry
-    -- have htop : ∀ t ∈ T, μ t ≠ ⊤ := sorry
-    -- exact MeasureTheory.Measure.ext_of_generateFrom_of_cover_subset rfl 𝒪.IsPiSystem h_sub hc hU htop h
-
-    -- -- NOTE: v2 using `iUnion`
-    -- apply FiniteSpanningSetsIn.ext rfl 𝒪.IsPiSystem ?_ h
-    -- sorry
-
-    -- NOTE: v3 using finite measures, i.e. `μ Set.univ < ⊤`
-    -- obtain ⟨μ, hμ⟩ := μ
-    -- obtain ⟨ν, hν⟩ := ν
-
-    -- apply MeasureTheory.ext_of_generate_finite _ rfl 𝒪.IsPiSystem h (h _ _); simp
-    -- suffices IsFiniteMeasure μ by
-
-
-    -- refine sigmaFinite_trim_bot_iff.mp ?_
-
-    -- refine sigmaFinite_iff_measure_singleton_lt_top.mpr ?_
-
-    -- apply (@isFiniteMeasure_iff_isFiniteMeasureOnCompacts_of_compactSpace _ 𝒪.topology _ _ instCompactSpaceSetH).mpr ?_
-
-    -- sorry
-
-
-    -- ext B hB
-    -- if B ∈ 𝒪 then exact h B ‹B ∈ 𝒪› else
-    -- simp_all
-    -- induction B, hB using MeasurableSpace.generateFrom_induction
-    -- next => simp_all
-    -- next => simp_all
-    -- next Z h' h'' h''' =>
-    --   simp_all
-    --   suffices μ Z ≠ ⊤ ∧ ν Z ≠ ⊤ by
-    --     simp_all [MeasureTheory.measure_compl]
-    --     congr! 1
-    --     · apply h _ (fun ⦃a b⦄ a_1 a => a) (IsLowerSet.dirSupInacc fun ⦃a b⦄ a_1 a => a)
-    --     · apply h''
-    --       contrapose! h'''
-    --       simp_all
-    --       constructor
-    --       · refine isLowerSet_iff_forall_lt.mpr ?_
-    --         simp
-    --         intro a b hba haZ
-    --         simp_all [IsUpperSet, DirSupInacc]
-    --         replace h''' := h Z h'''.left h'''.right
-    --         symm at h'''
-    --         simp_all
-    --         sorry
-
-
-    --       sorry
-
-    --   apply?
-    --   rw [MeasureTheory.measure_compl, MeasureTheory.measure_compl]
-    --   simp_all
-    --   sorry
-    -- next f h₁ h₂ h' =>
-    --   subst_eqs
-    --   simp_all
-    --   sorry
+noncomputable instance : CompletePartialOrder (ProbabilityMeasure (Set H[F])) :=
+  {instPartialOrderProbabilityMeasureSetH with
+    sSup D := if hD : DirectedOn (∀ B ∈ 𝒪, · B ≤ · B) D then my_sSup D hD else default
+    lubOfDirected := by
+      intro D hD
+      simp_all only [instPartialOrderProbabilityMeasureSetH, 𝒪.mem_iff, not_forall,
+        Classical.not_imp, not_le, my_sSup, dite_true]
+      split_ifs with hDE
+      · refine isLUB_iff_le_iff.mpr ?_
+        intro μ
+        simp_all only [𝒪.mem_iff, instPartialOrderProbabilityMeasureSetH, not_forall,
+          Classical.not_imp, not_le, ProbabilityMeasure.mk_apply, 𝒪.measureℬ_apply',
+          𝒪.AddContentℬ_apply, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, upperBounds,
+          Set.mem_setOf_eq]
+        simp_all only [instPartialOrderProbabilityMeasureSetH, 𝒪.mem_iff, not_forall,
+          Classical.not_imp, not_le]
+        constructor
+        · intro h ν hν B hB
+          apply le_trans _ (h B hB)
+          suffices ν B ≤ ⨆ μ ∈ D, μ.val B by
+            sorry -- TODO: done, just needs coe
+          apply le_iSup₂_of_le ν hν
+          simp only [ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure,
+            ProbabilityMeasure.val_eq_to_measure, le_refl]
+        · intro h B hB
+          suffices ⨆ μ ∈ D, (μ.val B) ≤ (ENNReal.ofNNReal <| μ B) by
+            sorry -- TODO: done, just needs coe
+          apply iSup₂_le fun ν hν ↦ ?_
+          have := h hν B hB
+          simp only [ProbabilityMeasure.val_eq_to_measure,
+            ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure, ge_iff_le]
+          sorry -- TODO: done, just needs coe
+      · refine isLUB_iff_le_iff.mpr ?_
+        intro μ
+        simp only [instPartialOrderProbabilityMeasureSetH, 𝒪.mem_iff, not_forall, Classical.not_imp,
+          not_le, ProbabilityMeasure.mk_apply, upperBounds, Set.mem_setOf_eq]
+        constructor
+        · intro h ν hν B hB
+          contrapose! hDE; use ν
+        · intro h B hB
+          have := dirac_bot μ B hB
+          simp_all only [instPartialOrderProbabilityMeasureSetH, 𝒪.mem_iff, not_forall,
+            Classical.not_imp, not_le, ProbabilityMeasure.ennreal_coeFn_eq_coeFn_toMeasure,
+            ge_iff_le]
+          sorry -- TODO: done, just needs coe
+    }
 
 def Kernel.IsContinuous (P : Kernel (Set H[F]) (ℬ (F:=F))) : Prop := by
   let inst₁ : Preorder (Set (H F)) := inferInstance
@@ -692,7 +956,7 @@ noncomputable alias η := dirac
 
 instance History.instTopologicalSpace : TopologicalSpace (Set H[F]) :=
   -- NOTE: this requires [Preorder (Set H[F])], which uses the natural ⊆ of sets
-  Topology.scott _ Set.univ
+  Topology.scott _ cool
 instance History.instMeasurableSpace : MeasurableSpace (Set H[F]) :=
   -- NOTE: Construct the smallest measure space containing a collection of basic sets.
   --       The basic sets are the open sets of the Scott topology.

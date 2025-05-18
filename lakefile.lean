@@ -33,6 +33,7 @@ package «pGCL» where
   -- ] ++ linters.map fun s ↦ { s with name := `weak ++ s.name }
 
 require "leanprover-community" / "mathlib"
+require "chasenorman" / "Canonical"
 
 @[default_target]
 lean_lib «PGCL» where
