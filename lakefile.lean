@@ -42,5 +42,7 @@ lean_lib «MDP» where
 
 lean_lib «WGCL» where
 
+lean_lib «ProbNetKAT» where
+
 meta if get_config? env = some "dev" then -- dev is so not everyone has to build it
 require «doc-gen4» from git "https://github.com/leanprover/doc-gen4" @ "main"
