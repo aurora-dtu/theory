@@ -10,6 +10,8 @@ set_option grind.warning false
 
 variable {H : Type}
 
+
+
 /-- **Lemma 5.** (i) The cartesian product of any collection of DCPOs is a DCPO under the
     componentwise order. -/
 instance {α β : Type} [CompletePartialOrder α] [CompletePartialOrder β] :
@@ -90,7 +92,11 @@ instance : PartialOrder (@ProbabilityMeasure (Set H) ℬ.borel) where
 
 noncomputable def ℬ_sSup (D : Set (@ProbabilityMeasure (Set H) ℬ.borel)) :
     @ProbabilityMeasure (Set H) ℬ.borel :=
-  ⟨measure_of_fin (fun B ↦ ⨆ μ ∈ D, μ B) sorry, by
+  ⟨extend_measure (fun B ↦ ⨆ μ ∈ D, μ B) (by
+    simp_all [extend_measure_requirement]
+    intro a b hab h
+    sorry
+    ), by
     simp
     refine isProbabilityMeasure_iff.mpr ?_
     sorry
@@ -99,44 +105,134 @@ noncomputable def ℬ_sSup (D : Set (@ProbabilityMeasure (Set H) ℬ.borel)) :
 noncomputable instance :
     CompletePartialOrder (@ProbabilityMeasure (Set H) ℬ.borel) where
   sSup D := ℬ_sSup D
-  lubOfDirected := by sorry
+  lubOfDirected := by
+    simp [ℬ_sSup]
+    simp [extend_measure, extend_AddContent, extend_B, extend_A_ab, extend_B_b_fin]
+    sorry
+
+def MarkovKernel (α β : Type) [MeasurableSpace α] [MeasurableSpace β] :=
+    {𝒦 : ProbabilityTheory.Kernel α β // ProbabilityTheory.IsMarkovKernel 𝒦}
+
+def MarkovKernel' (α β : Type) [MeasurableSpace α] [MeasurableSpace β] :=
+  {f : α → ProbabilityMeasure β // Measurable f}
+
+@[simp]
+instance {α β : Type}  [MeasurableSpace α] [MeasurableSpace β] :
+    FunLike (MarkovKernel' α β) α (ProbabilityMeasure β) where
+  coe κ i := κ.val i
+  coe_injective' := by
+    rintro ⟨a, ha⟩ ⟨b, hb⟩ h
+    congr
+
+@[ext]
+theorem MarkovKernel.ext {α β : Type} {mα : MeasurableSpace α} {mβ : MeasurableSpace β}
+    {κ η : MarkovKernel' α β} (h : ∀ (a : α), κ a = η a) : κ = η := by
+  obtain ⟨κ, hκ⟩ := κ
+  obtain ⟨η, hη⟩ := η
+  congr
+  ext i s hS
+  replace h := h i
+  simp_all
+  -- nth_rw 1 [DFunLike.coe] at h
+  -- simp [instFunLikeMarkovKernelProbabilityMeasure] at h
+  -- apply Subtype.eq_iff.mp at h
+  -- simp_all
 
 @[simp]
 noncomputable instance instLE :
-    LE (@ProbabilityTheory.Kernel (Set H) (Set H) ℬ.borel ℬ.borel) where
+    LE (@MarkovKernel' (Set H) (Set H) ℬ.borel ℬ.borel) where
   le a b := ∀ i, ∀ B ∈ 𝒪, a i B ≤ b i B
 
 noncomputable instance :
-    PartialOrder (@ProbabilityTheory.Kernel (Set H) (Set H) ℬ.borel ℬ.borel) := {instLE with
+    PartialOrder (@MarkovKernel' (Set H) (Set H) ℬ.borel ℬ.borel) := {instLE with
   le_refl a a h := by simp_all
   le_trans a b c hab hbc i B hB := hab i B hB |>.trans (hbc i B hB)
-  lt_iff_le_not_le := by simp; sorry
+  lt_iff_le_not_le := by simp
   le_antisymm a b hab hba := by
     simp_all
     ext i
-    set μ := a i
-    set ν := b i
-    let μ' : @ProbabilityMeasure (Set H) ℬ.borel := ⟨μ, by sorry⟩
-    let ν' : @ProbabilityMeasure (Set H) ℬ.borel := ⟨ν, by sorry⟩
-
-    have := @instCompletePartialOrderPi
-      (@ProbabilityMeasure (Set H) ℬ.borel)
-      (Set H)
-      instCompletePartialOrderProbabilityMeasureSet_probNetKAT
-      |>.le_antisymm
-
-    suffices μ' = ν' by
-      sorry
-    apply le_antisymm
-    · intro B hB
-      have := hab i B hB
-      simp_all [μ', ν']
-      refine (ENNReal.toNNReal_le_toNNReal ?_ ?_).mpr (hab i B hB) <;> sorry
-    · intro B hB
-      have := hba i B hB
-      simp_all [μ', ν']
-      refine (ENNReal.toNNReal_le_toNNReal ?_ ?_).mpr (hba i B hB) <;> sorry
+    exact le_antisymm (hab i) (hba i)
 }
+
+instance : @BorelSpace (Set H) ℬ.cantorSpace ℬ.borel := sorry
+
+@[simp]
+noncomputable instance :
+    SupSet (@MarkovKernel' (Set H) (Set H) ℬ.borel ℬ.borel) where
+  sSup 𝒟 :=
+    ⟨fun i ↦ sSup ((· i) '' 𝒟), by
+
+      -- have := instCompletePartialOrderProbabilityMeasureSet_probNetKAT.lubOfDirected ((· i) '' 𝒟)
+      -- simp only [instFunLikeMarkovKernel'ProbabilityMeasure]
+
+      -- apply?
+      -- intro X hX
+      -- refine MeasurableSpace.map_def.mp ?_
+      -- refine MeasurableSpace.measurableSet_generateFrom ?_
+      -- simp_all only [Set.mem_setOf_eq]
+      sorry
+      -- apply?
+      -- refine MeasurableSpace.map_def.mp ?_
+      -- have := @Measurable.iSup (Set H) (Set H) ℬ.cantorSpace ℬ.borel sorry (ι:=𝒟) ℬ.borel
+      ⟩
+    -- let κ := @ProbabilityTheory.Kernel.mk (Set H) (Set H) ℬ.borel ℬ.borel
+    --     (fun i ↦ sSup ((DFunLike.coe · i) '' 𝒟))
+    --     sorry
+    -- ⟨κ, by refine { isProbabilityMeasure := ?_ }; sorry⟩
+
+noncomputable instance :
+    CompletePartialOrder (@MarkovKernel (Set H) (Set H) ℬ.borel ℬ.borel) :=
+{instSupSetMarkovKernelSet , instPartialOrderMarkovKernelSet with
+  lubOfDirected := by
+    simp_all only [instSupSetMarkovKernelSet]
+    intro 𝒟 h𝒟
+    refine isLUB_iff_le_iff.mpr ?_
+    intro κ
+    constructor
+    · intro h
+      simp only [upperBounds, Set.mem_setOf_eq]
+      intro η hη
+      intro i B hB
+      have := h i B hB
+      have := instCompletePartialOrderProbabilityMeasureSet_probNetKAT.lubOfDirected
+          ((· i) '' 𝒟) ?_
+      · apply isLUB_iff_le_iff.mp at this
+        simp_all only [upperBounds, Set.mem_image, forall_exists_index, and_imp,
+          forall_apply_eq_imp_iff₂, Set.mem_setOf_eq, ge_iff_le]
+        replace := this (κ i) |>.mp
+        apply this
+        · intro B' hB'
+          replace h := h i B' hB'
+          apply le_trans _ h
+          simp only [instFunLikeMarkovKernelProbabilityMeasure, ProbabilityMeasure.coe_mk,
+            ProbabilityTheory.Kernel.coe_mk, ProbabilityMeasure.mk_apply]
+          apply ENNReal.le_toNNReal_of_coe_le
+          · simp
+            clear! B this
+            clear! κ η
+            sorry
+          · sorry
+        · assumption
+        · assumption
+      · sorry
+    · sorry
+    -- refine isLUB_pi.mpr fun a ↦ ?_
+    -- simp only [Function.eval, sSup_apply]
+    -- have := CompletePartialOrder.lubOfDirected ((· a) '' 𝒟) ?_
+    -- · convert this
+    --   exact Eq.symm sSup_image'
+    -- · intro x hx y hy
+    --   simp_all only [Set.mem_image, exists_exists_and_eq_and]
+    --   obtain ⟨fx, hx, hx'⟩ := hx
+    --   obtain ⟨fy, hy, hy'⟩ := hy
+    --   subst_eqs
+    --   obtain ⟨f, hf, hfx, hfy⟩ := h𝒟 _ hx _ hy
+    --   use f
+    --   exact ⟨hf, hfx a, hfy a⟩
+
+
+}
+
 -- noncomputable instance :
 --     PartialOrder (@ProbabilityTheory.Kernel (Set H) (Set H) ℬ.borel ℬ.borel) := {instLE with
 --   le_refl a a h := by simp_all
