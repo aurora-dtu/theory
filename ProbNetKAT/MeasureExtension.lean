@@ -149,22 +149,22 @@ omit [DecidableEq H] in
 @[simp]
 theorem B_mem_ℬ_b_B (B : ℬ{(Set.univ : Set H)}) : B.val ∈ ℬ{b{B}} := b_B_gen_spec B |>.right
 
-def 𝒜 (B : ℬ{(Set.univ : Set H)}) : Set (Set H) := ℬ_b_cover (B_mem_ℬ_b_B B) (b_B_Finite B)
-def 𝒜_spec (B : ℬ{(Set.univ : Set H)}) :
-    B.val = ⋃ a ∈ 𝒜 B, A{a,b{B}} ∧
-    ((𝒜 B).PairwiseDisjoint fun x ↦ A{x,b{B}}) ∧
-    (𝒜 B).Finite ∧
-    (B.val.Nonempty ↔ (𝒜 B).Nonempty) ∧
-    ∀ a ∈ 𝒜 B, a ⊆ b{B}
-:= ℬ_b_cover_spec (B_mem_ℬ_b_B B) (b_B_Finite B)
+def 𝒜 (B : ℬ{b}) (hb : b.Finite) : Set (Set H) := ℬ_b_cover B.prop hb
+def 𝒜_spec (B : ℬ{b}) (hb : b.Finite) :
+    B.val = ⋃ a ∈ 𝒜 B hb, A{a,b} ∧
+    ((𝒜 B hb).PairwiseDisjoint fun x ↦ A{x,b}) ∧
+    (𝒜 B hb).Finite ∧
+    (B.val.Nonempty ↔ (𝒜 B hb).Nonempty) ∧
+    ∀ a ∈ 𝒜 B hb, a ⊆ b
+:= ℬ_b_cover_spec B.prop hb
 omit [DecidableEq H] in
 @[simp]
-theorem 𝒜_nonempty_iff (B : ℬ{(Set.univ : Set H)}) : (𝒜 B).Nonempty ↔ B.val.Nonempty :=
-  (𝒜_spec B).2.2.2.1.symm
+theorem 𝒜_nonempty_iff (B : ℬ{b}) (hb : b.Finite) : (𝒜 B hb).Nonempty ↔ B.val.Nonempty :=
+  (𝒜_spec B hb).2.2.2.1.symm
 omit [DecidableEq H] in
 @[simp]
-theorem 𝒜_empty_iff (B : ℬ{(Set.univ : Set H)}) : 𝒜 B = ∅ ↔ B.val = ∅ :=
-  have := 𝒜_nonempty_iff B |>.not
+theorem 𝒜_empty_iff (B : ℬ{b}) (hb : b.Finite) : 𝒜 B hb = ∅ ↔ B.val = ∅ :=
+  have := 𝒜_nonempty_iff B hb |>.not
   by simp_all [-𝒜_nonempty_iff, Set.not_nonempty_iff_eq_empty]
 
 omit [DecidableEq H] in
@@ -178,9 +178,14 @@ noncomputable def IE (μ : B_b_fin (H:=H) → ENNReal) (a b : Set H) (hb : b.Fin
     (-1 : ℝ)^(Nat.card ↑(c.val \ a)) * (μ ⟨B{c.val}, by use c; simp_all⟩).toReal
 
 open scoped Classical in
+noncomputable def wild (μ : B_b_fin (H:=H) → ENNReal) :
+    (b : Set H) → b.Finite → ℬ{b} → ENNReal := fun b hb B ↦
+  ∑' a : 𝒜 ⟨B, by simp⟩ hb, ENNReal.ofReal (IE μ a b hb)
+
+open scoped Classical in
 noncomputable def crazy (μ : B_b_fin (H:=H) → ENNReal) :
     ℬ{(Set.univ : Set H)} → ENNReal := fun B ↦
-  ENNReal.ofReal (∑' a : 𝒜 B, IE μ a b{B} (b_B_Finite B))
+  wild μ b{B} (b_B_Finite B) ⟨B, by simp⟩
 
 omit [DecidableEq H] in
 theorem mah (hxb : x ∉ b) (hab : a ⊆ b) : A{a∪{x},b∪{x}} ∪ A{a,b∪{x}} = A{a,b} := by
@@ -209,12 +214,111 @@ theorem mah (hxb : x ∉ b) (hab : a ⊆ b) : A{a∪{x},b∪{x}} ∪ A{a,b∪{x}
     if hy : x ∈ y then exact .inl (Set.inter_insert_of_mem hy).symm
     else exact .inr (Set.inter_insert_of_not_mem hy).symm
 
-omit [DecidableEq H] in
-@[simp] theorem 𝒜_empty : (𝒜 ⟨(∅ : Set (Set H)), by simp⟩) = ∅ := by simp_all
+@[simp]
+theorem ashjdas : B[s] ∈ ℬ{b} ↔ s ∈ b := by
+  constructor
+  · intro h
+    sorry
+  · intro h
+    exact B_h_mem_ℬ_b h
 
-noncomputable instance 𝒜_fintype : Fintype (𝒜 B) := by
+theorem B_mem_ℬ_b_has_lowerBound {b₁ b₂ : Set H} (hb₁ : b₁.Finite) (hb₂ : b₂.Finite)
+    (hB₁ : B ∈ ℬ{b₁}) (hB₂ : B ∈ ℬ{b₂}) : ∃ b', B ∈ ℬ{b'} ∧ b' ⊆ b₁ ∧ b' ⊆ b₂ := by
+  have ⟨q₁, h₁, h₁_disjoint, h₁_finite, h₁_nonempty, h₁_subset⟩ := ℬ_b_exists_cover hB₁ hb₁
+  have ⟨q₂, h₂, h₂_disjoint, h₂_finite, h₂_nonempty, h₂_subset⟩ := ℬ_b_exists_cover hB₂ hb₂
+  subst_eqs
+  simp_all
+  -- simp_all [A_ab]
+  use b₁ ∩ b₂
+  simp_all
+  have := IsSetAlgebra.biUnion_mem (ℬ_b_IsSetAlgebra (b:=b₁∩b₂)) h₂_finite.toFinset (s:=(A{·,b₂}))
+  simp_all
+  apply this
+  intro i hi₂
+  sorry
+
+
+  -- induction hB₁ with
+  -- | base s hs =>
+  --   simp_all
+  --   obtain ⟨s, hs, _, _⟩ := hs
+  --   use {s}
+  --   simp_all
+  -- | empty => simp_all; use ∅; simp
+  -- | compl => simp_all
+  -- | union s t hs ht ihs iht =>
+  --   replace hs : s ∈ ℬ{b₁} := hs
+  --   replace ht : t ∈ ℬ{b₁} := ht
+  --   if hb₁₂ : b₁ ⊆ b₂ then
+  --     use b₁
+  --     simp_all
+  --     -- have := ℬ_b_mono hb₁₂
+  --     -- have ⟨bs, hs'⟩ := ihs (this hs)
+  --     -- have ⟨bt, ht'⟩ := iht (this ht)
+  --     -- use bs ∪ bt
+  --     -- simp_all
+  --     -- have := ℬ_b_mono (by simp_all : bs ∪ bt ⊆ b₂)
+  --     -- sorry
+  --   else
+  --     contrapose hb₁₂
+  --     simp_all
+  --     have := hb₁₂ b₁ (by simp_all) (by rfl)
+  --     simp_all
+  --     sorry
+  --   -- have := ℬ_b_mono
+  --   -- have := ihs hb₂
+  --   -- sorry
+
+theorem ahsjdas :
+      (𝒜 ⟨⋃ a ∈ 𝒜 ⟨B, hB⟩ hb, A{a,b}, by rw [← (𝒜_spec ⟨B, hB⟩ hb).left]; exact hB⟩ hb)
+    = ⋃ a ∈ 𝒜 ⟨B, hB⟩ hb, A{a,b} := by
+  have ⟨h₁, h₂, h₃, h₄, h₅⟩ :=
+    𝒜_spec ⟨⋃ a ∈ 𝒜 ⟨B, hB⟩ hb, A{a,b}, by rw [← (𝒜_spec ⟨B, hB⟩ hb).left]; exact hB⟩ hb
+  have ⟨p₁, p₂, p₃, p₄, p₅⟩ := 𝒜_spec ⟨B, hB⟩ hb
+  simp at *
+  symm at h₁ p₁
+  simp_all
+  simp_all
+
+  sorry
+
+theorem wild_over_𝒜 :
+      wild μ b hb ⟨⋃ a ∈ 𝒜 ⟨B, hB⟩ hb, A{a,b}, by rw [← (𝒜_spec ⟨B, hB⟩ hb).left]; exact hB⟩
+    = ∑' a : 𝒜 ⟨B, hB⟩ hb, wild μ b hb ⟨A{a,b},
+        A_ab_mem_ℬ_b hb (𝒜_spec ⟨B, hB⟩ hb |>.right.right.right.right a a.prop)⟩ := by
+  simp [wild]
+  sorry
+
+theorem wild_same_on_b_subset {b₁ b₂ : Set H} (hb₂ : b₂.Finite) (hb₁₂ : b₁ ⊆ b₂) (hB₁ : B ∈ ℬ{b₁}) :
+    wild μ b₁ (Set.Finite.subset hb₂ hb₁₂) ⟨B, hB₁⟩ = wild μ b₂ hb₂ ⟨B, ℬ_b_mono hb₁₂ hB₁⟩ := by
+  have hb₁ : b₁.Finite := Set.Finite.subset hb₂ hb₁₂
+  have hB₂ : B ∈ ℬ{b₂} := ℬ_b_mono hb₁₂ hB₁
+  have h₁ := 𝒜_spec ⟨B, hB₁⟩ hb₁ |>.left
+  have h₂ := 𝒜_spec ⟨B, hB₂⟩ hb₂ |>.left
+  replace h₁ : (⟨B, hB₁⟩ : ℬ{b₁}) = ⟨⋃ a ∈ 𝒜 ⟨B, hB₁⟩ hb₁, A{a,b₁}, by rw [← h₁]; exact hB₁⟩ := by
+    simp; exact h₁
+  replace h₂ : (⟨B, hB₂⟩ : ℬ{b₂}) = ⟨⋃ a ∈ 𝒜 ⟨B, hB₂⟩ hb₂, A{a,b₂}, by rw [← h₂]; exact hB₂⟩ := by
+    simp; exact h₂
+  rw [h₁, h₂]; clear h₁ h₂
+
+
+  -- simp only [𝒜_nonempty_iff, true_and] at *
+  rw [ENNReal.tsum_biUnion'']
+
+  sorry
+
+theorem wild_same_on_b {b₁ b₂ : Set H} (hb₁ : b₁.Finite) (hb₂ : b₂.Finite)
+    (hB₁ : B ∈ ℬ{b₁}) (hB₂ : B ∈ ℬ{b₂}) : wild μ b₁ hb₁ ⟨B, hB₁⟩ = wild μ b₂ hb₂ ⟨B, hB₂⟩ := by
+  obtain ⟨b, hBb, h₁, h₂⟩ := B_mem_ℬ_b_has_lowerBound hb₁ hb₂ hB₁ hB₂
+  rw [← wild_same_on_b_subset hb₁ h₁ hBb]
+  rw [← wild_same_on_b_subset hb₂ h₂ hBb]
+
+-- omit [DecidableEq H] in
+-- @[simp] theorem 𝒜_empty : (𝒜 ⟨(∅ : Set (Set H)), by simp⟩) = ∅ := by simp_all
+
+noncomputable instance 𝒜_fintype : Fintype (𝒜 B hb) := by
   refine Set.Finite.fintype ?_
-  have ⟨h₁, h₂, h₃, h₄⟩ := 𝒜_spec B
+  have ⟨h₁, h₂, h₃, h₄⟩ := 𝒜_spec B hb
   exact h₃
 
 noncomputable instance middle_c_Fintype (hb : b.Finite) : Fintype { c // a ⊆ c ∧ c ⊆ b } := by
@@ -230,15 +334,15 @@ noncomputable instance middle_c_Fintype' : Fintype { c // a ⊆ c ∧ c ⊆ b{B}
 -- example {a b : ENNReal} (h : a.toReal = b.toReal) : a = b := by
 --   refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp h
 
-open scoped Classical in
-theorem 𝒜_sUnion (I : Finset (Set (Set H))) (hIsubset : I.toSet ⊆ ℬ{Set.univ})
-    (hIdisjoint : I.toSet.PairwiseDisjoint id) (hIunion : ⋃₀ I.toSet ∈ ℬ{Set.univ}) :
-    𝒜 ⟨⋃₀ I.toSet, hIunion⟩ = ⋃₀ (I.attach.image (fun ⟨i, hi⟩ ↦ 𝒜 ⟨i, hIsubset hi⟩)) := by
-  have ⟨h₁, h₂, h₃, h₄⟩ := 𝒜_spec ⟨⋃₀ I.toSet, hIunion⟩
-  simp at *
-  generalize hb : b{⟨⋃₀ I.toSet, hIunion⟩} = b
-  simp [hb] at h₁ h₂ h₃ h₄
-  sorry
+-- open scoped Classical in
+-- theorem 𝒜_sUnion (I : Finset (Set (Set H))) (hIsubset : I.toSet ⊆ ℬ{Set.univ})
+--     (hIdisjoint : I.toSet.PairwiseDisjoint id) (hIunion : ⋃₀ I.toSet ∈ ℬ{Set.univ}) :
+--     𝒜 ⟨⋃₀ I.toSet, hIunion⟩ (b_B_Finite) = ⋃₀ (I.attach.image (fun ⟨i, hi⟩ ↦ 𝒜 ⟨i, hIsubset hi⟩)) := by
+--   have ⟨h₁, h₂, h₃, h₄⟩ := 𝒜_spec ⟨⋃₀ I.toSet, hIunion⟩
+--   simp at *
+--   generalize hb : b{⟨⋃₀ I.toSet, hIunion⟩} = b
+--   simp [hb] at h₁ h₂ h₃ h₄
+--   sorry
 
 def bI (I : Finset (Set (Set H))) (hIsubset : I.toSet ⊆ ℬ{Set.univ}) : Set H :=
   ⋃ i : I, b{⟨i.val, hIsubset i.prop⟩}
@@ -328,7 +432,7 @@ open scoped Classical in
 noncomputable def crazyAddContent' (μ : B_b_fin (H:=H) → ENNReal) (hμ : condition μ) :
     AddContent ℬ{(Set.univ : Set H)} where
   toFun B := if hB : B ∈ ℬ{Set.univ} then crazy μ ⟨B, hB⟩ else 0
-  empty' := by simp [crazy]
+  empty' := by simp [crazy, wild]
   sUnion' := by
     clear a b
     intro I hIsubset hIdisjoint hIunion
