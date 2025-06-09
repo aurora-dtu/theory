@@ -29,7 +29,7 @@ theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
     gcongr with s' hs'
     · exact (EC_le (by simp_all)).trans <| EC_monotone (by omega)
     · obtain ⟨s', _⟩ := s'
-      exact (EC_le <| by simp_all; split_ifs <;> simp_all).trans <| EC_monotone (by omega)
+      exact (EC_le <| by simp_all; rintro _ _ ⟨_⟩ _; simp_all).trans <| EC_monotone (by omega)
 
 theorem iSup_iSup_EC_eq_lfp_Ψ [DecidableEq State] :
     ⨆ n, ⨆ 𝒮, EC c 𝒮 n = lfp (M.Ψ c) := by

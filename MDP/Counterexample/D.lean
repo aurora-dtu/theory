@@ -89,7 +89,7 @@ theorem EC_init :
   · rw [EC_succ]
     simp
     rw [tsum_eq_single ⟨.node (𝒮 {.init}), by simp⟩]
-    · simp_all; split_ifs <;> simp_all; omega
+    · simp_all
     · simp_all
       rintro _ α ⟨_⟩
       simp_all [eq_comm]
@@ -135,7 +135,7 @@ theorem ER_init :
   · rw [EC_succ]
     simp
     rw [tsum_eq_single ⟨.node (𝒮 {.init}), by simp⟩]
-    · simp_all; split_ifs <;> simp_all; omega
+    · simp_all
     · simp_all
       rintro _ α ⟨_⟩
       simp_all [eq_comm]
