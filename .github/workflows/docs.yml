@@ -38,7 +38,7 @@ jobs:
         run: ~/.elan/bin/lake -Kenv=dev exe cache get || true
 
       - name: Build project
-        run: ~/.elan/bin/lake -Kenv=dev build MDP PGCL WGCL ProbNetKAT
+        run: ~/.elan/bin/lake -Kenv=dev build MDP PGCL WGCL
 
       # TODO: it seems like the mathlib items are not added to the index of the generated docs,
       # perhaps due to caching, so we disable it for the moment
@@ -63,7 +63,7 @@ jobs:
       #       MathlibDoc-
 
       - name: Build documentation
-        run: ~/.elan/bin/lake -Kenv=dev build MDP:docs PGCL:docs WGCL:docs ProbNetKAT:docs
+        run: ~/.elan/bin/lake -Kenv=dev build MDP:docs PGCL:docs WGCL:docs
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

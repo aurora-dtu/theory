@@ -1,5 +1,8 @@
 docs:
-    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs MDP:docs WGCL:docs ProbNetKAT:docs
+    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs MDP:docs WGCL:docs
+
+watch-docs:
+    watchexec -e lean just docs
 
 check-docs:
     #!/bin/bash

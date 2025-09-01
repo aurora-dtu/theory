@@ -42,8 +42,6 @@ lean_lib «MDP» where
 
 lean_lib «WGCL» where
 
-lean_lib «ProbNetKAT» where
-
 lean_lib «STDX» where
 
 meta if get_config? env = some "dev" then -- dev is so not everyone has to build it
