@@ -66,9 +66,9 @@ theorem EC_succ [DecidableEq State] (𝒮 : 𝔖[M]) :
       simp_all
       apply (Path.prepend_inj_right _ _ (by simp_all)).mp h
     · simp_all
-      intro π ⟨_, _⟩ _ _; subst_eqs
+      intro π _ _ _ _; subst_eqs
       use π.tail
-      simp_all [Path.prepend_ECost, Path.ECost_tail, or_comm]
+      simp_all [Path.ECost_tail, or_comm]
     · simp_all [Path.prepend_ECost]; intros; ring
 theorem EC_eq (h : ∀ π ∈ Path[M,s,≤n], 𝒮 π = 𝒮' π) : EC c 𝒮 n s = EC c 𝒮' n s := by
   simp_all [EC, Path.ECost, Path.Prob]
@@ -112,7 +112,7 @@ theorem tsum_iInf_bounded_comm (f : (s' : M.succs_univ s) → 𝔖[M,s',≤n] �
   gcongr with s'
   simp
   convert fun ℬ ↦ (le_of_eq_of_le (c:=f s' ℬ) <| congrArg _ <| BScheduler.mk'_argmin s s' (f s')) _
-  all_goals try simp_all only [implies_true, Path_le.first_le]
+  all_goals try simp_all only [Path_le.first_le]
   simp [← BScheduler.elems.argmin_spec (by simp) (f s') |>.right]; use ℬ
 
 variable [M.FiniteBranching] in
@@ -135,7 +135,7 @@ theorem iInf_EC_succ_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 (n + 1) = M
 
 theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 n = (M.Φ c)^[n] ⊥ := by
   induction n with
-  | zero => simp [EC, Path.ECost, Path.Cost]; rfl
+  | zero => simp; rfl
   | succ n ih => rw [Function.iterate_succ']; simp [ih, iInf_EC_succ_eq_Φ]
 
 theorem iSup_iInf_EC_eq_iSup_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 n = ⨆ n, (M.Φ c)^[n] ⊥ :=
@@ -147,7 +147,7 @@ theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 
 theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
     EC c ℒ (n + 1) = Φℒ ℒ c (EC c ℒ n) := by
   induction n with
-  | zero => ext; simp [EC_succ, Φℒ, Φf]
+  | zero => ext; simp [Φℒ, Φf]
   | succ n ih =>
     simp [ih, EC_succ]
     simp [EC, Path.ECost, Path.Cost, Path.Prob, MScheduler.markovian, Φℒ, Φf]

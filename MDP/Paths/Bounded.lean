@@ -89,7 +89,7 @@ variable {n} {s}
 @[simp] theorem length_le (π : Path[M,s,≤n]) : ‖π.val‖ ≤ n := π.prop.left
 @[simp] theorem first_le (π : Path[M,s,≤n]) : π.val[0] = s := π.prop.right
 
-@[simp] theorem iff (π : M.Path) : π ∈ Path[M,s,≤n] ↔ ‖π‖ ≤ n ∧ π[0] = s := Set.mem_def
+@[simp] theorem iff (π : M.Path) : π ∈ Path[M,s,≤n] ↔ ‖π‖ ≤ n ∧ π[0] = s := by rfl
 
 instance : Subsingleton Path[M,s,≤0] where
   allEq := fun ⟨a, _, _⟩ ⟨b, _, h⟩ ↦ by
@@ -169,8 +169,6 @@ theorem eq_biUnion_succs_univ : Path[M,s,=n+2] = ⋃ π : Path[M,s,=n+1], π.val
 theorem eq_succs_univ_biUnion : Path[M,s,=n+2] = ⋃ s', Path[M,s─s',=n] := by
   ext π
   simp
-  constructor
-  · simp_all; intro ⟨_, _⟩; subst_eqs; simp_all
-  · simp_all
+  grind [Path.mem_succs_univ]
 
 end MDP.Path_eq

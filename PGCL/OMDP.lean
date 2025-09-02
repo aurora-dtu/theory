@@ -156,7 +156,7 @@ theorem op_isLeast (b : pGCL ϖ → Exp ϖ → Exp ϖ) (h : ς b ≤ b) : op ≤
   rw [op_eq_iSup_Φ, iSup_le_iff]
   intro n
   induction n with
-  | zero => intros _ _ _; simp [cost]
+  | zero => intros _ _ _; simp
   | succ i ih =>
     refine le_trans (fun _ _ _ ↦ ?_) h
     simp [Function.iterate_succ', ς, -Function.iterate_succ]
@@ -174,7 +174,7 @@ theorem op_le_seq : C.op ∘ C'.op ≤ (C ;; C').op := by
   simp
   intro n
   induction n generalizing C C' σ with
-  | zero => nth_rw 2 [← ς_op_eq_op]; simp_all [ς, MDP.Φf]
+  | zero => nth_rw 2 [← ς_op_eq_op]; simp_all [ς]
   | succ i ih =>
     nth_rw 2 [← ς_op_eq_op]
     rw [Function.iterate_succ', Function.comp_apply]
@@ -190,7 +190,7 @@ theorem ς_wp_eq_wp : ς (ϖ:=ϖ) wp = wp := by
     rw [← ih₁]
     simp [ς, 𝒬.tsum_succs_univ']
     congr! 4
-    apply C₂.tsum_after_eq <;> simp_all <;> split_ifs <;> simp_all
+    apply C₂.tsum_after_eq <;> simp_all; split_ifs <;> simp_all
     rintro _ _ _ _ _ h ⟨_⟩ _ _ h' ⟨_⟩ hp _
     exact ⟨⟨_, _, h⟩, _, h', hp⟩
 

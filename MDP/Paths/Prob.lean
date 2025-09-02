@@ -22,7 +22,7 @@ theorem singleton_Prob (x : State) (𝒮 : 𝔖[M]) : ({x} : M.Path).Prob 𝒮 =
 
 @[simp]
 theorem Prob_le_one (𝒮 : 𝔖[M]) : π.Prob 𝒮 ≤ 1 := by
-  simp only [Prob, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ]
+  simp only [Prob, Fin.getElem_fin, Fin.val_succ]
   apply Finset.prod_le_one
   · simp only [Finset.mem_univ, zero_le, imp_self, implies_true]
   · intro n _
@@ -39,7 +39,7 @@ theorem extend_Prob (s : M.succs_univ π.last) (𝒮 : 𝔖[M]) :
   rw [←Fin.prod_congr' _ (by simp ; omega : n + 1 = ‖π.extend s‖ - 1)]
   rw [←Fin.prod_congr' _ (by omega : n = ‖π‖ - 1)]
   rw [Fin.prod_univ_castSucc]
-  simp only [Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ]
+  simp only [Fin.getElem_fin, Fin.val_succ]
   rw [mul_comm]
   have hn' : n = ‖π‖ - 1 := by omega
   subst_eqs
@@ -47,7 +47,7 @@ theorem extend_Prob (s : M.succs_univ π.last) (𝒮 : 𝔖[M]) :
 
 theorem prepend_Prob [DecidableEq State] (𝒮 : 𝔖[M]) (s : M.prev_univ π[0]) :
     (π.prepend s).Prob 𝒮 = M.P s (𝒮 {s.val}) π[0] * π.Prob (𝒮[s ↦ π[0]]'(by simp)) := by
-  simp [Prob, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ]
+  simp [Prob, Fin.getElem_fin, Fin.val_succ]
   have h₂ : ∀ f : Fin (‖π.prepend s‖ - 1) → ENNReal,
       ∏ i : Fin (‖π.prepend s‖ - 1), f i
     = ∏ i : Fin (‖π‖ - 1 + 1), f ⟨i, by obtain ⟨i, hi⟩ := i; have := π.length_pos; simp; omega⟩
@@ -55,7 +55,7 @@ theorem prepend_Prob [DecidableEq State] (𝒮 : 𝔖[M]) (s : M.prev_univ π[0]
     intro f
     congr <;> try simp
     exact (Fin.heq_fun_iff (by simp)).mpr (congrFun rfl)
-  simp [h₂, Fin.prod_univ_succ, Scheduler.specialize]
+  simp [h₂, Fin.prod_univ_succ]
   congr! 2 with ⟨i, hi⟩
 
 theorem Prob_tail [DecidableEq State] (h : 1 < ‖π‖) (𝒮 : 𝔖[M]) :
@@ -105,12 +105,12 @@ theorem Path.one_sub_tsum_ite_Prob_eq (n : ℕ) (p : Path[M,s,=n+1] → Prop) [D
     convert Path.tsum_Prob_eq_one_comp (𝒮:=𝒮) (S:=p)
     · apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨⟨π, h₁⟩, h₂⟩ ↦ π)
       · intro ⟨π₁, _⟩ ⟨π₂, _⟩ h; simp_all; exact SetCoe.ext h
-      · simp_all; exact fun _ _ h _ ↦ h
-      · simp_all; exact fun _ _ h₁ _ h₂ ↦ (h₂ h₁).elim
+      · simp_all; exact fun _ _ _ h₂ _ ↦ h₂
+      · simp_all; exact fun _ _ _ h₁ _ h₂ ↦ (h₂ h₁).elim
     · apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨⟨π, h₁⟩, h₂⟩ ↦ π)
       · intro ⟨π₁, _⟩ ⟨π₂, _⟩ h; simp_all; exact SetCoe.ext h
-      · simp_all; exact fun _ _ h _ ↦ h
-      · simp_all; exact fun _ _ h₁ _ h₂ ↦ (h₁ h₂).elim
+      · simp_all; exact fun _ _ _ h _ ↦ h
+      · simp_all; exact fun _ _ _ h₁ _ h₂ ↦ (h₁ h₂).elim
 
 @[simp]
 theorem Path.one_sub_tsum_ite_Prob_eq' (n : ℕ) (p : Path[M,s,=n+1] → Prop) [DecidablePred p] :

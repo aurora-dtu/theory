@@ -223,11 +223,11 @@ theorem iSup_EC_succ_s₁ :
     | zero => simp
     | succ n ih =>
       rcases n with _ | n
-      · simp [EC_succ_s₁]
+      · simp
       · rw [EC_succ_s₁]; simp; gcongr; exact le_iSup_iff.mpr fun _ h ↦ h (n + 1)
-  · simp [ENNReal.mul_iSup, ENNReal.add_iSup, ENNReal.iSup_add]
+  · simp [ENNReal.mul_iSup, ENNReal.iSup_add]
     intro n
-    rcases n with _ | n <;> simp_all [EC_succ_s₁, ENNReal.add_iSup, ENNReal.iSup_add]
+    rcases n with _ | n <;> simp_all [EC_succ_s₁, ENNReal.iSup_add]
     · apply le_iSup_of_le 2
       simp [EC_succ_s₁, le_tsub_add]
     · apply le_iSup_of_le (n + 2)
@@ -376,7 +376,7 @@ theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost M.cost π = 1 :=
       apply gt_of_s₂_eq_s₃ 𝓅 ⟨states, nonempty, progress⟩ hi' (by omega) (by simp; omega)
     · simp_all
   · simp_all [List.mem_take_iff_getElem]
-    intro s j hs hs'
+    intro s j _ hs hs'
     split at hs'
     · suffices states[j] = .s₁ by simp_all
       apply lt_of_s₂_eq_s₁ 𝓅 ⟨states, nonempty, progress⟩ hi'; simp_all
@@ -397,6 +397,8 @@ theorem EC_𝒮_len' :
       left
       refine List.sum_eq_zero ?_
       simp_all
+      intro s hs
+      simp [h s hs]
     · simp_all [Path.ECost]
       suffices π.Cost M.cost = 1 by simp_all
       apply Cost_one_of_s₂_mem
@@ -471,7 +473,7 @@ theorem iInf_iSup_EC_ab :
   simp_all
   intro n
   apply le_iSup_of_le n
-  simp only [EC_𝒮_len', AddLeftCancelMonoid.add_eq_zero, one_ne_zero, and_false, ↓reduceIte]
+  simp only [EC_𝒮_len']
   simp [tsum_paths_eq_ite_tprod]
   split_ifs <;> simp_all
 
@@ -488,23 +490,6 @@ theorem prod_p_eq' : ∏ x : Fin n, p (↑x + 1) = 2^((2 : ℝ)^((-(n : ℝ))) -
     congr! 1
     rw [← ENNReal.rpow_neg]
     simp [← ENNReal.rpow_add]
-    congr! 1
-    ring_nf
-    rw [@mul_div_left_comm]
-    simp_all [@neg_inv]
-    rw [@add_neg_eq_iff_eq_add]
-    have : ((2 : ℝ) ^ (n : ℝ))⁻¹ = 2^(-n:ℝ) := by
-      simp
-      rw [← Real.rpow_neg_one]
-      have := Real.rpow_mul (x:=2) (y:=n) (z:=-1)
-      simp_all
-    simp at this; simp [this]; clear this
-    ring_nf
-    simp [← Real.rpow_neg_one]
-    rw [← Real.rpow_add (by simp)]
-    ring_nf
-    have := Real.rpow_add (x:=2) (by simp) (-1 - n:ℝ) 1
-    simp at this; simp [← this]
     ring_nf
 
 theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
@@ -523,6 +508,6 @@ theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
   rw [add_comm]
   gcongr
   rw [← ENNReal.rpow_neg_one]
-  gcongr <;> simp_all [Real.rpow_nonneg zero_le_two]
+  gcongr <;> simp_all
 
 end MDP.Counterexample.C

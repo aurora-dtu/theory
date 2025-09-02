@@ -179,7 +179,7 @@ theorem tail_prepend' (h : 1 < ‖π‖) (h' : π[0] = s) :
 @[simp]
 theorem singleton_first : ({s} : M.Path)[0] = s := by simp only [instSingleton, instGetElem]; simp
 @[simp]
-theorem extend_first : (π.extend s)[0] = π[0] := by simp [extend, List.getElem_append]
+theorem extend_first : (π.extend s)[0] = π[0] := by simp [extend]
 @[simp]
 theorem prepend_first : (π.prepend s)[0] = s := by simp [prepend]
 @[simp]
@@ -198,7 +198,7 @@ theorem succs_first (π' : π.succs_univ) : π'.val[0] = π[0] := by
 theorem singleton_last : ({s} : M.Path).last = s := by
   simp only [last, instSingleton, instGetElem, length]; simp
 @[simp]
-theorem extend_last : (π.extend s).last = s := by simp [extend, List.getElem_append]
+theorem extend_last : (π.extend s).last = s := by simp [extend]
 @[simp]
 theorem prepend_last : (π.prepend s).last = π.last := by simp [prepend, List.getElem_cons, last]
 @[simp]
@@ -258,13 +258,13 @@ theorem take_prepend :
 theorem getElem_length_pred_eq_last : π[‖π‖ - 1] = π.last := by rfl
 @[simp]
 theorem extend_getElem_length_pred_eq_last : (π.extend s)[‖π‖ - 1] = π.last := by
-  simp [extend, List.getElem_append]
+  simp [extend]
 @[simp]
 theorem take_length_pred_eq_prev : π.take (‖π‖ - 2) = π.prev := by
   simp [take, prev]; split_ifs with h <;> simp_all [List.dropLast_eq_take]
 @[simp]
 theorem extend_take_length_pred_eq_prev : (π.extend s).take (‖π‖ - 1) = π := by
-  simp [take, prev, extend]
+  simp [take, extend]
 @[simp]
 theorem extend_take (i : Fin ‖π‖) : (π.extend s).take i = π.take i := by
   simp [extend, take]; omega
@@ -273,11 +273,11 @@ theorem extend_take' (i : Fin (‖π‖ - 1)) : (π.extend s).take i = π.take i
   simp [extend, take]; omega
 @[simp]
 theorem extend_getElem (i : Fin ‖π‖) : (π.extend s)[i] = π[i] := by
-  simp [extend, List.getElem_append]
+  simp [extend]
 @[simp]
 theorem extend_getElem' (i : Fin (‖π‖ - 1)) : (π.extend s)[i] = π[i] := by
   have : i < ‖π‖ := by have := i.isLt; omega
-  simp [extend, List.getElem_append, this]
+  simp [extend, this]
 @[simp]
 theorem extend_getElem_nat (h : i < ‖π‖) : (π.extend s)[i]'(by simp; omega) = π[i] := by
   have := π.extend_getElem (s:=s) ⟨i, h⟩
@@ -296,7 +296,7 @@ theorem extend_getElem_succ (i : Fin ‖π‖) :
 @[simp]
 theorem extend_getElem_succ' (i : Fin (‖π‖ - 1)) :
     (π.extend s)[i.val + 1]'(by simp; omega) = π[i.val + 1] := by
-  simp [extend, List.getElem_append]
+  simp [extend]
 
 @[simp]
 theorem tail_getElem (i : Fin (‖π‖ - 1)) :
@@ -385,6 +385,6 @@ theorem induction_on
         have := progress (l.length - 1) (by simp_all [List.length_pos_iff])
         simp [List.getElem_append] at this
         split_ifs at this <;> (try omega); simp_all
-      · apply ih; simp_all [List.getElem_append, List.length_pos_iff]
+      · apply ih; simp_all [List.length_pos_iff]
 
 end MDP.Path

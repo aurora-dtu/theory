@@ -3,6 +3,17 @@
         100
     ],
     "workbench.colorTheme": "GitHub Light",
+    "lean4.input.customTranslations": {
+        "Aab": "A{$CURSOR,}",
+        // Weighted programming
+        "w+": "⨁",
+        "w*": "⨀",
+        "w.": "⨀",
+        "w0": "𝟘",
+        "w1": "𝟙",
+        "wle": "≼",
+        "wge": "≽"
+    },
     // Spellright
     "spellright.spellContextByClass": {
         "lean4": "comments"

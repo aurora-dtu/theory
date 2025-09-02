@@ -16,11 +16,11 @@ variable (π : M.Path)
 
 theorem prepend_Cost (c : M.Costs) (s : M.prev_univ π[0]) :
     (π.prepend s).Cost c = c s + π.Cost c := by
-  simp [Cost, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ, prepend]
+  simp [Cost, prepend]
 
 theorem extend_Cost (c : M.Costs) (s : M.succs_univ π.last) :
     (π.extend s).Cost c = π.Cost c + c s := by
-  simp [Cost, Fin.getElem_fin, Nat.succ_eq_add_one, Fin.val_succ, extend]
+  simp [Cost, extend]
 
 theorem Cost_tail (h : 1 < ‖π‖) (c : M.Costs) :
     π.Cost c = c π[0] + π.tail.Cost c := by

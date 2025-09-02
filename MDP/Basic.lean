@@ -129,8 +129,7 @@ lemma P_ne_zero_sum_eq_one (h : ¬M.P s a s' = 0) : ∑' s'', M.P s a s'' = 1 :=
   split
   · rename_i pmf _
     simp [pmf.tsum_coe]
-  · rename_i h'
-    simp [h'] at h
+  · simp at h
 
 noncomputable instance act.instDefault : Inhabited (M.act s) := Classical.inhabited_of_nonempty'
 
@@ -138,7 +137,7 @@ noncomputable instance act₀.instDefault [M.FiniteBranching] : Inhabited (M.act
   Classical.inhabited_of_nonempty'
 
 theorem P_sum_one_iff : ∑' s', M.P s a s' = 1 ↔ a ∈ M.act s := by
-  simp [act, Set.mem_setOf_eq, P]
+  simp [act, P]
   unfold P
   split
   · rename_i pmf _
@@ -169,12 +168,12 @@ instance instNonemptySuccs (α : M.act s) : Nonempty (M.succs α s) := by
   exact Function.ne_iff.mp hα
 instance instNonemptySuccs₀ [M.FiniteBranching] (α : M.act s) : Nonempty (M.succs₀ α s) := by
   simp only [succs₀_mem_eq_succs_mem]
-  exact instNonemptySuccs M α
+  exact M.instNonemptySuccs α
 
 theorem prev_iff_succs : s' ∈ M.prev α s ↔ s ∈ M.succs α s' := by simp [prev]
 @[simp]
 theorem prev_univ_iff_succs_univ : s' ∈ M.prev_univ s ↔ s ∈ M.succs_univ s' := by
-  simp [prev_univ, prev_iff_succs, succs_univ, succs, act]
+  simp [prev_univ, prev_iff_succs, succs_univ, succs]
 
 @[simp] theorem succs_implies_succs_univ (s' : M.succs α s) : ↑s' ∈ M.succs_univ s := by
   obtain ⟨s', h⟩ := s'
