@@ -1,5 +1,6 @@
 import MDP.OptimalCost
 import PGCL.OMDP
+import PGCL.ProofRules
 
 /-!
 # _probabilistic Guarded Command Language_ (pGCL)

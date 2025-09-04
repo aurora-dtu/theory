@@ -30,8 +30,9 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | .seq C₁ C₂ => C₁.wp (C₂.wp X)
   | .prob C₁ p C₂ => p.pick (C₁.wp X) (C₂.wp X)
   | .nonDet C₁ C₂ => C₁.wp X ⊓ C₂.wp X
-  | .loop b C' => wp.lfp (b.probOf * C'.wp · + b.not.probOf * X)
+  | .loop b C' => wp.lfp (b.iver * C'.wp · + b.not.iver * X)
   | .tick e => e + X
+  | .assert b => b.iver * X
 
 @[simp] theorem wp.skip : wp (ϖ:=ϖ) .skip = (·) := rfl
 @[simp] theorem wp.assign : wp (ϖ:=ϖ) (.assign x A) = fun X σ ↦ X (σ[x ↦ A σ]) := rfl
@@ -39,6 +40,7 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
 @[simp] theorem wp.prob : wp (ϖ:=ϖ) (.prob C₁ p C₂) = fun X ↦ p.pick (C₁.wp X) (C₂.wp X) := rfl
 @[simp] theorem wp.nonDet : wp (ϖ:=ϖ) (.nonDet C₁ C₂) = C₁.wp ⊓ C₂.wp := rfl
 @[simp] theorem wp.tick : wp (ϖ:=ϖ) (.tick e) = fun X ↦ e + X := rfl
+@[simp] theorem wp.assert : wp (ϖ:=ϖ) (.assert b) = fun X ↦ b.iver * X := rfl
 
 @[simp] theorem wp.monotone (C : pGCL ϖ) : Monotone (C.wp) := by
   intro X₁ X₂ h
@@ -47,14 +49,15 @@ noncomputable def wp (C : pGCL ϖ) (X : Exp ϖ) : Exp ϖ := match C with
   | nonDet C₁ C₂ ih₁ ih₂ => simp [inf_le_of_left_le (ih₁ h), inf_le_of_right_le (ih₂ h)]
   | loop b C' => exact lfp.monotone fun Y σ ↦ by by_cases h' : b σ <;> simp_all [h σ]
   | tick e => intro; simp; gcongr; apply_assumption
+  | assert b => intro; simp; gcongr; apply_assumption
 
 noncomputable def wp_loop_f (b : BExpr ϖ) (C' : pGCL ϖ) (X : Exp ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun Y ↦ b.probOf * C'.wp Y + b.not.probOf * X,
+  ⟨fun Y ↦ b.iver * C'.wp Y + b.not.iver * X,
    fun _ _ h σ ↦ by simp [add_le_add, mul_le_mul, wp.monotone C' h σ]⟩
 theorem wp_loop : (loop (ϖ:=ϖ) b C').wp = fun X ↦ OrderHom.lfp (C'.wp_loop_f b X) := rfl
 
 theorem wp_loop_fp (b : BExpr ϖ) (C : pGCL ϖ) :
-  (pGCL.loop b C).wp = fun X ↦ b.probOf * (C ;; .loop b C).wp X + b.not.probOf * X
+  (pGCL.loop b C).wp = fun X ↦ b.iver * (C ;; .loop b C).wp X + b.not.iver * X
 := by
   ext
   simp only [wp_loop, wp_loop_f, Pi.add_apply, Pi.mul_apply]

@@ -13,6 +13,7 @@ inductive pGCL (ϖ : Type*) where
   | nonDet : pGCL ϖ → pGCL ϖ → pGCL ϖ
   | loop : BExpr ϖ → pGCL ϖ → pGCL ϖ
   | tick : Exp ϖ → pGCL ϖ
+  | assert : BExpr ϖ → pGCL ϖ
 deriving Inhabited
 
 noncomputable instance pGCL.decidableEq [DecidableEq ϖ] : DecidableEq (pGCL ϖ)

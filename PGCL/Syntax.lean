@@ -3,7 +3,7 @@ import pGCL.WeakestPre
 namespace pGCL
 
 def ite (b : BExpr ϖ) (c₁ c₂ : pGCL ϖ) : pGCL ϖ :=
-  pGCL.prob c₁ ⟨b.probOf, sorry⟩ c₂
+  pGCL.prob c₁ ⟨b.iver, sorry⟩ c₂
 
 declare_syntax_cat varname
 syntax ident : varname
@@ -227,24 +227,24 @@ macro_rules
   | `(triple { $pre } $prog { $post }) =>
     `(Triple.mk (expr {$pre}) (pgcl {$prog}) (expr {$post}) |>.valid_wp)
 
-theorem asdhjasdhjsas {P Q : Exp ϖ} (h : b.probOf * C.wp P + b.not.probOf * Q ≤ P) :
+theorem asdhjasdhjsas {P Q : Exp ϖ} (h : b.iver * C.wp P + b.not.iver * Q ≤ P) :
     (pgcl { while (~b) { ~C } }).wp Q ≤ P := by
   simp [wp_loop, wp_loop_f]
   apply OrderHom.lfp_le
   simp_all
-theorem asdhjasdhjs {P Q : Exp ϖ} (h : ∀ Y, b.probOf * C.wp Y + b.not.probOf * Q ≤ Y → P ≤ Y) :
+theorem asdhjasdhjs {P Q : Exp ϖ} (h : ∀ Y, b.iver * C.wp Y + b.not.iver * Q ≤ Y → P ≤ Y) :
     P ≤ (pgcl { while (~b) { ~C } }).wp Q := by
   simp [wp_loop, wp_loop_f]
   apply OrderHom.le_lfp
   simp_all
 theorem asdhjasdhjs' {Q : Exp ϖ}
-  (h : ∀ Y, b.probOf * C.wp Y + b.not.probOf * Q ≤ Y → (fun _ ↦ p) ≤ Y) :
+  (h : ∀ Y, b.iver * C.wp Y + b.not.iver * Q ≤ Y → (fun _ ↦ p) ≤ Y) :
     p ≤ (pgcl { while (~b) { ~C } }).wp Q σ := by
   simp [wp_loop, wp_loop_f]
   apply asdhjasdhjs
   simp_all
 theorem asdhjasdhjsas' {Q : Exp ϖ}
-  (h : (b.probOf * C.wp fun _ ↦ p) + b.not.probOf * Q ≤ fun _ ↦ p) :
+  (h : (b.iver * C.wp fun _ ↦ p) + b.not.iver * Q ≤ fun _ ↦ p) :
     (pgcl { while (~b) { ~C } }).wp Q σ ≤ p := by
   simp [wp_loop, wp_loop_f]
   -- apply?
@@ -273,12 +273,12 @@ check triple {10} assert 10 < 9 ; x := 10; if (x < 10) { x := x + 1 } else { ski
 example : triple {10} x := 69; while (x < 10) { x := x + 1 } {x} := by
   simp [Triple.valid_wp, Exp.ofString, Exp.add]
   intro σ
-  simp_all [BExpr.probOf, BExpr.not, BExpr.lt, Exp.ofString]
+  simp_all [BExpr.iver, BExpr.not, BExpr.lt, Exp.ofString]
   apply asdhjasdhjsas'
   simp_all
   clear σ
   intro σ
-  simp_all [BExpr.probOf, BExpr.not, BExpr.lt, Exp.ofString]
+  simp_all [BExpr.iver, BExpr.not, BExpr.lt, Exp.ofString]
   split_ifs with h' h'' <;> try simp_all
   · contrapose h'; simp_all
   · sorry

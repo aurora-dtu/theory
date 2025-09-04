@@ -24,14 +24,15 @@ theorem Exp.subst_lift [DecidableEq ϖ] (e : Exp ϖ) : e.subst x A σ = e (σ[x 
 namespace BExpr
 
 def not (b : BExpr ϖ) : BExpr ϖ := (!b ·)
-def probOf (b : BExpr ϖ) : Exp ϖ := (if b · then 1 else 0)
+def iver (b : BExpr ϖ) : Exp ϖ := (if b · then 1 else 0)
+def probOf (b : BExpr ϖ) : ProbExp ϖ := ⟨(if b · then 1 else 0), by intro; simp; split <;> simp⟩
 
 variable {b : BExpr ϖ}
 
-@[simp] theorem true_probOf (h : b σ = true) : b.probOf σ = 1 := by simp [probOf, h]
-@[simp] theorem false_probOf (h : b σ = false) : b.probOf σ = 0 := by simp [probOf, h]
-@[simp] theorem true_not_probOf (h : b σ = true) : b.not.probOf σ = 0 := by simp [probOf, not, h]
-@[simp] theorem false_not_probOf (h : b σ = false) : b.not.probOf σ = 1 := by simp [probOf, not, h]
+@[simp] theorem true_iver (h : b σ = true) : b.iver σ = 1 := by simp [iver, h]
+@[simp] theorem false_iver (h : b σ = false) : b.iver σ = 0 := by simp [iver, h]
+@[simp] theorem true_not_iver (h : b σ = true) : b.not.iver σ = 0 := by simp [iver, not, h]
+@[simp] theorem false_not_iver (h : b σ = false) : b.not.iver σ = 1 := by simp [iver, not, h]
 
 end BExpr
 

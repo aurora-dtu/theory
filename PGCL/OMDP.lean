@@ -1,4 +1,7 @@
+import MDP.Bellman
+import MDP.Relational
 import PGCL.SmallStep
+import PGCL.WeakestPre
 
 /-!
 # Operation MDP derived from `SmallStep`.
@@ -78,20 +81,28 @@ theorem tsum_succs_univ' (f : (𝒬 (ϖ:=ϖ)).succs_univ c → ENNReal) :
 variable {X : Exp ϖ}
 
 @[simp]
-theorem sink_eq : (𝒬.Φ (cost X))^[i] ⊥ (some (none, σ)) = if i = 0 then 0 else X σ := by
+theorem term_eq : (𝒬.Φ (cost X))^[i] ⊥ (some (.term, σ)) = if i = 0 then 0 else X σ := by
+  induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
+@[simp]
+theorem fault_eq : (𝒬.Φ (cost X))^[i] ⊥ (some (.fault, σ)) = 0 := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
 
 @[simp]
 theorem lfp_Φ_bot : 𝒬.lfp_Φ (cost X) none = 0 := by simp [MDP.lfp_Φ_eq_iSup_Φ]
 
 @[simp]
-theorem lfp_Φ_sink : 𝒬.lfp_Φ (cost X) (some (none, σ)) = X σ := by
+theorem lfp_Φ_term : 𝒬.lfp_Φ (cost X) (some (.term, σ)) = X σ := by
+  rw [← MDP.map_lfp_Φ]; simp_all [tsum_succs_univ']
+@[simp]
+theorem lfp_Φ_fault : 𝒬.lfp_Φ (cost X) (some (.fault, σ)) = 0 := by
   rw [← MDP.map_lfp_Φ]; simp_all [tsum_succs_univ']
 
 noncomputable def ς : (pGCL ϖ → Exp ϖ → Exp ϖ) →o pGCL ϖ → Exp ϖ → Exp ϖ :=
   ⟨fun Y ↦ (fun C X σ ↦
-    𝒬.Φ (cost X) (match · with | ·⟨⇓ ϖ,σ'⟩ => X σ' | ·⟨C',σ'⟩ => Y C' X σ' | ⊥ => 0) (·⟨C, σ⟩))
-    , by
+    𝒬.Φ (cost X)
+      (match · with
+      | ·⟨⇓ ϖ,σ'⟩ => X σ' | ·⟨↯ ϖ,σ'⟩ => 0 | ·⟨C',σ'⟩ => Y C' X σ' | ⊥ => 0) (·⟨C, σ⟩)),
+    by
       intro _ _ _ _ _ _
       apply (𝒬.Φ _).mono
       rintro (_ | ⟨_ | _, _⟩) <;> try rfl
@@ -104,6 +115,9 @@ variable {f : pGCL ϖ → Exp ϖ → Exp ϖ}
   by simp_all [ς, 𝒬.tsum_succs_univ']
 @[simp] theorem ς.tick : ς f (.tick r) = fun X ↦ r + f .skip X := by
   simp_all [ς, 𝒬.tsum_succs_univ']; rfl
+@[simp] theorem ς.assert : ς f (.assert b) = fun X ↦ b.iver * f .skip X := by
+  ext X
+  simp_all [ς, 𝒬.tsum_succs_univ', BExpr.iver]; grind
 @[simp] theorem ς.prob : ς f (.prob C₁ p C₂) = fun X ↦ p.pick (f C₁ X) (f C₂ X) := by
   simp only [ς]
   simp only [Φ_simp, cost_X_of_pGCL, P_eq, SmallStep.tsum_p, tsum_succs_univ', succs_univ_eq,
@@ -126,7 +140,7 @@ variable {f : pGCL ϖ → Exp ϖ → Exp ϖ}
     · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₁,σ⟩)]; simp
     · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₂,σ⟩)]; simp
 theorem ς.loop :
-    ς f (.loop b C) = fun X ↦ b.probOf * f (C ;; .loop b C) X + b.not.probOf * f .skip X := by
+    ς f (.loop b C) = fun X ↦ b.iver * f (C ;; .loop b C) X + b.not.iver * f .skip X := by
   funext X σ
   simp [ς, 𝒬.tsum_succs_univ']
   split_ifs <;> simp_all
@@ -179,8 +193,9 @@ theorem op_le_seq : C.op ∘ C'.op ≤ (C ;; C').op := by
     nth_rw 2 [← ς_op_eq_op]
     rw [Function.iterate_succ', Function.comp_apply]
     simp [ς, 𝒬.tsum_succs_univ']
-    refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ C'.tsum_after_le (by simp) ?_ ?_)
-    all_goals intros; simp_all; split_ifs <;> simp_all [mul_le_mul]
+    refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ C'.tsum_after_le ?_ ?_ ?_ ?_)
+    all_goals intros; simp_all
+    all_goals split_ifs <;> simp_all [mul_le_mul]
 
 theorem ς_wp_eq_wp : ς (ϖ:=ϖ) wp = wp := by
   funext C; induction C with try simp_all
@@ -209,6 +224,7 @@ theorem wp_le_op : wp (ϖ:=ϖ) ≤ op := by
   | loop b C ih => exact wp_le_op.loop ih
   | seq C₁ C₂ ih₁ ih₂ => intro; exact (wp.monotone _ (ih₂ _)).trans (ih₁ _) |>.trans (op_le_seq _)
   | tick => rw [← ς_op_eq_op]; simp
+  | assert => rw [← ς_op_eq_op]; simp
 
 theorem op_eq_wp : op (ϖ:=ϖ) = wp := (op_isLeast _ ς_wp_eq_wp.le).antisymm wp_le_op
 
