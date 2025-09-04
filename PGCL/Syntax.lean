@@ -227,22 +227,40 @@ macro_rules
   | `(triple { $pre } $prog { $post }) =>
     `(Triple.mk (expr {$pre}) (pgcl {$prog}) (expr {$post}) |>.valid_wp)
 
+syntax "wp⟦" stmt "⟧" : term
+
+macro_rules
+  | `(wp⟦ $c ⟧) => `(pGCL.wp (pgcl { $c }))
+
+@[app_unexpander pGCL.wp]
+def pGCL.wpUnexpander : Lean.PrettyPrinter.Unexpander
+| `($(_) $c) => do
+  `(wp⟦~$c⟧)
+  -- let c : TSyntax `cwgcl_bexp := ← unexpandBExpr c
+  -- let l := ← match l with | `(wgcl {$l}) => pure l | _ => `(cwgcl_prog| ~ $l)
+  -- match r with
+  -- | `(wgcl {skip}) => `(wgcl { if ($c) { $l } })
+  -- | _ =>
+  --   let r := ←match r with | `(wgcl {$r}) => pure r | _ => `(cwgcl_prog| ~ $r)
+  --   `(wgcl { if ($c) { $l } else { $r } })
+| _ => throw ()
+
 theorem asdhjasdhjsas {P Q : Exp ϖ} (h : b.iver * C.wp P + b.not.iver * Q ≤ P) :
     (pgcl { while (~b) { ~C } }).wp Q ≤ P := by
-  simp [wp_loop, wp_loop_f]
+  simp [wp_loop]
   apply OrderHom.lfp_le
-  simp_all
+  simp_all [Φ]
 theorem asdhjasdhjs {P Q : Exp ϖ} (h : ∀ Y, b.iver * C.wp Y + b.not.iver * Q ≤ Y → P ≤ Y) :
     P ≤ (pgcl { while (~b) { ~C } }).wp Q := by
-  simp [wp_loop, wp_loop_f]
+  simp [wp_loop]
   apply OrderHom.le_lfp
-  simp_all
+  simp_all [Φ]
 theorem asdhjasdhjs' {Q : Exp ϖ}
   (h : ∀ Y, b.iver * C.wp Y + b.not.iver * Q ≤ Y → (fun _ ↦ p) ≤ Y) :
     p ≤ (pgcl { while (~b) { ~C } }).wp Q σ := by
-  simp [wp_loop, wp_loop_f]
+  simp [wp_loop]
   apply asdhjasdhjs
-  simp_all
+  simp_all [Φ]
 theorem asdhjasdhjsas' {Q : Exp ϖ}
   (h : (b.iver * C.wp fun _ ↦ p) + b.not.iver * Q ≤ fun _ ↦ p) :
     (pgcl { while (~b) { ~C } }).wp Q σ ≤ p := by

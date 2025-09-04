@@ -53,9 +53,9 @@ instance : MDP.FiniteBranching (𝒬 (ϖ:=ϖ)) where
 
 @[simp]
 noncomputable def cost (X : Exp ϖ)
-  | ·⟨⇓ ϖ, σ⟩ => X σ
-  | ·⟨tick r, σ⟩ => r σ
-  | ·⟨c' ;; _, σ⟩ => cost X (·⟨c', σ⟩)
+  | conf[⇓ ϖ, σ] => X σ
+  | conf[tick(r), σ] => r σ
+  | conf[~c' ; ~_, σ] => cost X conf[~c', σ]
   | _ => 0
 
 omit [DecidableEq ϖ] in
@@ -76,7 +76,7 @@ theorem cost_mono : Monotone (cost (ϖ:=ϖ)) := fun a b hab ↦ by
         simp_all
         split at ih₁ <;> simp_all
 
-@[simp] theorem cost_X_of_pGCL : cost X (·⟨C, σ⟩) = cost 0 (·⟨C, σ⟩) := by induction C <;> simp_all
+@[simp] theorem cost_X_of_pGCL : cost X conf[~C, σ] = cost 0 conf[~C, σ] := by induction C <;> simp_all
 
 @[simp]
 theorem Φ_simp {C : Conf ϖ} :
@@ -119,7 +119,7 @@ noncomputable def ς : (pGCL ϖ → Exp ϖ →o Exp ϖ) →o pGCL ϖ → Exp ϖ 
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
     𝒬.Φ (cost X)
       (match · with
-      | ·⟨⇓ ϖ,σ'⟩ => X σ' | ·⟨↯ ϖ,σ'⟩ => 0 | ·⟨C',σ'⟩ => Y C' X σ' | ⊥ => 0) (·⟨C, σ⟩),
+      | conf[⇓,σ'] => X σ' | conf[↯,σ'] => 0 | conf[~C',σ'] => Y C' X σ' | ⊥ => 0) conf[~C, σ],
       fun a b h σ ↦ by
         simp
         gcongr
@@ -157,7 +157,7 @@ variable {f : pGCL ϖ → Exp ϖ →o Exp ϖ}
     exists_and_left, exists_eq_left, dite_eq_ite, iInf_iInf_eq_left, true_and, zero_add]
   ext X σ
   simp only [SmallStep.prob_iff, exists_and_left, exists_eq_left, coe_mk]
-  rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₁,σ⟩), ENNReal.tsum_eq_add_tsum_ite (·⟨C₂,σ⟩)]
+  rw [ENNReal.tsum_eq_add_tsum_ite conf[~C₁,σ], ENNReal.tsum_eq_add_tsum_ite conf[~C₂,σ]]
   by_cases C₁ = C₂ <;> simp_all [eq_comm, ite_and]
 @[simp] theorem ς.nonDet : ς f (.nonDet C₁ C₂) = f C₁ ⊓ f C₂ := by
   ext X σ
@@ -166,15 +166,16 @@ variable {f : pGCL ϖ → Exp ϖ →o Exp ϖ}
   apply le_antisymm <;> simp
   · constructor
     · apply iInf_le_of_le ⟨.L, by simp⟩
-      rw [tsum_eq_single (·⟨C₁,σ⟩) (by simp_all [Imp.swap])]; simp
+      rw [tsum_eq_single conf[~C₁,σ] (by simp_all [Imp.swap])]; simp
     · apply iInf_le_of_le ⟨.R, by simp⟩
-      rw [tsum_eq_single (·⟨C₂,σ⟩) (by simp_all [Imp.swap])]; simp
+      rw [tsum_eq_single conf[~C₂,σ] (by simp_all [Imp.swap])]; simp
   · rintro α (⟨_, _⟩ | ⟨_, _⟩)
-    · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₁,σ⟩)]; simp
-    · rw [ENNReal.tsum_eq_add_tsum_ite (·⟨C₂,σ⟩)]; simp
+    · rw [ENNReal.tsum_eq_add_tsum_ite conf[~C₁,σ]]; simp
+    · rw [ENNReal.tsum_eq_add_tsum_ite conf[~C₂,σ]]; simp
 theorem ς.loop :
       ς f (.loop b C)
-    = ⟨fun X ↦ b.iver * f (C ;; .loop b C) X + b.not.iver * f .skip X, fun a b h ↦ by simp; gcongr⟩
+    = ⟨fun X ↦ b.iver * f (pgcl { ~C ; while ~b {~C} }) X + b.not.iver * f .skip X,
+       fun a b h ↦ by simp; gcongr⟩
 := by
   ext X σ
   simp [ς, 𝒬.tsum_succs_univ']
@@ -185,14 +186,14 @@ end 𝒬
 open 𝒬
 
 noncomputable def op (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun X ↦ (lfp (𝒬.Φ <| cost X) <| ·⟨C, ·⟩), fun a b h σ ↦ by
+  ⟨fun X ↦ (lfp (𝒬.Φ <| cost X) <| conf[~C, ·]), fun a b h σ ↦ by
     suffices lfp (MDP.Φ (cost a)) ≤ lfp (MDP.Φ (cost b)) by exact this _
     gcongr
     apply MDP.Φ.monotone' (cost_mono h)⟩
 
 theorem op_eq_iSup_Φ :
     op (ϖ:=ϖ)
-  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n] ⊥ (·⟨C,σ⟩), fun a b h σ ↦ by
+  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n] ⊥ conf[~C,σ], fun a b h σ ↦ by
     simp
     suffices (⇑(MDP.Φ (cost a)))^[n] ⊥ ≤ (⇑(MDP.Φ (cost b)))^[n] ⊥ by apply this
     induction n with
@@ -204,7 +205,7 @@ theorem op_eq_iSup_Φ :
   simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.Φ_ωScottContinuous]
 theorem op_eq_iSup_succ_Φ :
       op (ϖ:=ϖ)
-    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n + 1] ⊥ (·⟨C,σ⟩), fun a b h σ ↦ by
+    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n + 1] ⊥ conf[~C,σ], fun a b h σ ↦ by
       simp only
       suffices (⇑(MDP.Φ (cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.Φ (cost b)))^[n + 1] ⊥ by apply this
       induction n with
@@ -248,7 +249,7 @@ theorem lfp_ς_eq_op : lfp (ς (ϖ:=ϖ)) = op :=
 variable {C : pGCL ϖ}
 
 attribute [-simp] Function.iterate_succ in
-theorem op_le_seq : C.op ∘ C'.op ≤ (C ;; C').op := by
+theorem op_le_seq : C.op ∘ C'.op ≤ pgcl {~C ; ~C'}.op := by
   intro X σ
   nth_rw 1 [op_eq_iSup_succ_Φ]
   simp

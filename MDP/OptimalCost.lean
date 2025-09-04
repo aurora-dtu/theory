@@ -141,7 +141,7 @@ theorem iInf_EC_eq_Φ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 n = (M.Φ c)^[n]
 theorem iSup_iInf_EC_eq_iSup_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 n = ⨆ n, (M.Φ c)^[n] ⊥ :=
   by simp_all [iInf_EC_eq_Φ]
 
-theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 n = M.lfp_Φ c := by
+theorem iSup_iInf_EC_eq_lfp_Φ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 n = lfp (M.Φ c) := by
   simp [lfp_Φ_eq_iSup_Φ, iInf_EC_eq_Φ]
 
 theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
@@ -162,22 +162,22 @@ theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
   | zero => simp [Φℒ, Φf]; rfl
   | succ n ih => simp [Φℒ_step_ECℒ, ih, Function.iterate_succ']
 
-noncomputable def ℒ' [M.FiniteBranching] (c : M.Costs) : 𝔏[M] :=
-  ⟨⟨fun π ↦ (M.act π.last).toFinset.argmin (M.act₀_nonempty _) (M.Φf π.last · (lfp_Φ c)), by simp⟩,
-    by constructor; simp [Scheduler.IsMarkovian]⟩
+noncomputable def ℒ' [M.FiniteBranching] (c : M.Costs) : 𝔏[M] := ⟨⟨
+  fun π ↦ (M.act π.last).toFinset.argmin (M.act₀_nonempty _) (M.Φf π.last · (lfp (Φ c))), by simp⟩,
+  by constructor; simp [Scheduler.IsMarkovian]⟩
 
 noncomputable def ℒ'_spec [M.FiniteBranching] (c : M.Costs) (s : State) :
-  ⨅ α : M.act s, M.Φf s α (lfp_Φ c) = (Φf s · (lfp_Φ c)) (ℒ' c {s})
+  ⨅ α : M.act s, M.Φf s α (lfp (Φ c)) = (Φf s · (lfp (Φ c))) (ℒ' c {s})
 := by
-  convert Finset.argmin_spec (M.act s).toFinset (act₀_nonempty M s) (Φf s · (lfp_Φ c)) |>.right
+  convert Finset.argmin_spec (M.act s).toFinset (act₀_nonempty M s) (Φf s · (lfp (Φ c))) |>.right
   simp [Finset.inf'_eq_inf, Finset.inf_eq_iInf, iInf_subtype]
 
 omit [DecidableEq State] in
-theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp_Φ c := by
+theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp (Φ c) := by
   apply le_antisymm
   · apply lfp_le
-    nth_rw 2 [← map_lfp_Φ]
-    simp [Φℒ, Φ]
+    nth_rw 2 [← map_lfp]
+    simp only [Φℒ, Φ, coe_mk]
     congr! 2 with s
     exact M.ℒ'_spec c s |>.symm
   · refine lfp_le _ fun s ↦ ?_
@@ -212,7 +212,7 @@ theorem iSup_iInf_ECℒ_eq_iInf_iSup_ECℒ [M.FiniteBranching] :
   simp [iInf_iSup_EC_eq_iInf_iSup_ECℒ, iSup_iInf_EC_eq_iInf_iSup_EC]
 
 theorem iInf_iSup_EC_eq_lfp_Φ [M.FiniteBranching] :
-    ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n = M.lfp_Φ c := by
+    ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n = lfp (Φ c) := by
   simp [← iSup_iInf_EC_eq_lfp_Φ, iSup_iInf_EC_eq_iInf_iSup_EC]
 
 end MDP

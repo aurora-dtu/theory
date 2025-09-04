@@ -54,16 +54,16 @@ noncomputable def wp' : pGCL ϖ → Exp ϖ →o Exp ϖ :=
   have : ∀ (a b : ℕ), a < 1 + a + b := by omega
   WellFounded.fix sizeOfWFRel.wf fun C wp ↦
   ⟨fun X ↦ match C with
-  | .skip => X
-  | .assign x A => fun σ ↦ X (σ[x ↦ A σ])
-  | .seq C₁ C₂ => wp C₁ (by simp_all) (wp C₂ (by simp_all) X)
-  | .prob C₁ p C₂ => p.pick (wp C₁ (by simp_all) X) (wp C₂ (by simp_all) X)
-  | .nonDet C₁ C₂ => wp C₁ (by simp_all) X ⊓ wp C₂ (by simp_all) X
-  | .loop b C' => OrderHom.lfp ⟨
+  | pgcl {skip} => X
+  | pgcl {~x := ~A} => fun σ ↦ X (σ[x ↦ A σ])
+  | pgcl {~C₁ ; ~C₂} => wp C₁ (by simp_all) (wp C₂ (by simp_all) X)
+  | pgcl {{~C₁} [~p] {~C₂}} => p.pick (wp C₁ (by simp_all) X) (wp C₂ (by simp_all) X)
+  | pgcl {{~C₁} [] {~C₂}} => wp C₁ (by simp_all) X ⊓ wp C₂ (by simp_all) X
+  | pgcl {while ~b {~C'}} => OrderHom.lfp ⟨
       (b.iver * wp C' (by simp_all) · + b.not.iver * X),
       fun a b hab σ ↦ by simp; gcongr; apply (wp _ _).mono hab⟩
-  | .tick e => e + X
-  | .assert b => b.iver * X,
+  | pgcl {tick(~e)} => e + X
+  | pgcl {assert(~b)} => b.iver * X,
   by
     intro X Y hXY
     simp
