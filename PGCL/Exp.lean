@@ -21,6 +21,13 @@ def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : Exp ϖ) : Exp ϖ := fu
 @[simp]
 theorem Exp.subst_lift [DecidableEq ϖ] (e : Exp ϖ) : e.subst x A σ = e (σ[x ↦ A σ]) := rfl
 
+@[gcongr]
+theorem Exp.add_le_add (a b c d : Exp ϖ) (hac : a ≤ c) (hac : b ≤ d) : a + b ≤ c + d := by
+  intro; simp; gcongr <;> apply_assumption
+@[gcongr]
+theorem Exp.mul_le_mul (a b c d : Exp ϖ) (hac : a ≤ c) (hac : b ≤ d) : a * b ≤ c * d := by
+  intro; simp; gcongr <;> apply_assumption
+
 namespace BExpr
 
 def not (b : BExpr ϖ) : BExpr ϖ := (!b ·)
@@ -72,7 +79,7 @@ theorem top_ne_one_sub : ¬⊤ = 1 - p.val σ :=
 
 noncomputable def pick (x y : Exp ϖ) : Exp ϖ := p.val * x + (1 - p.val) * y
 
-@[simp]
+@[simp, gcongr]
 theorem pick_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y ≤ p.pick z w := by
   intro; simp [pick]; gcongr <;> apply_assumption
 @[simp]

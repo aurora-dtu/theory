@@ -26,10 +26,10 @@ def ite (b : BExpr ϖ) (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .prob C₁ b.probOf C�
 def AST (C : pGCL ϖ) : Prop := C.st.wp 1 = 1
 
 noncomputable def cwp (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨(C.wp · / C.st.wp 1), fun a b hab σ ↦ ENNReal.div_le_div (wp.monotone _ hab _) (by rfl)⟩
+  ⟨(C.wp · / C.st.wp 1), fun a b hab σ ↦ ENNReal.div_le_div ((wp _).monotone hab _) (by rfl)⟩
 
-theorem park_induction (b : BExpr ϖ) (C : pGCL ϖ) (f I) (h : (wp_loop_f b C f) I ≤ I) :
-    (C.loop b).wp f ≤ I := lfp_le _ h
+theorem park_induction (b : BExpr ϖ) (C : pGCL ϖ) (f I) (h : (Φ b C f) I ≤ I) :
+    (C.loop b).wp f ≤ I := lfp_le _ (by simp [Φ] at h ⊢; exact h)
 
 def Ψ (f : Exp ϖ) (Φ : Exp ϖ →o Exp ϖ) : Exp ϖ →o Exp ϖ := ⟨(Φ · ⊓ f), fun a b hab ↦ by
   simp

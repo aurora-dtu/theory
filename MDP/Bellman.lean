@@ -38,12 +38,17 @@ theorem Φ.monotone' : Monotone M.Φ := fun _ _ h _ _ ↦ by simp [Φ]; gcongr; 
 theorem Φ_le_Φℒ : Φ ≤ Φℒ ℒ :=
   fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property {s}⟩ (by rfl)
 
+@[deprecated]
 noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.Φ
 
 theorem iSup_succ_Φ_eq_iSup_Φ (c) : ⨆ (n : ℕ), (M.Φ c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.Φ c)^[n] ⊥ := by
   ext; rw [iSup_iterate_succ]
+theorem iSup_succ_Φ_eq_iSup_Φ_apply (c) :
+    ⨆ (n : ℕ), (M.Φ c)^[n + 1] ⊥ x = ⨆ (n : ℕ), (M.Φ c)^[n] ⊥ x := by
+  have := congrFun (iSup_succ_Φ_eq_iSup_Φ c) x
+  simpa
 
-theorem map_lfp_Φ : Φ c (lfp_Φ c) = lfp_Φ c := map_lfp (Φ c)
+-- theorem map_lfp_Φ : Φ c (lfp_Φ c) = lfp_Φ c := map_lfp (Φ c)
 
 noncomputable def lfp_Φℒ (ℒ : 𝔏[M]) : M.Costs → M.Costs := lfp ∘ M.Φℒ ℒ
 
@@ -80,10 +85,10 @@ theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
 
-theorem lfp_Φ_eq_iSup_Φ : M.lfp_Φ = fun c ↦ ⨆ (n : ℕ), (Φ c)^[n] ⊥ :=
-  funext fun _ ↦ fixedPoints.lfp_eq_sSup_iterate _ M.Φ_ωScottContinuous
+theorem lfp_Φ_eq_iSup_Φ : lfp (M.Φ c) = ⨆ (n : ℕ), (Φ c)^[n] ⊥ :=
+  fixedPoints.lfp_eq_sSup_iterate _ M.Φ_ωScottContinuous
 
-theorem lfp_Φ_eq_iSup_succ_Φ : M.lfp_Φ = fun c ↦ ⨆ (n : ℕ), (Φ c)^[n + 1] ⊥ :=
-  lfp_Φ_eq_iSup_Φ.trans <| (Set.eqOn_univ _ _).mp fun c _ ↦ (iSup_succ_Φ_eq_iSup_Φ c).symm
+theorem lfp_Φ_eq_iSup_succ_Φ : lfp (M.Φ c) = ⨆ (n : ℕ), (Φ c)^[n + 1] ⊥ :=
+  lfp_Φ_eq_iSup_Φ.trans <| (Set.eqOn_univ _ _).mp fun c' _ ↦ by simp [← iSup_succ_Φ_eq_iSup_Φ_apply]
 
 end MDP.FiniteBranching
