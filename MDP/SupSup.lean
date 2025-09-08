@@ -10,6 +10,18 @@ variable {M : MDP State Act}
 noncomputable def Ψ (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + ⨆ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
+theorem Ψ.monotone' : Monotone M.Ψ := fun _ _ h _ _ ↦ by simp [Ψ]; gcongr; exact h _
+
+theorem Ψ_ωScottContinuous : ωScottContinuous (M.Ψ c) := by
+  refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
+  simp [Ψ, Φf_ωScottContinuous.map_ωSup]
+  simp [ωSup, ← ENNReal.add_iSup]
+  congr
+  rw [iSup_comm]
+
+theorem lfp_Ψ_eq_iSup_Ψ : lfp (M.Ψ c) = ⨆ (n : ℕ), (Ψ c)^[n] ⊥ :=
+  fixedPoints.lfp_eq_sSup_iterate _ M.Ψ_ωScottContinuous
+
 theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
       ∑' s' : M.succs_univ s, ⨆ n, ⨆ 𝒮, M.P s α s' * M.EC c 𝒮 n s'
     ≤ ⨆ n, ⨆ 𝒮, ∑' s' : M.succs_univ s, M.P s α s' * M.EC c 𝒮 n s' := by

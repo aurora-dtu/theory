@@ -295,31 +295,31 @@ theorem succs_univ_fin'_eq_r (c : Conf' ϖ) :
       · use .N, 1, Conf.term Termination.fault ‹States ϖ›
         simp_all
 
-open scoped Classical in
-theorem succs_eq_succs_fin : succs (ϖ:=ϖ) c α = (succs_fin c α).toSet := by
-  ext s'
-  simp [succs]
-  -- simp [← succs_univ_fin'_eq_r]
-  sorry
-  -- constructor
-  -- · simp
-  --   intro p h
-  --   induction h with try simp_all [succs_fin]
-  --   | seq_R => unfold succs_fin; split <;> simp_all
-  --   | seq_F =>
-  --     unfold succs_fin; split <;> simp_all
-  --     simp [after]
-  --     grind
-  --   | prob_L | prob_R => split_ifs <;> simp_all
-  -- · intro h
-  --   induction c, α using succs_fin.induct generalizing s'
-  --     with (simp [succs_fin] at h ⊢; try subst_eqs) <;> try grind
-  --   | case9 | case10 => simp_all; (use 1); simp
-  --   | case11 => aesop
-  --   | case17 _ _ _ _ _ ih =>
-  --     obtain ⟨((_ | _) | ⟨c', σ'⟩), h, _, _⟩ := h <;> obtain ⟨_, _⟩ := ih _ h <;> simp_all
-  --     · grind
-  --     · grind
+-- open scoped Classical in
+-- theorem succs_eq_succs_fin : succs (ϖ:=ϖ) c α = (succs_fin c α).toSet := by
+--   ext s'
+--   simp [succs]
+--   -- simp [← succs_univ_fin'_eq_r]
+--   sorry
+--   -- constructor
+--   -- · simp
+--   --   intro p h
+--   --   induction h with try simp_all [succs_fin]
+--   --   | seq_R => unfold succs_fin; split <;> simp_all
+--   --   | seq_F =>
+--   --     unfold succs_fin; split <;> simp_all
+--   --     simp [after]
+--   --     grind
+--   --   | prob_L | prob_R => split_ifs <;> simp_all
+--   -- · intro h
+--   --   induction c, α using succs_fin.induct generalizing s'
+--   --     with (simp [succs_fin] at h ⊢; try subst_eqs) <;> try grind
+--   --   | case9 | case10 => simp_all; (use 1); simp
+--   --   | case11 => aesop
+--   --   | case17 _ _ _ _ _ ih =>
+--   --     obtain ⟨((_ | _) | ⟨c', σ'⟩), h, _, _⟩ := h <;> obtain ⟨_, _⟩ := ih _ h <;> simp_all
+--   --     · grind
+--   --     · grind
 
 set_option maxHeartbeats 500000 in
 open scoped Classical in
