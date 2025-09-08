@@ -325,7 +325,6 @@ theorem dop_le_seq :
     nth_rw 2 [← ς_dop_eq_dop]
     rw [Function.iterate_succ', Function.comp_apply]
     simp [ς, tsum_succs_univ']
-    -- gcongr
     refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ C'.tsum_after_le ?_ ?_ ?_ ?_)
     · simp [mdp, r]
     · simp [mdp, r]

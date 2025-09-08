@@ -29,11 +29,20 @@ noncomputable def Φf (s : State) (α : Act) : M.Costs →o ENNReal :=
 noncomputable def Φ (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + ⨅ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
+noncomputable def Φ' (O : {τ : Type u_2} → (τ → ENNReal) →o ENNReal) (c : M.Costs) :
+    M.Costs →o M.Costs :=
+  ⟨fun v s ↦ c s + O (fun (α : M.act s) ↦ (M.Φf s α v : ENNReal)),
+    by intro _ _ _ _; simp; gcongr; intro; simp; gcongr⟩
+
+noncomputable abbrev dΦ := M.Φ' ⟨fun f ↦ ⨆ a, f a, by intro a b h; simp only; gcongr; apply h⟩
+noncomputable abbrev aΦ := M.Φ' ⟨fun f ↦ ⨅ a, f a, by intro a b h; simp only; gcongr; apply h⟩
+
 /-- The Bellman operator with a fixed scheduler (necessarily `Markovian`). -/
 noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + Φf s (ℒ {s}) v, by intro _ _ _ _; simp; gcongr⟩
 
 theorem Φ.monotone' : Monotone M.Φ := fun _ _ h _ _ ↦ by simp [Φ]; gcongr; exact h _
+theorem Φ'.monotone' : Monotone (M.Φ' f) := fun _ _ h _ _ ↦ by simp [Φ']; gcongr; exact h _
 
 theorem Φ_le_Φℒ : Φ ≤ Φℒ ℒ :=
   fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property {s}⟩ (by rfl)

@@ -8,11 +8,6 @@ abbrev 𝔼 (S : Type*) := S → ENNReal
 
 notation "𝔼[" S "]" => 𝔼 S
 
-class DemonicExpectationTransformer (P S : Type*) where
-  det : P → 𝔼[S] →o 𝔼[S]
-class AngelicExpectationTransformer (P S : Type*) where
-  aet : P → 𝔼[S] →o 𝔼[S]
-
 inductive Conf (P S T : Type*) where
   | term (t : T) (σ : S)
   | prog (P : P) (σ : S)
@@ -168,6 +163,8 @@ noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
       rintro (_ | ⟨_ , _⟩) <;> try rfl
       apply_assumption⟩
 
+section Demonic
+
 variable [i.mdp.FiniteBranching]
 
 @[simp]
@@ -185,23 +182,6 @@ theorem lfp_Φ_term :
 theorem lfp_Φ_bot :
     lfp (i.mdp.Φ (i.cost X)) Conf.bot = 0 := by
   rw [MDP.lfp_Φ_eq_iSup_Φ]
-  simp
-
-@[simp]
-theorem lfp_Ψ_term :
-    lfp (i.mdp.Ψ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
-  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
-  simp
-  apply le_antisymm
-  · simp
-    intro i
-    split_ifs <;> simp
-  · apply le_iSup_of_le 1
-    simp
-@[simp]
-theorem lfp_Ψ_bot :
-    lfp (i.mdp.Ψ (i.cost X)) Conf.bot = 0 := by
-  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
   simp
 
 theorem dop_eq_iSup_Φ :
@@ -239,6 +219,58 @@ theorem ς_dop_eq_dop : i.ς i.dop = i.dop := by
   congr! 3 with C'
   rcases C' with ⟨t, σ'⟩ | ⟨C', σ'⟩ | _ <;> simp [dop]
 
+theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.ς b ≤ b) : i.dop ≤ b := by
+  rw [dop_eq_iSup_Φ, iSup_le_iff]
+  intro n
+  induction n with
+  | zero => intros _ _ _; simp
+  | succ i ih =>
+    refine le_trans (fun C X σ ↦ ?_) h
+    simp [Function.iterate_succ', ς, -Function.iterate_succ]
+    gcongr
+    split
+    · simp_all []; split_ifs <;> simp
+    · simp_all only; exact ih _ X _
+    · simp_all [le_refl]
+
+theorem lfp_ς_eq_dop : lfp i.ς = i.dop :=
+  (lfp_le_fixed _ i.ς_dop_eq_dop).antisymm (le_lfp _ i.dop_isLeast)
+
+class DemonicExpectationTransformer (P S : Type*) where
+  det : P → 𝔼[S] →o 𝔼[S]
+
+class SoundDemonicExpectationTransformer (P S T A : Type*)
+    [i : SmallStepSemantics P S T A] [i.mdp.FiniteBranching]
+    [i' : DemonicExpectationTransformer P S] where
+  det_le_dop : i'.det ≤ i.dop
+  det_prefixed_point : i.ς i'.det ≤ i'.det
+
+variable [i' : DemonicExpectationTransformer P S] [SoundDemonicExpectationTransformer P S T A]
+
+theorem SoundDemonicExpectationTransformer.det_eq_dop : i'.det = i.dop :=
+  le_antisymm det_le_dop (dop_isLeast i'.det det_prefixed_point)
+
+end Demonic
+
+section Angelic
+
+@[simp]
+theorem lfp_Ψ_term :
+    lfp (i.mdp.Ψ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
+  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
+  simp
+  apply le_antisymm
+  · simp
+    intro i
+    split_ifs <;> simp
+  · apply le_iSup_of_le 1
+    simp
+@[simp]
+theorem lfp_Ψ_bot :
+    lfp (i.mdp.Ψ (i.cost X)) Conf.bot = 0 := by
+  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
+  simp
+
 theorem aop_eq_iSup_Ψ :
     i.aop
   = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.Ψ (i.cost X))^[n] ⊥ (.prog C σ), fun a b h σ ↦ by
@@ -274,20 +306,6 @@ theorem aς_aop_eq_aop : i.aς i.aop = i.aop := by
   congr! 3 with C'
   rcases C' with ⟨t, σ'⟩ | ⟨C', σ'⟩ | _ <;> simp [aop]
 
-theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.ς b ≤ b) : i.dop ≤ b := by
-  rw [dop_eq_iSup_Φ, iSup_le_iff]
-  intro n
-  induction n with
-  | zero => intros _ _ _; simp
-  | succ i ih =>
-    refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', ς, -Function.iterate_succ]
-    gcongr
-    split
-    · simp_all []; split_ifs <;> simp
-    · simp_all only; exact ih _ X _
-    · simp_all [le_refl]
-
 theorem aop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.aς b ≤ b) : i.aop ≤ b := by
   rw [aop_eq_iSup_Ψ, iSup_le_iff]
   intro n
@@ -302,31 +320,22 @@ theorem aop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.aς b ≤ b) : i.aop
     · simp_all only; exact ih _ X _
     · simp_all [le_refl]
 
-theorem lfp_ς_eq_dop : lfp i.ς = i.dop :=
-  (lfp_le_fixed _ i.ς_dop_eq_dop).antisymm (le_lfp _ i.dop_isLeast)
-
-class SoundDemonicExpectationTransformer (P S T A : Type*)
-    [i : SmallStepSemantics P S T A] [i.mdp.FiniteBranching] [i' : DemonicExpectationTransformer P S] where
-  det_le_dop : i'.det ≤ i.dop
-  det_prefixed_point : i.ς i'.det ≤ i'.det
+class AngelicExpectationTransformer (P S : Type*) where
+  aet : P → 𝔼[S] →o 𝔼[S]
 
 class SoundAngelicExpectationTransformer (P S T A : Type*)
-    [i : SmallStepSemantics P S T A] [i.mdp.FiniteBranching] [i' : AngelicExpectationTransformer P S] where
+    [i : SmallStepSemantics P S T A]
+    [i' : AngelicExpectationTransformer P S] where
   aet_le_aop : i'.aet ≤ i.aop
   aet_prefixed_point : i.aς i'.aet ≤ i'.aet
 
-variable [i' : DemonicExpectationTransformer P S] [SoundDemonicExpectationTransformer P S T A]
-
-theorem SoundDemonicExpectationTransformer.det_eq_dop : i'.det = i.dop :=
-  le_antisymm det_le_dop (dop_isLeast i'.det det_prefixed_point)
-
-section
 variable [i' : AngelicExpectationTransformer P S] [SoundAngelicExpectationTransformer P S T A]
+
 theorem SoundAngelicExpectationTransformer.aet_eq_aop : i'.aet = i.aop :=
   le_antisymm aet_le_aop (aop_isLeast i'.aet aet_prefixed_point)
-end
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
+end Angelic
+
 open scoped Classical in
 theorem ς_apply {p : P} {σ : S}
     (a : Set A) (ss : Set (Conf P S T))
@@ -344,7 +353,6 @@ theorem ς_apply {p : P} {σ : S}
   subst_eqs
   simp [ς, tsum_succs_univ']
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
 open scoped Classical in
 theorem aς_apply {p : P} {σ : S}
     (a : Set A) (ss : Set (Conf P S T))
@@ -371,7 +379,6 @@ noncomputable def ς_continuation_fin
       | Conf.prog C' σ' => v C' X σ'
       | Conf.bot => 0
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
 open scoped Classical in
 theorem ς_apply_fin {p : P} {σ : S}
     (as : Finset A) (ss : Finset (Conf P S T))
@@ -392,7 +399,6 @@ theorem ς_apply_fin {p : P} {σ : S}
   · intro; simp_all
   · simp_all
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
 open scoped Classical in
 theorem ς_apply_act₂ {p : P} {σ : S}
     (a₁ a₂ : A) (ss : Finset (Conf P S T))
@@ -404,7 +410,6 @@ theorem ς_apply_act₂ {p : P} {σ : S}
   rw [← iInf_pair]
   simp
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
 open scoped Classical in
 theorem aς_apply_fin {p : P} {σ : S}
     (as : Finset A) (ss : Finset (Conf P S T))
@@ -425,7 +430,6 @@ theorem aς_apply_fin {p : P} {σ : S}
   · intro; simp_all
   · simp_all
 
-omit [i.mdp.FiniteBranching] i' [SoundDemonicExpectationTransformer P S T A] in
 open scoped Classical in
 theorem aς_apply_act₂ {p : P} {σ : S}
     (a₁ a₂ : A) (ss : Finset (Conf P S T))
@@ -436,31 +440,6 @@ theorem aς_apply_act₂ {p : P} {σ : S}
   congr
   rw [← iSup_pair]
   simp
-
-omit i' [SoundDemonicExpectationTransformer P S T A] in
-open scoped Classical in
-theorem ς_apply_fin' {p : P} {σ : S} :
-    i.ς v p X σ = i.cost X (Conf.prog p σ) +
-        ⨅ α ∈ i.mdp.act₀ (Conf.prog p σ),
-          ∑ s' ∈ i.mdp.succs₀ α (Conf.prog p σ),
-            i.mdp.P (Conf.prog p σ) α s' *
-              match s' with
-              | Conf.term t σ' => i.cost X (Conf.term t σ')
-              | Conf.prog C' σ' => v C' X σ'
-              | Conf.bot => 0 := by
-  rw [ς_apply_fin (i.mdp.act₀ (Conf.prog p σ)) (i.mdp.succs_univ₀ (Conf.prog p σ))]
-  · simp_all
-    congr! 4
-    apply Finset.sum_bij_ne_zero (fun x _ _ ↦ x)
-    · simp_all [MDP.succs_univ]
-      intros
-      apply_assumption
-    · simp
-    · simp_all [MDP.succs_univ]
-      grind
-    · simp
-  · simp [act, mdp]
-  · simp [mdp]
 
 -- attribute [-simp] Function.iterate_succ in
 -- theorem op_le_seq (seq : P → P → P)
@@ -504,6 +483,5 @@ theorem ς_apply_fin' {p : P} {σ : S} :
 --       split_ifs <;> try rfl
 --       gcongr
 --       simp_all
-
 
 end SmallStepSemantics
