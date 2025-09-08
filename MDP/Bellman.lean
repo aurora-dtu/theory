@@ -38,6 +38,7 @@ noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + Φf s (ℒ {s}) v, by intro _ _ _ _; simp; gcongr⟩
 
 theorem dΦ.monotone' : Monotone M.dΦ := fun _ _ h _ _ ↦ by simp [dΦ]; gcongr; exact h _
+theorem aΦ.monotone' : Monotone M.aΦ := fun _ _ h _ _ ↦ by simp [aΦ]; gcongr; exact h _
 
 theorem dΦ_le_Φℒ : dΦ ≤ Φℒ ℒ :=
   fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property {s}⟩ (by rfl)

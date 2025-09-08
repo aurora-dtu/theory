@@ -42,10 +42,10 @@ noncomputable def dop (C : P) : 𝔼[S] →o 𝔼[S] :=
     gcongr
     apply MDP.dΦ.monotone' (i.cost_mono h)⟩
 noncomputable def aop (C : P) : 𝔼[S] →o 𝔼[S] :=
-  ⟨fun X ↦ (lfp (i.mdp.Ψ <| i.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
-    suffices lfp (MDP.Ψ (i.cost a)) ≤ lfp (MDP.Ψ (i.cost b)) by exact this _
+  ⟨fun X ↦ (lfp (i.mdp.aΦ <| i.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
+    suffices lfp (MDP.aΦ (i.cost a)) ≤ lfp (MDP.aΦ (i.cost b)) by exact this _
     gcongr
-    apply MDP.Ψ.monotone' (i.cost_mono h)⟩
+    apply MDP.aΦ.monotone' (i.cost_mono h)⟩
 
 @[simp]
 theorem dΦ_simp {C : Conf P S T} :
@@ -67,10 +67,10 @@ theorem dΦ_simp {C : Conf P S T} :
     obtain ⟨C', p, h, hp⟩ := h
     apply iInf_le_of_le p (iInf_le_of_le C' (iInf_le_of_le h (by rfl)))
 @[simp]
-theorem Ψ_simp {C : Conf P S T} :
-    i.mdp.Ψ c f C = c C + ⨆ α ∈ i.act C, ∑' s' : i.mdp.succs_univ C, i.mdp.P C α s' * f s'
+theorem aΦ_simp {C : Conf P S T} :
+    i.mdp.aΦ c f C = c C + ⨆ α ∈ i.act C, ∑' s' : i.mdp.succs_univ C, i.mdp.P C α s' * f s'
 := by
-  simp [MDP.Ψ, MDP.Φf, act, MDP.act, iSup_subtype, mdp]
+  simp [MDP.aΦ, MDP.Φf, act, MDP.act, iSup_subtype, mdp]
   simp [funext_iff]
   congr! with α
   rw [iSup_comm]
@@ -116,17 +116,17 @@ theorem Φ_term_eq :
   · simp
 
 @[simp]
-theorem Ψ_bot_eq : (i.mdp.Ψ (i.cost X))^[n] ⊥ .bot = 0 := by
+theorem aΦ_bot_eq : (i.mdp.aΦ (i.cost X))^[n] ⊥ .bot = 0 := by
   induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', tsum_succs_univ']
 @[simp]
-theorem Ψ_term_eq :
-    (i.mdp.Ψ (i.cost X))^[n] ⊥ (.term t σ) = if n = 0 then 0 else i.cost X (Conf.term t σ) := by
+theorem aΦ_term_eq :
+    (i.mdp.aΦ (i.cost X))^[n] ⊥ (.term t σ) = if n = 0 then 0 else i.cost X (Conf.term t σ) := by
   induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', tsum_succs_univ']
   nth_rw 2 [← add_zero (cost A X (Conf.term t σ))]
   congr
   simp
 
-noncomputable def ς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
+noncomputable def dς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
     i.mdp.dΦ (i.cost X)
       (match · with
@@ -146,7 +146,7 @@ noncomputable def ς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼
       apply_assumption⟩
 noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
-    i.mdp.Ψ (i.cost X)
+    i.mdp.aΦ (i.cost X)
       (match · with
       | .term t σ' => i.cost X (.term t σ') | .prog C' σ' => Y C' X σ' | .bot => 0) (.prog C σ),
       fun a b h σ ↦ by
@@ -159,7 +159,7 @@ noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
           · rfl⟩),
     by
       intro _ _ _ _ _ _
-      apply (i.mdp.Ψ _).mono
+      apply (i.mdp.aΦ _).mono
       rintro (_ | ⟨_ , _⟩) <;> try rfl
       apply_assumption⟩
 
@@ -211,30 +211,30 @@ theorem dop_eq_iSup_succ_dΦ :
   rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.dΦ_ωScottContinuous]
   rw [← iSup_iterate_succ]
   simp
-theorem ς_dop_eq_dop : i.ς i.dop = i.dop := by
+theorem dς_dop_eq_dop : i.dς i.dop = i.dop := by
   ext C X σ
   simp [dop]
   rw [← map_lfp]
-  simp only [ς, OrderHom.coe_mk]
+  simp only [dς, OrderHom.coe_mk]
   congr! 3 with C'
   rcases C' with ⟨t, σ'⟩ | ⟨C', σ'⟩ | _ <;> simp [dop]
 
-theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.ς b ≤ b) : i.dop ≤ b := by
+theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.dς b ≤ b) : i.dop ≤ b := by
   rw [dop_eq_iSup_dΦ, iSup_le_iff]
   intro n
   induction n with
   | zero => intros _ _ _; simp
   | succ i ih =>
     refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', ς, -Function.iterate_succ]
+    simp [Function.iterate_succ', dς, -Function.iterate_succ]
     gcongr
     split
     · simp_all []; split_ifs <;> simp
     · simp_all only; exact ih _ X _
     · simp_all [le_refl]
 
-theorem lfp_ς_eq_dop : lfp i.ς = i.dop :=
-  (lfp_le_fixed _ i.ς_dop_eq_dop).antisymm (le_lfp _ i.dop_isLeast)
+theorem lfp_dς_eq_dop : lfp i.dς = i.dop :=
+  (lfp_le_fixed _ i.dς_dop_eq_dop).antisymm (le_lfp _ i.dop_isLeast)
 
 class DemonicExpectationTransformer (P S : Type*) where
   det : P → 𝔼[S] →o 𝔼[S]
@@ -243,7 +243,7 @@ class SoundDemonicExpectationTransformer (P S T A : Type*)
     [i : SmallStepSemantics P S T A] [i.mdp.FiniteBranching]
     [i' : DemonicExpectationTransformer P S] where
   det_le_dop : i'.det ≤ i.dop
-  det_prefixed_point : i.ς i'.det ≤ i'.det
+  det_prefixed_point : i.dς i'.det ≤ i'.det
 
 variable [i' : DemonicExpectationTransformer P S] [SoundDemonicExpectationTransformer P S T A]
 
@@ -255,9 +255,9 @@ end Demonic
 section Angelic
 
 @[simp]
-theorem lfp_Ψ_term :
-    lfp (i.mdp.Ψ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
-  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
+theorem lfp_aΦ_term :
+    lfp (i.mdp.aΦ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
+  rw [MDP.lfp_aΦ_eq_iSup_aΦ]
   simp
   apply le_antisymm
   · simp
@@ -266,36 +266,36 @@ theorem lfp_Ψ_term :
   · apply le_iSup_of_le 1
     simp
 @[simp]
-theorem lfp_Ψ_bot :
-    lfp (i.mdp.Ψ (i.cost X)) Conf.bot = 0 := by
-  rw [MDP.lfp_Ψ_eq_iSup_Ψ]
+theorem lfp_aΦ_bot :
+    lfp (i.mdp.aΦ (i.cost X)) Conf.bot = 0 := by
+  rw [MDP.lfp_aΦ_eq_iSup_aΦ]
   simp
 
-theorem aop_eq_iSup_Ψ :
+theorem aop_eq_iSup_aΦ :
     i.aop
-  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.Ψ (i.cost X))^[n] ⊥ (.prog C σ), fun a b h σ ↦ by
+  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.aΦ (i.cost X))^[n] ⊥ (.prog C σ), fun a b h σ ↦ by
     simp
-    suffices (⇑(MDP.Ψ (i.cost a)))^[n] ⊥ ≤ (⇑(MDP.Ψ (i.cost b)))^[n] ⊥ by apply this
+    suffices (⇑(MDP.aΦ (i.cost a)))^[n] ⊥ ≤ (⇑(MDP.aΦ (i.cost b)))^[n] ⊥ by apply this
     induction n with
     | zero => simp
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
-      exact apply_mono (MDP.Ψ.monotone' (i.cost_mono h)) ih⟩ := by
+      exact apply_mono (MDP.aΦ.monotone' (i.cost_mono h)) ih⟩ := by
   ext C X σ; rw [aop]
-  simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.Ψ_ωScottContinuous]
-theorem aop_eq_iSup_succ_Ψ :
+  simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.aΦ_ωScottContinuous]
+theorem aop_eq_iSup_succ_aΦ :
       i.aop
-    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.Ψ (i.cost X))^[n + 1] ⊥ (.prog C σ), fun a b h σ ↦ by
+    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.aΦ (i.cost X))^[n + 1] ⊥ (.prog C σ), fun a b h σ ↦ by
       simp only
-      suffices (⇑(MDP.Ψ (i.cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.Ψ (i.cost b)))^[n + 1] ⊥ by apply this
+      suffices (⇑(MDP.aΦ (i.cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.aΦ (i.cost b)))^[n + 1] ⊥ by apply this
       induction n with
-      | zero => simp; apply MDP.Ψ.monotone' (cost_mono h)
+      | zero => simp; apply MDP.aΦ.monotone' (cost_mono h)
       | succ n ih =>
         simp only [Function.iterate_succ', Function.comp_apply] at ih ⊢
-        exact apply_mono (MDP.Ψ.monotone' (cost_mono h)) ih⟩ := by
+        exact apply_mono (MDP.aΦ.monotone' (cost_mono h)) ih⟩ := by
   ext C X σ; rw [aop]
   simp only [coe_mk, _root_.iSup_apply, coe_iSup]
-  rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.Ψ_ωScottContinuous]
+  rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.aΦ_ωScottContinuous]
   rw [← iSup_iterate_succ]
   simp
 theorem aς_aop_eq_aop : i.aς i.aop = i.aop := by
@@ -307,7 +307,7 @@ theorem aς_aop_eq_aop : i.aς i.aop = i.aop := by
   rcases C' with ⟨t, σ'⟩ | ⟨C', σ'⟩ | _ <;> simp [aop]
 
 theorem aop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.aς b ≤ b) : i.aop ≤ b := by
-  rw [aop_eq_iSup_Ψ, iSup_le_iff]
+  rw [aop_eq_iSup_aΦ, iSup_le_iff]
   intro n
   induction n with
   | zero => intros _ _ _; simp
@@ -337,10 +337,10 @@ theorem SoundAngelicExpectationTransformer.aet_eq_aop : i'.aet = i.aop :=
 end Angelic
 
 open scoped Classical in
-theorem ς_apply {p : P} {σ : S}
+theorem dς_apply {p : P} {σ : S}
     (a : Set A) (ss : Set (Conf P S T))
     (ha : a = i.act (Conf.prog p σ)) (ha : ss = i.mdp.succs_univ (Conf.prog p σ)) :
-    i.ς v p X σ = i.cost X (Conf.prog p σ) +
+    i.dς v p X σ = i.cost X (Conf.prog p σ) +
         ⨅ α ∈ a,
           ∑' (s' : Conf P S T),
           if s' ∈ ss then
@@ -351,7 +351,7 @@ theorem ς_apply {p : P} {σ : S}
               | Conf.bot => 0
           else 0 := by
   subst_eqs
-  simp [ς, tsum_succs_univ']
+  simp [dς, tsum_succs_univ']
 
 open scoped Classical in
 theorem aς_apply {p : P} {σ : S}
@@ -370,7 +370,7 @@ theorem aς_apply {p : P} {σ : S}
   subst_eqs
   simp [aς, tsum_succs_univ']
 
-noncomputable def ς_continuation_fin
+noncomputable def dς_continuation_fin
     (v : P → 𝔼[S] →o 𝔼[S]) (X : 𝔼[S]) (p : P) (σ : S) (ss : Finset (Conf P S T)) (α : A) :=
   ∑ s' ∈ ss,
     i.mdp.P (Conf.prog p σ) α s' *
@@ -380,17 +380,17 @@ noncomputable def ς_continuation_fin
       | Conf.bot => 0
 
 open scoped Classical in
-theorem ς_apply_fin {p : P} {σ : S}
+theorem dς_apply_fin {p : P} {σ : S}
     (as : Finset A) (ss : Finset (Conf P S T))
     (has : as = i.act (Conf.prog p σ)) (hss : ss = i.mdp.succs_univ (Conf.prog p σ)) :
-    i.ς v p X σ = i.cost X (Conf.prog p σ) +
-        ⨅ α ∈ as, ς_continuation_fin (A:=A) v X p σ ss α := by
-  unfold ς_continuation_fin
+    i.dς v p X σ = i.cost X (Conf.prog p σ) +
+        ⨅ α ∈ as, dς_continuation_fin (A:=A) v X p σ ss α := by
+  unfold dς_continuation_fin
   have : Fintype (i.act (Conf.prog p σ)) := by rw [← has]; exact FinsetCoe.fintype _
   have : Fintype (i.mdp.succs_univ (Conf.prog p σ)) := by rw [← hss]; exact FinsetCoe.fintype _
   have : as = (i.act (Conf.prog p σ)).toFinset := by ext; simp_all [← has]
   have : ss = (i.mdp.succs_univ (Conf.prog p σ)).toFinset := by ext; simp_all [← hss]
-  rw [ς_apply as ss] <;> simp_all
+  rw [dς_apply as ss] <;> simp_all
   subst_eqs
   congr! 4 with α hα
   rw [← Finset.tsum_subtype]
@@ -400,12 +400,12 @@ theorem ς_apply_fin {p : P} {σ : S}
   · simp_all
 
 open scoped Classical in
-theorem ς_apply_act₂ {p : P} {σ : S}
+theorem dς_apply_act₂ {p : P} {σ : S}
     (a₁ a₂ : A) (ss : Finset (Conf P S T))
     (has : {a₁, a₂} = i.act (Conf.prog p σ)) (hss : ss = i.mdp.succs_univ (Conf.prog p σ)) :
-    i.ς v p X σ = i.cost X (Conf.prog p σ) +
-        (ς_continuation_fin (T:=T) v X p σ ss a₁ ⊓ ς_continuation_fin (T:=T) v X p σ ss a₂) := by
-  rw [ς_apply_fin {a₁, a₂} ss (by simp [has]) hss]
+    i.dς v p X σ = i.cost X (Conf.prog p σ) +
+        (dς_continuation_fin (T:=T) v X p σ ss a₁ ⊓ dς_continuation_fin (T:=T) v X p σ ss a₂) := by
+  rw [dς_apply_fin {a₁, a₂} ss (by simp [has]) hss]
   congr
   rw [← iInf_pair]
   simp
@@ -415,8 +415,8 @@ theorem aς_apply_fin {p : P} {σ : S}
     (as : Finset A) (ss : Finset (Conf P S T))
     (has : as = i.act (Conf.prog p σ)) (hss : ss = i.mdp.succs_univ (Conf.prog p σ)) :
     i.aς v p X σ = i.cost X (Conf.prog p σ) +
-        ⨆ α ∈ as, ς_continuation_fin (A:=A) v X p σ ss α := by
-  unfold ς_continuation_fin
+        ⨆ α ∈ as, dς_continuation_fin (A:=A) v X p σ ss α := by
+  unfold dς_continuation_fin
   have : Fintype (i.act (Conf.prog p σ)) := by rw [← has]; exact FinsetCoe.fintype _
   have : Fintype (i.mdp.succs_univ (Conf.prog p σ)) := by rw [← hss]; exact FinsetCoe.fintype _
   have : as = (i.act (Conf.prog p σ)).toFinset := by ext; simp_all [← has]
@@ -435,7 +435,7 @@ theorem aς_apply_act₂ {p : P} {σ : S}
     (a₁ a₂ : A) (ss : Finset (Conf P S T))
     (has : {a₁, a₂} = i.act (Conf.prog p σ)) (hss : ss = i.mdp.succs_univ (Conf.prog p σ)) :
     i.aς v p X σ = i.cost X (Conf.prog p σ) +
-        (ς_continuation_fin (T:=T) v X p σ ss a₁ ⊔ ς_continuation_fin (T:=T) v X p σ ss a₂) := by
+        (dς_continuation_fin (T:=T) v X p σ ss a₁ ⊔ dς_continuation_fin (T:=T) v X p σ ss a₂) := by
   rw [aς_apply_fin {a₁, a₂} ss (by simp [has]) hss]
   congr
   rw [← iSup_pair]
@@ -456,11 +456,11 @@ theorem aς_apply_act₂ {p : P} {σ : S}
 --   | zero =>
 --     have : ⨅ α ∈ i.act (Conf.prog C σ), (0 : ENNReal) = 0 :=
 --       sorry
---     nth_rw 2 [← ς_dop_eq_dop]; simp_all [ς]
+--     nth_rw 2 [← dς_dop_eq_dop]; simp_all [dς]
 --   | succ i ih =>
---     nth_rw 2 [← ς_dop_eq_dop]
+--     nth_rw 2 [← dς_dop_eq_dop]
 --     rw [Function.iterate_succ', Function.comp_apply]
---     simp [ς, tsum_succs_univ', *]
+--     simp [dς, tsum_succs_univ', *]
 --     refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ ?_)
 --     · simp [mdp, r]
 --     · simp [mdp, r]

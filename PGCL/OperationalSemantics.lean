@@ -102,33 +102,33 @@ theorem act_seq :
     = instSmallStepSemantics.act (Conf.prog C σ) := by
   ext; simp [act, r]; grind
 
-@[simp] theorem ς.skip : instSmallStepSemantics.ς f skip = ⟨(· ·), fun ⦃_ _⦄ a ↦ a⟩ := by
+@[simp] theorem dς.skip : instSmallStepSemantics.dς f skip = ⟨(· ·), fun ⦃_ _⦄ a ↦ a⟩ := by
   ext X σ
-  rw [ς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
-@[simp] theorem ς.assign :
-      instSmallStepSemantics.ς f (pgcl {~x := ~e})
+  rw [dς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
+@[simp] theorem dς.assign :
+      instSmallStepSemantics.dς f (pgcl {~x := ~e})
     = ⟨fun X σ ↦ X (σ[x ↦ e σ]), fun _ _ h σ ↦ h (σ[x ↦ e σ])⟩ := by
   ext X σ
-  rw [ς_apply_fin {.N} {conf[⇓, σ[x ↦ e σ]]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
-@[simp] theorem ς.tick {t} :
-    instSmallStepSemantics.ς f (.tick t) = ⟨fun X ↦ t + X, fun _ _ _ ↦ by simp; gcongr⟩ := by
+  rw [dς_apply_fin {.N} {conf[⇓, σ[x ↦ e σ]]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
+@[simp] theorem dς.tick {t} :
+    instSmallStepSemantics.dς f (.tick t) = ⟨fun X ↦ t + X, fun _ _ _ ↦ by simp; gcongr⟩ := by
   ext X σ
-  rw [ς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
-@[simp] theorem ς.assert :
-    instSmallStepSemantics.ς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := by
+  rw [dς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
+@[simp] theorem dς.assert :
+    instSmallStepSemantics.dς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := by
   ext X σ
   if b σ then
-    rw [ς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+    rw [dς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
   else
-    rw [ς_apply_fin {.N} {conf[↯, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
-@[simp] theorem ς.prob :
-      instSmallStepSemantics.ς f (.prob C₁ p C₂)
+    rw [dς_apply_fin {.N} {conf[↯, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
+@[simp] theorem dς.prob :
+      instSmallStepSemantics.dς f (.prob C₁ p C₂)
     = ⟨fun X ↦ p.pick (f C₁ X) (f C₂ X),
        fun a b h ↦ by simp; apply ProbExp.pick_le <;> apply (f _).mono h⟩ := by
   ext X σ
-  rw [ς_apply_fin {Act.N} (SmallStep.succs_fin conf[{ ~C₁ } [~p] { ~C₂ }, σ] Act.N)]
+  rw [dς_apply_fin {Act.N} (SmallStep.succs_fin conf[{ ~C₁ } [~p] { ~C₂ }, σ] Act.N)]
   · simp_all [SmallStep.succs_fin]
-    simp_all [ς_continuation_fin, mdp, r]
+    simp_all [dς_continuation_fin, mdp, r]
     if C₁ = C₂ then simp_all else
     have : ¬C₂ = C₁ := by grind
     split_ifs <;> simp_all [ite_and, ProbExp.pick, -ProbExp.pick_of]
@@ -153,10 +153,10 @@ theorem act_seq :
         simp [*]; exact (ProbExp.lt_one_iff p σ).mp ‹_›
     · grind
 open scoped Classical in
-@[simp] theorem ς.nonDet : instSmallStepSemantics.ς f (.nonDet C₁ C₂) = f C₁ ⊓ f C₂ := by
+@[simp] theorem dς.nonDet : instSmallStepSemantics.dς f (.nonDet C₁ C₂) = f C₁ ⊓ f C₂ := by
   ext X σ
-  rw [ς_apply_act₂ Act.L Act.R {conf[~C₁, σ], conf[~C₂, σ]}]
-  · simp_all [ς_continuation_fin]
+  rw [dς_apply_act₂ Act.L Act.R {conf[~C₁, σ], conf[~C₂, σ]}]
+  · simp_all [dς_continuation_fin]
     simp_all [mdp, r]
     if hC₁₂ : C₁ = C₂ then
       subst_eqs
@@ -176,24 +176,24 @@ open scoped Classical in
 
 @[simp] theorem aς.skip : instSmallStepSemantics.aς f skip = ⟨(· ·), fun ⦃_ _⦄ a ↦ a⟩ := by
   ext X σ
-  rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+  rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
 @[simp] theorem aς.assign :
       instSmallStepSemantics.aς f (pgcl {~x := ~e})
     = ⟨fun X σ ↦ X (σ[x ↦ e σ]), fun _ _ h σ ↦ h (σ[x ↦ e σ])⟩ := by
   ext X σ
-  rw [aς_apply_fin {.N} {conf[⇓, σ[x ↦ e σ]]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+  rw [aς_apply_fin {.N} {conf[⇓, σ[x ↦ e σ]]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
 @[simp] theorem aς.tick {t} :
     instSmallStepSemantics.aς f (.tick t) = ⟨fun X ↦ t + X, fun _ _ _ ↦ by simp; gcongr⟩ := by
   ext X σ
-  rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+  rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
 @[simp] theorem aς.assert :
     instSmallStepSemantics.aς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩
 := by
   ext X σ
   if b σ then
-    rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+    rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
   else
-    rw [aς_apply_fin {.N} {conf[↯, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
+    rw [aς_apply_fin {.N} {conf[↯, σ]}] <;> simp_all [dς_continuation_fin, act, mdp, r]
 @[simp] theorem aς.prob :
       instSmallStepSemantics.aς f (.prob C₁ p C₂)
     = ⟨fun X ↦ p.pick (f C₁ X) (f C₂ X),
@@ -201,7 +201,7 @@ open scoped Classical in
   ext X σ
   rw [aς_apply_fin {Act.N} (SmallStep.succs_fin conf[{ ~C₁ } [~p] { ~C₂ }, σ] Act.N)]
   · simp_all [SmallStep.succs_fin]
-    simp_all [ς_continuation_fin, mdp, r]
+    simp_all [dς_continuation_fin, mdp, r]
     if C₁ = C₂ then simp_all else
     have : ¬C₂ = C₁ := by grind
     split_ifs <;> simp_all [ite_and, ProbExp.pick, -ProbExp.pick_of]
@@ -229,7 +229,7 @@ open scoped Classical in
 @[simp] theorem aς.nonDet : instSmallStepSemantics.aς f (.nonDet C₁ C₂) = f C₁ ⊔ f C₂ := by
   ext X σ
   rw [aς_apply_act₂ Act.L Act.R {conf[~C₁, σ], conf[~C₂, σ]}]
-  · simp_all [ς_continuation_fin]
+  · simp_all [dς_continuation_fin]
     simp_all [mdp, r]
     if hC₁₂ : C₁ = C₂ then
       subst_eqs
@@ -248,28 +248,28 @@ open scoped Classical in
     grind
 
 open scoped Classical in
-theorem ς.loop :
-      instSmallStepSemantics.ς f (.loop b C (ϖ:=ϖ))
+theorem dς.loop :
+      instSmallStepSemantics.dς f (.loop b C (ϖ:=ϖ))
     = ⟨fun X ↦ b.iver * f (pgcl { ~C ; while ~b {~C} }) X + b.not.iver * X,
        fun a b h ↦ by simp; gcongr⟩
 := by
   ext X σ
   if b σ = true then
-    rw [ς_apply_fin {.N} {conf[~C ; while ~b { ~C }, σ]}]
-    · simp_all [ς_continuation_fin, mdp, r, ite_and]
+    rw [dς_apply_fin {.N} {conf[~C ; while ~b { ~C }, σ]}]
+    · simp_all [dς_continuation_fin, mdp, r, ite_and]
     · simp [act, r]
     · ext; simp_all [mdp, r]
   else
-    rw [ς_apply_fin {.N} {conf[⇓, σ]}]
-    · simp_all [ς_continuation_fin, mdp, r, ite_and]
+    rw [dς_apply_fin {.N} {conf[⇓, σ]}]
+    · simp_all [dς_continuation_fin, mdp, r, ite_and]
     · simp [act, r]
     · ext; simp_all [mdp, r]
 
-theorem ς.seq {C₁ C₂ : pGCL ϖ}
-    (ih₁ : instSmallStepSemantics.ς dwp C₁ = dwp⟦~C₁⟧) :
-    instSmallStepSemantics.ς dwp (pgcl {~C₁ ; ~C₂}) = dwp⟦~C₁⟧.comp dwp⟦~C₂⟧ := by
+theorem dς.seq {C₁ C₂ : pGCL ϖ}
+    (ih₁ : instSmallStepSemantics.dς dwp C₁ = dwp⟦~C₁⟧) :
+    instSmallStepSemantics.dς dwp (pgcl {~C₁ ; ~C₂}) = dwp⟦~C₁⟧.comp dwp⟦~C₂⟧ := by
   ext
-  simp [← ih₁, ς, tsum_succs_univ']
+  simp [← ih₁, dς, tsum_succs_univ']
   congr! 4
   apply C₂.tsum_after_eq <;> simp [mdp, r, pGCL.after]
   rintro C' σ' α p (⟨C, _, _, _⟩ | ⟨_, _, _⟩) p' (⟨_, _, _⟩ | ⟨_, _, ⟨_⟩⟩) hp' _
@@ -288,12 +288,12 @@ theorem aς.loop :
   ext X σ
   if b σ = true then
     rw [aς_apply_fin {.N} {conf[~C ; while ~b { ~C }, σ]}]
-    · simp_all [ς_continuation_fin, mdp, r, ite_and]
+    · simp_all [dς_continuation_fin, mdp, r, ite_and]
     · simp [act, r]
     · ext; simp_all [mdp, r]
   else
     rw [aς_apply_fin {.N} {conf[⇓, σ]}]
-    · simp_all [ς_continuation_fin, mdp, r, ite_and]
+    · simp_all [dς_continuation_fin, mdp, r, ite_and]
     · simp [act, r]
     · ext; simp_all [mdp, r]
 
@@ -323,11 +323,11 @@ theorem dop_le_seq :
   | zero =>
     have : ⨅ α ∈ instSmallStepSemantics.act (Conf.prog C σ), (0 : ENNReal) = 0 :=
       SmallStep.iInf_act_const
-    nth_rw 2 [← ς_dop_eq_dop]; simp_all [ς]
+    nth_rw 2 [← dς_dop_eq_dop]; simp_all [dς]
   | succ i ih =>
-    nth_rw 2 [← ς_dop_eq_dop]
+    nth_rw 2 [← dς_dop_eq_dop]
     rw [Function.iterate_succ', Function.comp_apply]
-    simp [ς, tsum_succs_univ']
+    simp [dς, tsum_succs_univ']
     refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ C'.tsum_after_le ?_ ?_ ?_ ?_)
     · simp [mdp, r]
     · simp [mdp, r]
@@ -356,7 +356,7 @@ theorem aop_le_seq :
       instSmallStepSemantics.aop C ∘ instSmallStepSemantics.aop C'
     ≤ instSmallStepSemantics.aop pgcl {~C ; ~C'} := by
   intro X σ
-  nth_rw 1 [aop_eq_iSup_succ_Ψ]
+  nth_rw 1 [aop_eq_iSup_succ_aΦ]
   simp
   intro n
   induction n generalizing C C' σ with
@@ -375,14 +375,14 @@ theorem aop_le_seq :
       intro σ'
       split_ifs <;> try rfl
       gcongr
-      have := instSmallStepSemantics.Ψ_term_eq (A:=Act) (X:=(instSmallStepSemantics.aop C') X)
+      have := instSmallStepSemantics.aΦ_term_eq (A:=Act) (X:=(instSmallStepSemantics.aop C') X)
                 (t:=Termination.term) (σ:=σ') (n:=i+1)
       simp at this
       rw [this]
     · simp [mdp, r]
       intro σ' α' p' h
       right
-      have := instSmallStepSemantics.Ψ_term_eq (A:=Act) (X:=(instSmallStepSemantics.aop C') X)
+      have := instSmallStepSemantics.aΦ_term_eq (A:=Act) (X:=(instSmallStepSemantics.aop C') X)
                 (t:=Termination.fault) (σ:=σ') (n:=i+1)
       simp at this
       rw [this]
@@ -397,9 +397,9 @@ theorem dwp_le_dop.loop (ih : C.dwp ≤ instSmallStepSemantics.dop C) :
     dwp⟦while ~b { ~C }⟧ ≤ instSmallStepSemantics.dop (.loop b C (ϖ:=ϖ)) := by
   intro X
   apply OrderHom.lfp_le
-  nth_rw 2 [← ς_dop_eq_dop]
+  nth_rw 2 [← dς_dop_eq_dop]
   intro σ
-  simp_all [ς, tsum_succs_univ', BExpr.iver, BExpr.not, act, r]
+  simp_all [dς, tsum_succs_univ', BExpr.iver, BExpr.not, act, r]
   simp_all [mdp, r]
   rintro α p C' ⟨_⟩ ⟨_⟩ ⟨_⟩
   split_ifs <;> simp_all
@@ -432,7 +432,7 @@ open scoped Classical in
 noncomputable instance instSoundDemonicExpectationTransformer :
     SoundDemonicExpectationTransformer (pGCL ϖ) (States ϖ) Termination Act where
   det_le_dop := by
-    intro C; induction C with try simp_all; (try rw [← ς_dop_eq_dop]; simp; done)
+    intro C; induction C with try simp_all; (try rw [← dς_dop_eq_dop]; simp; done)
     | seq C₁ C₂ ih₁ ih₂ =>
       apply le_trans _ dop_le_seq
       intro σ
@@ -440,18 +440,18 @@ noncomputable instance instSoundDemonicExpectationTransformer :
       exact OrderHom.apply_mono ih₁ (ih₂ σ)
     | prob =>
       intro X
-      rw [← ς_dop_eq_dop]; simp
+      rw [← dς_dop_eq_dop]; simp
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
       intro X
-      rw [← ς_dop_eq_dop]; simp
+      rw [← dς_dop_eq_dop]; simp
       exact ⟨inf_le_of_left_le (ih₁ X), inf_le_of_right_le (ih₂ X)⟩
     | loop b C' ih => apply dwp_le_dop.loop ih
   det_prefixed_point := by
     apply le_of_eq
-    funext C; induction C with try simp_all [ς.seq]
+    funext C; induction C with try simp_all [dς.seq]
     | loop =>
-      rw [ς.loop]
+      rw [dς.loop]
       ext
       rw [← dwp_fp]
       simp only [dwp.seq, OrderHom.comp_coe, Function.comp_apply, OrderHom.coe_mk, Pi.add_apply,

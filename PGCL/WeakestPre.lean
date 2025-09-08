@@ -225,7 +225,7 @@ def awp'Unexpander : Lean.PrettyPrinter.Unexpander
 theorem awp'_eq_awp (C : pGCL ϖ) : C.awp' = C.awp := by
   cases C <;> (simp_all [awp, pGCL.awp']; rw [WellFounded.fix_eq])
 
-noncomputable def Ψ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
+noncomputable def aΦ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ := ⟨fun X ↦ φ.iver * (C'.awp X) + φ.not.iver * f, by
       intro X₁ X₂ h σ
       simp
@@ -233,13 +233,13 @@ noncomputable def Ψ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
       apply C'.awp.mono h⟩
 
 theorem awp_loop (C' : pGCL ϖ) :
-    (C'.loop φ).awp f = OrderHom.lfp (Ψ φ C' f) := by
+    (C'.loop φ).awp f = OrderHom.lfp (aΦ φ C' f) := by
   rw [awp]
   simp
   rfl
 
 theorem dop_fp (C' : pGCL ϖ) :
-    (Ψ φ C' f) ((C'.loop φ).awp f) = (C'.loop φ).awp f := by simp [awp_loop]
+    (aΦ φ C' f) ((C'.loop φ).awp f) = (C'.loop φ).awp f := by simp [awp_loop]
 
 @[simp] theorem awp.skip : awp[ϖ]⟦skip⟧ = ⟨(·), fun ⦃_ _⦄ a ↦ a⟩ := rfl
 @[simp] theorem awp.assign :
