@@ -85,11 +85,11 @@ theorem cost_X_of_pGCL : cost X conf[~C, σ] = cost 0 conf[~C, σ] := by inducti
 
 @[simp]
 theorem Φ_simp {C : Conf ϖ} :
-    𝒬.Φ c f C = c C + ⨅ α ∈ SmallStep.act C, ∑' s' : 𝒬.succs_univ C, 𝒬.P C α s' * f s'
-:= by simp [MDP.Φ, MDP.Φf, iInf_subtype]
+    𝒬.dΦ c f C = c C + ⨅ α ∈ SmallStep.act C, ∑' s' : 𝒬.succs_univ C, 𝒬.P C α s' * f s'
+:= by simp [dΦ, MDP.Φf, iInf_subtype]
 
 @[simp]
-theorem bot_eq {X : Exp ϖ} : (𝒬.Φ (cost X))^[i] ⊥ none = 0 := by
+theorem bot_eq {X : Exp ϖ} : (𝒬.dΦ (cost X))^[i] ⊥ none = 0 := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ']
 
 noncomputable instance : Decidable (s' ∈ (𝒬 (ϖ:=ϖ)).succs_univ s) := Classical.propDecidable _
@@ -104,25 +104,25 @@ theorem tsum_succs_univ' (f : (𝒬 (ϖ:=ϖ)).succs_univ c → ENNReal) :
 variable {X : Exp ϖ}
 
 @[simp]
-theorem term_eq : (𝒬.Φ (cost X))^[i] ⊥ conf[⇓, σ] = if i = 0 then 0 else X σ := by
+theorem term_eq : (𝒬.dΦ (cost X))^[i] ⊥ conf[⇓, σ] = if i = 0 then 0 else X σ := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
 @[simp]
-theorem fault_eq : (𝒬.Φ (cost X))^[i] ⊥ conf[↯, σ] = 0 := by
+theorem fault_eq : (𝒬.dΦ (cost X))^[i] ⊥ conf[↯, σ] = 0 := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
 
 @[simp]
-theorem lfp_Φ_bot : lfp (𝒬.Φ <| cost X) none = 0 := by simp [MDP.lfp_Φ_eq_iSup_Φ]
+theorem lfp_Φ_bot : lfp (𝒬.dΦ <| cost X) none = 0 := by simp lfp_dΦ_eq_iSup_dΦΦ]
 
 @[simp]
-theorem lfp_Φ_term : lfp (𝒬.Φ <| cost X) conf[⇓, σ] = X σ := by
+theorem lfp_Φ_term : lfp (𝒬.dΦ <| cost X) conf[⇓, σ] = X σ := by
   rw [← map_lfp]; simp_all [tsum_succs_univ']
 @[simp]
-theorem lfp_Φ_fault : lfp (𝒬.Φ <| cost X) conf[↯, σ] = 0 := by
+theorem lfp_Φ_fault : lfp (𝒬.dΦ <| cost X) conf[↯, σ] = 0 := by
   rw [← map_lfp]; simp_all [tsum_succs_univ']
 
 noncomputable def ς : (pGCL ϖ → Exp ϖ →o Exp ϖ) →o pGCL ϖ → Exp ϖ →o Exp ϖ :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
-    𝒬.Φ (cost X)
+    𝒬.dΦ (cost X)
       (match · with
       | conf[⇓,σ'] => X σ' | conf[↯,σ'] => 0 | conf[~C',σ'] => Y C' X σ' | ⊥ => 0) conf[~C, σ],
       fun a b h σ ↦ by
@@ -135,7 +135,7 @@ noncomputable def ς : (pGCL ϖ → Exp ϖ →o Exp ϖ) →o pGCL ϖ → Exp ϖ 
         · rfl⟩),
     by
       intro _ _ _ _ _ _
-      apply (𝒬.Φ _).mono
+      apply (𝒬.dΦ _).mono
       rintro (_ | ⟨_ | _, _⟩) <;> try rfl
       apply_assumption⟩
 
@@ -166,7 +166,7 @@ variable {f : pGCL ϖ → Exp ϖ →o Exp ϖ}
   by_cases C₁ = C₂ <;> simp_all [eq_comm, ite_and]
 @[simp] theorem ς.nonDet : ς f (.nonDet C₁ C₂) = f C₁ ⊓ f C₂ := by
   ext X σ
-  simp [ς, MDP.Φ, MDP.Φf, 𝒬.tsum_succs_univ']
+  simp [ς, dΦ, MDP.Φf, 𝒬.tsum_succs_univ']
   simp_all [ite_and]
   apply le_antisymm <;> simp
   · constructor
@@ -191,28 +191,28 @@ end 𝒬
 open 𝒬
 
 noncomputable def op (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨fun X ↦ (lfp (𝒬.Φ <| cost X) <| conf[~C, ·]), fun a b h σ ↦ by
-    suffices lfp (MDP.Φ (cost a)) ≤ lfp (MDP.Φ (cost b)) by exact this _
+  ⟨fun X ↦ (lfp (𝒬.dΦ <| cost X) <| conf[~C, ·]), fun a b h σ ↦ by
+    suffices lfp (dΦ (cost a)) ≤ lfp (dΦ (cost b)) by exact this _
     gcongr
     apply MDP.Φ.monotone' (cost_mono h)⟩
 
 theorem op_eq_iSup_Φ :
     op (ϖ:=ϖ)
-  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n] ⊥ conf[~C,σ], fun a b h σ ↦ by
+  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.dΦ (cost X))^[n] ⊥ conf[~C,σ], fun a b h σ ↦ by
     simp
-    suffices (⇑(MDP.Φ (cost a)))^[n] ⊥ ≤ (⇑(MDP.Φ (cost b)))^[n] ⊥ by apply this
+    suffices (⇑(dΦ (cost a)))^[n] ⊥ ≤ (⇑(dΦ (cost b)))^[n] ⊥ by apply this
     induction n with
     | zero => simp
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
       exact apply_mono (MDP.Φ.monotone' (cost_mono h)) ih⟩ := by
   ext C X σ; rw [op]
-  simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.Φ_ωScottContinuous]
+  simp [fixedPoints.lfp_eq_sSup_iterate _ dΦ_ωScottContinuous]
 theorem op_eq_iSup_succ_Φ :
       op (ϖ:=ϖ)
-    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.Φ (cost X))^[n + 1] ⊥ conf[~C,σ], fun a b h σ ↦ by
+    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (𝒬.dΦ (cost X))^[n + 1] ⊥ conf[~C,σ], fun a b h σ ↦ by
       simp only
-      suffices (⇑(MDP.Φ (cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.Φ (cost b)))^[n + 1] ⊥ by apply this
+      suffices (⇑(dΦ (cost a)))^[n + 1] ⊥ ≤ (⇑(dΦ (cost b)))^[n + 1] ⊥ by apply this
       induction n with
       | zero => simp; apply MDP.Φ.monotone' (cost_mono h)
       | succ n ih =>
@@ -220,7 +220,7 @@ theorem op_eq_iSup_succ_Φ :
         exact apply_mono (MDP.Φ.monotone' (cost_mono h)) ih⟩ := by
   ext C X σ; rw [op]
   simp only [coe_mk, _root_.iSup_apply, coe_iSup]
-  rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.Φ_ωScottContinuous]
+  rw [fixedPoints.lfp_eq_sSup_iterate _ dΦ_ωScottContinuous]
   rw [← iSup_iterate_succ]
   simp
 theorem ς_op_eq_op : ς (ϖ:=ϖ) op = op := by

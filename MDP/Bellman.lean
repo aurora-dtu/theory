@@ -25,39 +25,32 @@ variable {M : MDP State Act}
 noncomputable def Φf (s : State) (α : Act) : M.Costs →o ENNReal :=
   ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s α s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
 
-/-- The Bellman operator. -/
-noncomputable def Φ (c : M.Costs) : M.Costs →o M.Costs :=
+/-- The _demonic_ Bellman operator. -/
+noncomputable def dΦ (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + ⨅ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
-noncomputable def Φ' (O : {τ : Type u_2} → (τ → ENNReal) →o ENNReal) (c : M.Costs) :
-    M.Costs →o M.Costs :=
-  ⟨fun v s ↦ c s + O (fun (α : M.act s) ↦ (M.Φf s α v : ENNReal)),
-    by intro _ _ _ _; simp; gcongr; intro; simp; gcongr⟩
-
-noncomputable abbrev dΦ := M.Φ' ⟨fun f ↦ ⨆ a, f a, by intro a b h; simp only; gcongr; apply h⟩
-noncomputable abbrev aΦ := M.Φ' ⟨fun f ↦ ⨅ a, f a, by intro a b h; simp only; gcongr; apply h⟩
+/-- The _angelic_ Bellman operator. -/
+noncomputable def aΦ (c : M.Costs) : M.Costs →o M.Costs :=
+  ⟨fun v s ↦ c s + ⨆ α : M.act s, M.Φf s α v, by intro _ _ _ _; simp; gcongr⟩
 
 /-- The Bellman operator with a fixed scheduler (necessarily `Markovian`). -/
 noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + Φf s (ℒ {s}) v, by intro _ _ _ _; simp; gcongr⟩
 
-theorem Φ.monotone' : Monotone M.Φ := fun _ _ h _ _ ↦ by simp [Φ]; gcongr; exact h _
-theorem Φ'.monotone' : Monotone (M.Φ' f) := fun _ _ h _ _ ↦ by simp [Φ']; gcongr; exact h _
+theorem dΦ.monotone' : Monotone M.dΦ := fun _ _ h _ _ ↦ by simp [dΦ]; gcongr; exact h _
 
-theorem Φ_le_Φℒ : Φ ≤ Φℒ ℒ :=
+theorem dΦ_le_Φℒ : dΦ ≤ Φℒ ℒ :=
   fun c f s ↦ add_le_add (by rfl) <| iInf_le_of_le ⟨ℒ {s}, ℒ.val.property {s}⟩ (by rfl)
 
 @[deprecated]
-noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.Φ
+noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.dΦ
 
-theorem iSup_succ_Φ_eq_iSup_Φ (c) : ⨆ (n : ℕ), (M.Φ c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.Φ c)^[n] ⊥ := by
+theorem iSup_succ_dΦ_eq_iSup_dΦ c : ⨆ (n : ℕ), (M.dΦ c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.dΦ c)^[n] ⊥ := by
   ext; rw [iSup_iterate_succ]
-theorem iSup_succ_Φ_eq_iSup_Φ_apply (c) :
-    ⨆ (n : ℕ), (M.Φ c)^[n + 1] ⊥ x = ⨆ (n : ℕ), (M.Φ c)^[n] ⊥ x := by
-  have := congrFun (iSup_succ_Φ_eq_iSup_Φ c) x
+theorem iSup_succ_dΦ_eq_iSup_dΦ_apply c :
+    ⨆ (n : ℕ), (M.dΦ c)^[n + 1] ⊥ x = ⨆ (n : ℕ), (M.dΦ c)^[n] ⊥ x := by
+  have := congrFun (iSup_succ_dΦ_eq_iSup_dΦ c) x
   simpa
-
--- theorem map_lfp_Φ : Φ c (lfp_Φ c) = lfp_Φ c := map_lfp (Φ c)
 
 noncomputable def lfp_Φℒ (ℒ : 𝔏[M]) : M.Costs → M.Costs := lfp ∘ M.Φℒ ℒ
 
@@ -87,17 +80,18 @@ section FiniteBranching
 
 variable [M.FiniteBranching]
 
-theorem Φ_ωScottContinuous : ωScottContinuous (M.Φ c) := by
+theorem dΦ_ωScottContinuous : ωScottContinuous (M.dΦ c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
-  simp [Φ, Φf_ωScottContinuous.map_ωSup]
+  simp [dΦ, Φf_ωScottContinuous.map_ωSup]
   simp [ωSup, ← ENNReal.add_iSup]
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
 
-theorem lfp_Φ_eq_iSup_Φ : lfp (M.Φ c) = ⨆ (n : ℕ), (Φ c)^[n] ⊥ :=
-  fixedPoints.lfp_eq_sSup_iterate _ M.Φ_ωScottContinuous
+theorem lfp_dΦ_eq_iSup_dΦ : lfp (M.dΦ c) = ⨆ (n : ℕ), (dΦ c)^[n] ⊥ :=
+  fixedPoints.lfp_eq_sSup_iterate _ M.dΦ_ωScottContinuous
 
-theorem lfp_Φ_eq_iSup_succ_Φ : lfp (M.Φ c) = ⨆ (n : ℕ), (Φ c)^[n + 1] ⊥ :=
-  lfp_Φ_eq_iSup_Φ.trans <| (Set.eqOn_univ _ _).mp fun c' _ ↦ by simp [← iSup_succ_Φ_eq_iSup_Φ_apply]
+theorem lfp_dΦ_eq_iSup_succ_dΦ : lfp (M.dΦ c) = ⨆ (n : ℕ), (dΦ c)^[n + 1] ⊥ :=
+  lfp_dΦ_eq_iSup_dΦ.trans <|
+    (Set.eqOn_univ _ _).mp fun c' _ ↦ by simp [← iSup_succ_dΦ_eq_iSup_dΦ_apply]
 
 end MDP.FiniteBranching

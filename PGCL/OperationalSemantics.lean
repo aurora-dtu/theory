@@ -61,6 +61,8 @@ noncomputable instance instSmallStepSemantics :
   cost_mono
   cost_bot := by simp
 
+open SmallStepSemantics
+
 noncomputable instance : DemonicExpectationTransformer (pGCL ϖ) (States ϖ) where
   det := dwp
 noncomputable instance : AngelicExpectationTransformer (pGCL ϖ) (States ϖ) where
@@ -185,7 +187,8 @@ open scoped Classical in
   ext X σ
   rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
 @[simp] theorem aς.assert :
-    instSmallStepSemantics.aς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := by
+    instSmallStepSemantics.aς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩
+:= by
   ext X σ
   if b σ then
     rw [aς_apply_fin {.N} {conf[⇓, σ]}] <;> simp_all [ς_continuation_fin, act, mdp, r]
@@ -313,7 +316,7 @@ theorem dop_le_seq :
       instSmallStepSemantics.dop C ∘ instSmallStepSemantics.dop C'
     ≤ instSmallStepSemantics.dop pgcl {~C ; ~C'} := by
   intro X σ
-  nth_rw 1 [dop_eq_iSup_succ_Φ]
+  nth_rw 1 [dop_eq_iSup_succ_dΦ]
   simp
   intro n
   induction n generalizing C C' σ with

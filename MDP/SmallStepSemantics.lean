@@ -37,10 +37,10 @@ noncomputable def mdp : MDP (Conf P S T) A := MDP.ofRelation i.r i.h₀ i.h₁ i
 def act (c : Conf P S T) : Set A := {α | ∃ p c', i.r c α p c'}
 
 noncomputable def dop (C : P) : 𝔼[S] →o 𝔼[S] :=
-  ⟨fun X ↦ (lfp (i.mdp.Φ <| i.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
-    suffices lfp (MDP.Φ (i.cost a)) ≤ lfp (MDP.Φ (i.cost b)) by exact this _
+  ⟨fun X ↦ (lfp (i.mdp.dΦ <| i.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
+    suffices lfp (i.mdp.dΦ (i.cost a)) ≤ lfp (i.mdp.dΦ (i.cost b)) by exact this _
     gcongr
-    apply MDP.Φ.monotone' (i.cost_mono h)⟩
+    apply MDP.dΦ.monotone' (i.cost_mono h)⟩
 noncomputable def aop (C : P) : 𝔼[S] →o 𝔼[S] :=
   ⟨fun X ↦ (lfp (i.mdp.Ψ <| i.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
     suffices lfp (MDP.Ψ (i.cost a)) ≤ lfp (MDP.Ψ (i.cost b)) by exact this _
@@ -48,10 +48,10 @@ noncomputable def aop (C : P) : 𝔼[S] →o 𝔼[S] :=
     apply MDP.Ψ.monotone' (i.cost_mono h)⟩
 
 @[simp]
-theorem Φ_simp {C : Conf P S T} :
-    i.mdp.Φ c f C = c C + ⨅ α ∈ i.act C, ∑' s' : i.mdp.succs_univ C, i.mdp.P C α s' * f s'
+theorem dΦ_simp {C : Conf P S T} :
+    i.mdp.dΦ c f C = c C + ⨅ α ∈ i.act C, ∑' s' : i.mdp.succs_univ C, i.mdp.P C α s' * f s'
 := by
-  simp [MDP.Φ, act, MDP.act, MDP.Φf, iInf_subtype, mdp]
+  simp [MDP.dΦ, act, MDP.act, MDP.Φf, iInf_subtype, mdp]
   congr! with α
   apply le_antisymm
   · simp
@@ -94,7 +94,7 @@ theorem succs_univ_bot : i.mdp.succs_univ .bot = {.bot} := by
   simp [mdp, h₄]
 
 @[simp]
-theorem Φ_bot_eq : (i.mdp.Φ (i.cost X))^[n] ⊥ .bot = 0 := by
+theorem Φ_bot_eq : (i.mdp.dΦ (i.cost X))^[n] ⊥ .bot = 0 := by
   induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', tsum_succs_univ']
   apply le_antisymm
   · have ⟨p, α, C', h⟩ := i.h₂ Conf.bot
@@ -104,7 +104,7 @@ theorem Φ_bot_eq : (i.mdp.Φ (i.cost X))^[n] ⊥ .bot = 0 := by
   · simp
 @[simp]
 theorem Φ_term_eq :
-    (i.mdp.Φ (i.cost X))^[n] ⊥ (.term t σ) = if n = 0 then 0 else i.cost X (Conf.term t σ) := by
+    (i.mdp.dΦ (i.cost X))^[n] ⊥ (.term t σ) = if n = 0 then 0 else i.cost X (Conf.term t σ) := by
   induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', tsum_succs_univ']
   nth_rw 2 [← add_zero (cost A X (Conf.term t σ))]
   congr
@@ -128,7 +128,7 @@ theorem Ψ_term_eq :
 
 noncomputable def ς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
-    i.mdp.Φ (i.cost X)
+    i.mdp.dΦ (i.cost X)
       (match · with
       | .term t σ' => i.cost X (.term t σ') | .prog C' σ' => Y C' X σ' | .bot => 0) (.prog C σ),
       fun a b h σ ↦ by
@@ -141,7 +141,7 @@ noncomputable def ς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼
           · rfl⟩),
     by
       intro _ _ _ _ _ _
-      apply (i.mdp.Φ _).mono
+      apply (i.mdp.dΦ _).mono
       rintro (_ | ⟨_ , _⟩) <;> try rfl
       apply_assumption⟩
 noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
@@ -168,9 +168,9 @@ section Demonic
 variable [i.mdp.FiniteBranching]
 
 @[simp]
-theorem lfp_Φ_term :
-    lfp (i.mdp.Φ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
-  rw [MDP.lfp_Φ_eq_iSup_Φ]
+theorem lfp_dΦ_term :
+    lfp (i.mdp.dΦ (i.cost X)) (Conf.term t σ) = i.cost X (Conf.term t σ) := by
+  rw [MDP.lfp_dΦ_eq_iSup_dΦ]
   simp
   apply le_antisymm
   · simp
@@ -179,36 +179,36 @@ theorem lfp_Φ_term :
   · apply le_iSup_of_le 1
     simp
 @[simp]
-theorem lfp_Φ_bot :
-    lfp (i.mdp.Φ (i.cost X)) Conf.bot = 0 := by
-  rw [MDP.lfp_Φ_eq_iSup_Φ]
+theorem lfp_dΦ_bot :
+    lfp (i.mdp.dΦ (i.cost X)) Conf.bot = 0 := by
+  rw [MDP.lfp_dΦ_eq_iSup_dΦ]
   simp
 
-theorem dop_eq_iSup_Φ :
+theorem dop_eq_iSup_dΦ :
     i.dop
-  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.Φ (i.cost X))^[n] ⊥ (.prog C σ), fun a b h σ ↦ by
+  = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.dΦ (i.cost X))^[n] ⊥ (.prog C σ), fun a b h σ ↦ by
     simp
-    suffices (⇑(MDP.Φ (i.cost a)))^[n] ⊥ ≤ (⇑(MDP.Φ (i.cost b)))^[n] ⊥ by apply this
+    suffices (⇑(MDP.dΦ (i.cost a)))^[n] ⊥ ≤ (⇑(MDP.dΦ (i.cost b)))^[n] ⊥ by apply this
     induction n with
     | zero => simp
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
-      exact apply_mono (MDP.Φ.monotone' (i.cost_mono h)) ih⟩ := by
+      exact apply_mono (MDP.dΦ.monotone' (i.cost_mono h)) ih⟩ := by
   ext C X σ; rw [dop]
-  simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.Φ_ωScottContinuous]
-theorem dop_eq_iSup_succ_Φ :
+  simp [fixedPoints.lfp_eq_sSup_iterate _ MDP.dΦ_ωScottContinuous]
+theorem dop_eq_iSup_succ_dΦ :
       i.dop
-    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.Φ (i.cost X))^[n + 1] ⊥ (.prog C σ), fun a b h σ ↦ by
+    = ⨆ n, fun C ↦ ⟨fun X σ ↦ (i.mdp.dΦ (i.cost X))^[n + 1] ⊥ (.prog C σ), fun a b h σ ↦ by
       simp only
-      suffices (⇑(MDP.Φ (i.cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.Φ (i.cost b)))^[n + 1] ⊥ by apply this
+      suffices (⇑(MDP.dΦ (i.cost a)))^[n + 1] ⊥ ≤ (⇑(MDP.dΦ (i.cost b)))^[n + 1] ⊥ by apply this
       induction n with
-      | zero => simp; apply MDP.Φ.monotone' (cost_mono h)
+      | zero => simp; apply MDP.dΦ.monotone' (cost_mono h)
       | succ n ih =>
         simp only [Function.iterate_succ', Function.comp_apply] at ih ⊢
-        exact apply_mono (MDP.Φ.monotone' (cost_mono h)) ih⟩ := by
+        exact apply_mono (MDP.dΦ.monotone' (cost_mono h)) ih⟩ := by
   ext C X σ; rw [dop]
   simp only [coe_mk, _root_.iSup_apply, coe_iSup]
-  rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.Φ_ωScottContinuous]
+  rw [fixedPoints.lfp_eq_sSup_iterate _ MDP.dΦ_ωScottContinuous]
   rw [← iSup_iterate_succ]
   simp
 theorem ς_dop_eq_dop : i.ς i.dop = i.dop := by
@@ -220,7 +220,7 @@ theorem ς_dop_eq_dop : i.ς i.dop = i.dop := by
   rcases C' with ⟨t, σ'⟩ | ⟨C', σ'⟩ | _ <;> simp [dop]
 
 theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : i.ς b ≤ b) : i.dop ≤ b := by
-  rw [dop_eq_iSup_Φ, iSup_le_iff]
+  rw [dop_eq_iSup_dΦ, iSup_le_iff]
   intro n
   induction n with
   | zero => intros _ _ _; simp
@@ -449,7 +449,7 @@ theorem aς_apply_act₂ {p : P} {σ : S}
 --       i.dop C ∘ i.dop C'
 --     ≤ i.dop (seq C C') := by
 --   intro X σ
---   nth_rw 1 [dop_eq_iSup_succ_Φ]
+--   nth_rw 1 [dop_eq_iSup_succ_dΦ]
 --   simp
 --   intro n
 --   induction n generalizing C C' σ with

@@ -118,7 +118,7 @@ def dwp'Unexpander : Lean.PrettyPrinter.Unexpander
 theorem dwp'_eq_wp (C : pGCL ϖ) : C.dwp' = C.dwp := by
   cases C <;> (simp_all [dwp, pGCL.dwp']; rw [WellFounded.fix_eq])
 
-noncomputable def Φ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
+noncomputable def dΦ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ := ⟨fun X ↦ φ.iver * (C'.dwp X) + φ.not.iver * f, by
       intro X₁ X₂ h σ
       simp
@@ -126,13 +126,13 @@ noncomputable def Φ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
       apply C'.dwp.mono h⟩
 
 theorem dwp_loop (C' : pGCL ϖ) :
-    (C'.loop φ).dwp f = OrderHom.lfp (Φ φ C' f) := by
+    (C'.loop φ).dwp f = OrderHom.lfp (dΦ φ C' f) := by
   rw [dwp]
   simp
   rfl
 
 theorem dwp_fp (C' : pGCL ϖ) :
-    (Φ φ C' f) ((C'.loop φ).dwp f) = (C'.loop φ).dwp f := by simp [dwp_loop]
+    (dΦ φ C' f) ((C'.loop φ).dwp f) = (C'.loop φ).dwp f := by simp [dwp_loop]
 
 @[simp] theorem dwp.skip : dwp[ϖ]⟦skip⟧ = ⟨(·), fun ⦃_ _⦄ a ↦ a⟩ := rfl
 @[simp] theorem dwp.assign :
