@@ -46,8 +46,10 @@ macro_rules
 
 syntax ident : cpgcl_var
 
-syntax term : cpgcl_aexp
-syntax term:max : cpgcl_bexp
+syntax num : cpgcl_aexp
+syntax ident : cpgcl_aexp
+
+syntax ident : cpgcl_bexp
 
 syntax ident : cpgcl_prog
 syntax cpgcl_var " := " cpgcl_aexp : cpgcl_prog
@@ -62,9 +64,12 @@ macro_rules
 -- vars
 | `(pgcl_var { $v:ident }) => `(term|$(quote v.getId.toString))
 -- aexp
-| `(pgcl_aexp { $v:term }) => `($v)
+| `(pgcl_aexp { $n:num }) => `($n)
+| `(pgcl_aexp { $v:ident }) => `(term|$(quote v.getId.toString))
 -- bexp
-| `(pgcl_bexp { $v:term }) => `($v)
+| `(pgcl_bexp { true }) => `(fun _ ↦ true)
+| `(pgcl_bexp { false }) => `(fun _ ↦ false)
+| `(pgcl_bexp { $v:ident }) => `(term|$(quote v.getId.toString))
 -- pGCL
 | `(pgcl { skip }) => `(pGCL.skip)
 | `(pgcl { $v:cpgcl_var := $e }) => `(pGCL.assign pgcl_var {$v} pgcl_aexp {$e})
@@ -79,6 +84,31 @@ set_option linter.style.setOption false
 set_option pp.mvars false
 set_option linter.style.setOption true
 
+def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cpgcl_aexp)
+| `($a:num) => `(cpgcl_aexp|$a:num)
+| `(fun $σ ↦ $σ' $x:str) =>
+  if σ.raw == σ'.raw then
+    let name := mkIdent <| Name.mkSimple x.getString
+    `(cpgcl_aexp|$name:ident)
+  else
+    throw ()
+| c => `(cpgcl_aexp|~ $c)
+
+def unexpandBExp : TSyntax `term → UnexpandM (TSyntax `cpgcl_bexp)
+| `(fun $_ ↦ true) =>
+  let name := mkIdent <| Name.mkSimple "true"
+  `(cpgcl_bexp| $name:ident)
+| `(fun $_ ↦ false) =>
+  let name := mkIdent <| Name.mkSimple "false"
+  `(cpgcl_bexp| $name:ident)
+| `(fun $σ ↦ $σ' $x:str) =>
+  if σ.raw == σ'.raw then
+    let name := mkIdent <| Name.mkSimple x.getString
+    `(cpgcl_bexp|$name:ident)
+  else
+    throw ()
+| c => `(cpgcl_bexp|~ $c)
+
 @[app_unexpander pGCL.skip]
 def skipUnexpander : Unexpander
 | `($(_)) =>
@@ -91,11 +121,13 @@ def skipUnexpander : Unexpander
 
 @[app_unexpander pGCL.assign]
 def assignUnexpander : Unexpander
-| `($(_) $name:str $y) =>
+| `($(_) $name:str $e) => do
   let name := mkIdent <| Name.mkSimple name.getString
-  `(pgcl { $name:ident := $y:term })
-| `($(_) $name $y) =>
-  `(pgcl { ~$name := $y:term })
+  let e ← unexpandAexp e
+  `(pgcl { $name:ident := $e })
+| `($(_) $name $e) => do
+  let e ← match e with | `(pgcl_aexp {$e}) => pure e | _ => `(cpgcl_aexp| ~ $e)
+  `(pgcl { ~$name := $e })
 | _ => throw ()
 
 /-- info: pgcl {x := 1} : pGCL String -/
@@ -125,7 +157,7 @@ def probUnexpander : Unexpander
 
 /-- info: pgcl {{ x := 1 } [~⟨1, ⋯⟩] { skip }} : pGCL String -/
 #guard_msgs in
-#check pgcl { { x := 1 } [⟨1, by simp⟩] { skip } }
+#check pgcl { { x := 1 } [~⟨1, by simp⟩] { skip } }
 
 @[app_unexpander pGCL.nonDet]
 def nonDetUnexpander : Unexpander
@@ -149,28 +181,33 @@ def loopUnexpander : Unexpander
 
 /-- info: pgcl {while ~fun σ ↦ decide (σ "x" = 1) { skip }} : pGCL String -/
 #guard_msgs in
-#check pgcl { while (fun σ ↦ σ "x" = 1) { skip } }
+#check pgcl { while ~(fun σ ↦ σ "x" = 1) { skip } }
 
 @[app_unexpander pGCL.tick]
 def tickUnexpander : Unexpander
 | `($(_) $r) => do
-  `(pgcl { tick($r:term) })
+  let r ← unexpandAexp r
+  `(pgcl { tick($r) })
 | _ => throw ()
 
 /-- info: pgcl {tick(1)} : pGCL ?_ -/
 #guard_msgs in
 #check pgcl { tick(1) }
 
+/-- info: fun r ↦ pgcl {tick(~r)} : Exp ?_ → pGCL ?_ -/
+#guard_msgs in
+#check fun r ↦ pgcl { tick(~r) }
+
 @[app_unexpander pGCL.assert]
 def assertUnexpander : Unexpander
 | `($(_) $r) => do
-  let r := ← match r with | `(pgcl_bexp {$r}) => pure r | _ => `(cpgcl_bexp| ~ $r)
+  let r ← unexpandBExp r
   `(pgcl { assert($r) })
 | _ => throw ()
 
-/-- info: pgcl {assert(~fun x ↦ false)} : pGCL ?_ -/
+/-- info: pgcl {assert(false) ; assert(true)} : pGCL ?_ -/
 #guard_msgs in
-#check pgcl { assert(fun _ ↦ false) }
+#check pgcl { assert(false) ; assert(true) }
 
 end Syntax
 

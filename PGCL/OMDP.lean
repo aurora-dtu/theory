@@ -25,6 +25,10 @@ variable {ϖ : Type*} [DecidableEq ϖ]
 noncomputable def 𝒬 : MDP (Conf ϖ) Act :=
   MDP.ofRelation SmallStep SmallStep.p_ne_zero SmallStep.sums_to_one SmallStep.progress
 
+namespace General
+
+end General
+
 namespace 𝒬
 
 @[simp]
@@ -54,7 +58,7 @@ instance : MDP.FiniteBranching (𝒬 (ϖ:=ϖ)) where
 @[simp]
 noncomputable def cost (X : Exp ϖ)
   | conf[⇓ ϖ, σ] => X σ
-  | conf[tick(r), σ] => r σ
+  | conf[tick(~ r), σ] => r σ
   | conf[~c' ; ~_, σ] => cost X conf[~c', σ]
   | _ => 0
 
@@ -76,7 +80,8 @@ theorem cost_mono : Monotone (cost (ϖ:=ϖ)) := fun a b hab ↦ by
         simp_all
         split at ih₁ <;> simp_all
 
-@[simp] theorem cost_X_of_pGCL : cost X conf[~C, σ] = cost 0 conf[~C, σ] := by induction C <;> simp_all
+@[simp]
+theorem cost_X_of_pGCL : cost X conf[~C, σ] = cost 0 conf[~C, σ] := by induction C <;> simp_all
 
 @[simp]
 theorem Φ_simp {C : Conf ϖ} :
@@ -99,20 +104,20 @@ theorem tsum_succs_univ' (f : (𝒬 (ϖ:=ϖ)).succs_univ c → ENNReal) :
 variable {X : Exp ϖ}
 
 @[simp]
-theorem term_eq : (𝒬.Φ (cost X))^[i] ⊥ (some (.term, σ)) = if i = 0 then 0 else X σ := by
+theorem term_eq : (𝒬.Φ (cost X))^[i] ⊥ conf[⇓, σ] = if i = 0 then 0 else X σ := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
 @[simp]
-theorem fault_eq : (𝒬.Φ (cost X))^[i] ⊥ (some (.fault, σ)) = 0 := by
+theorem fault_eq : (𝒬.Φ (cost X))^[i] ⊥ conf[↯, σ] = 0 := by
   induction i <;> simp_all [-Function.iterate_succ, Function.iterate_succ', 𝒬.tsum_succs_univ']
 
 @[simp]
 theorem lfp_Φ_bot : lfp (𝒬.Φ <| cost X) none = 0 := by simp [MDP.lfp_Φ_eq_iSup_Φ]
 
 @[simp]
-theorem lfp_Φ_term : lfp (𝒬.Φ <| cost X) (some (.term, σ)) = X σ := by
+theorem lfp_Φ_term : lfp (𝒬.Φ <| cost X) conf[⇓, σ] = X σ := by
   rw [← map_lfp]; simp_all [tsum_succs_univ']
 @[simp]
-theorem lfp_Φ_fault : lfp (𝒬.Φ <| cost X) (some (.fault, σ)) = 0 := by
+theorem lfp_Φ_fault : lfp (𝒬.Φ <| cost X) conf[↯, σ] = 0 := by
   rw [← map_lfp]; simp_all [tsum_succs_univ']
 
 noncomputable def ς : (pGCL ϖ → Exp ϖ →o Exp ϖ) →o pGCL ϖ → Exp ϖ →o Exp ϖ :=
@@ -138,7 +143,7 @@ variable {f : pGCL ϖ → Exp ϖ →o Exp ϖ}
 
 @[simp] theorem ς.skip : ς f skip = ⟨(· ·), fun ⦃_ _⦄ a ↦ a⟩ := by simp_all [ς, 𝒬.tsum_succs_univ']
 @[simp] theorem ς.assign :
-      ς f (.assign x e)
+      ς f (pgcl {~x := ~e})
     = ⟨fun X σ ↦ f .skip X (σ[x ↦ e σ]), fun a b h σ ↦ by simp; apply (f _).mono h⟩ :=
   by simp_all [ς, 𝒬.tsum_succs_univ']
 @[simp] theorem ς.tick : ς f (.tick r) = ⟨fun X ↦ r + f .skip X, fun _ _ _ ↦ by simp; gcongr⟩ := by
@@ -264,7 +269,8 @@ theorem op_le_seq : C.op ∘ C'.op ≤ pgcl {~C ; ~C'}.op := by
     all_goals intros; simp_all
     all_goals split_ifs <;> simp_all [mul_le_mul]
 
-theorem ς_wp_eq_wp : ς (ϖ:=ϖ) wp = wp := by
+theorem ς_wp_le_wp : ς (ϖ:=ϖ) wp ≤ wp := by
+  apply le_of_eq
   funext C; induction C with try simp_all
   | loop =>
     rw [ς.loop]
@@ -279,7 +285,7 @@ theorem ς_wp_eq_wp : ς (ϖ:=ϖ) wp = wp := by
     rintro _ _ _ _ _ h ⟨_⟩ _ _ h' ⟨_⟩ hp _
     exact ⟨⟨_, _, h⟩, _, h', hp⟩
 
-theorem wp_le_op.loop (ih : C.wp ≤ C.op) : wp (.loop b C) ≤ op (.loop b C) := by
+theorem wp_le_op.loop (ih : C.wp ≤ C.op) : wp⟦while ~b { ~C }⟧ ≤ op (.loop b C) := by
   intro X
   apply lfp_le
   nth_rw 2 [← ς_op_eq_op]
@@ -290,18 +296,14 @@ theorem wp_le_op.loop (ih : C.wp ≤ C.op) : wp (.loop b C) ≤ op (.loop b C) :
 
 theorem wp_le_op : wp (ϖ:=ϖ) ≤ op := by
   intro C
-  induction C with
-  | skip => simp
-  | assign => rw [← ς_op_eq_op]; simp
+  induction C with (try rw [← ς_op_eq_op]; simp; done)
   | prob C₁ p C₂ ih₁ ih₂ => rw [← ς_op_eq_op]; intro X; simp; gcongr <;> apply_assumption
   | nonDet C₁ C₂ ih₁ ih₂ =>
     intro X σ; rw [← ς_op_eq_op]; specialize ih₁ X σ; specialize ih₂ X σ; simp_all
   | loop b C ih => exact wp_le_op.loop ih
   | seq C₁ C₂ ih₁ ih₂ =>
     intro; simp; exact ((wp _).mono (ih₂ _)).trans (ih₁ _) |>.trans (op_le_seq _)
-  | tick => rw [← ς_op_eq_op]; simp
-  | assert => rw [← ς_op_eq_op]; simp
 
-theorem op_eq_wp : op (ϖ:=ϖ) = wp := (op_isLeast _ ς_wp_eq_wp.le).antisymm wp_le_op
+theorem op_eq_wp : op (ϖ:=ϖ) = wp := (op_isLeast _ ς_wp_le_wp).antisymm wp_le_op
 
 end pGCL

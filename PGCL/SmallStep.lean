@@ -27,9 +27,9 @@ inductive SmallStep : Conf ϖ → Act → ENNReal → Conf ϖ → Prop where
     SmallStep conf[{~C₁} [~p] {~C₂}, σ] .N (1 - p.val σ) conf[~C₂, σ]
   | nonDet_L : SmallStep conf[{~C₁} [] {~C₂}, σ]      .L 1 conf[~C₁, σ]
   | nonDet_R : SmallStep conf[{~C₁} [] {~C₂}, σ]      .R 1 conf[~C₂, σ]
-  | tick     : SmallStep conf[tick(r), σ]       .N 1 conf[skip, σ]
-  | assert₁  : b σ  → SmallStep conf[assert(b), σ] .N 1 conf[skip, σ]
-  | assert₂  : ¬b σ → SmallStep conf[assert(b), σ] .N 1 conf[↯, σ]
+  | tick     : SmallStep conf[tick(~ r), σ]       .N 1 conf[skip, σ]
+  | assert₁  : b σ  → SmallStep conf[assert(~b), σ] .N 1 conf[skip, σ]
+  | assert₂  : ¬b σ → SmallStep conf[assert(~b), σ] .N 1 conf[↯, σ]
   | seq_L    : SmallStep conf[skip ; ~C₂, σ] .N 1 conf[~C₂, σ]
   | seq_R    : SmallStep conf[~C₁, σ] α p conf[~C₁', τ] →
                 SmallStep conf[~C₁ ; ~C₂, σ] α p conf[~C₁' ; ~C₂, τ]
@@ -85,7 +85,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf[↯, σ]) :
       (conf[{~C₁} [] {~C₂}, σ] ⤳[α,p'] c')
     ↔ p' = 1 ∧ ((α = .L ∧ c' = conf[~C₁, σ]) ∨ (α = .R ∧ c' = conf[~C₂, σ]))
   := by grind
-@[simp] theorem tick_iff : (conf[tick(r), σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf[skip, σ]
+@[simp] theorem tick_iff : (conf[tick(~ r), σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf[skip, σ]
   := by grind
 @[simp] theorem assert_iff :
       (conf[assert(~b), σ] ⤳[α,p] c')
@@ -141,8 +141,8 @@ theorem exists_succ_iff {C : pGCL ϖ} (h : ¬C = .skip) :
 @[simp] theorem act_nonDet : act conf[{~C₁} [] {~C₂}, σ] = {.L, .R} := by
   ext; simp [act]; aesop
 @[simp] theorem act_loop : act conf[while ~b {~C}, σ] = {.N} := by simp [act]
-@[simp] theorem act_tick : act conf[tick(r), σ] = {.N} := by simp [act]
-@[simp] theorem act_assert : act conf[assert(r), σ] = {.N} := by simp [act]
+@[simp] theorem act_tick : act conf[tick(~ r), σ] = {.N} := by simp [act]
+@[simp] theorem act_assert : act conf[assert(~ r), σ] = {.N} := by simp [act]
 
 instance act_nonempty (s : Conf ϖ) : Nonempty (act s) := by
   rcases s with (_ | ⟨σ' | σ' | c', σ'⟩) <;> (try induction c') <;> simp_all
@@ -171,8 +171,8 @@ noncomputable def succs_fin (c : Conf ϖ) (α : Act) : Finset (Conf ϖ) :=
   | conf[⇓, _], .N => {none}
   | conf[↯, _], .N => {none}
   | conf[skip, σ], .N => {conf[⇓, σ]}
-  | conf[tick(_), σ], .N => {conf[skip, σ]}
-  | conf[assert(b), σ], .N => if b σ then {conf[skip, σ]} else {conf[↯, σ]}
+  | conf[tick(~_), σ], .N => {conf[skip, σ]}
+  | conf[assert(~b), σ], .N => if b σ then {conf[skip, σ]} else {conf[↯, σ]}
   | conf[~x := ~E, σ], .N => {conf[skip, σ[x ↦ E σ]]}
   | conf[{~C₁} [~p] {~C₂}, σ], .N =>
     if p.val σ = 0

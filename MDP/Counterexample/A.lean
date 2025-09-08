@@ -155,29 +155,38 @@ theorem iSup_iInf_ECℒ_eq_top : ⨆ n, ⨅ ℒ : 𝔏[M], M.EC M.cost ℒ n .in
   apply (iInf_le_of_le ⟨⟨(if ·.last = .init then n + 1 else 0), by simp⟩,
       by constructor; intro; simp_all⟩ (by simp [DFunLike.coe])).antisymm bot_le
 
+open OrderHom
+
 theorem lfp_Φ_node_eq_add :
-    M.lfp_Φ M.cost (.node i α) = M.lfp_Φ M.cost (.node (i + j) α) := by
+    lfp (Φ M.cost) (.node i α) = lfp (Φ M.cost) (.node (i + j) α) := by
   induction j with simp_all
   | succ j ih =>
-    nth_rw 1 [← map_lfp_Φ]
-    simp [Φ, Φf]
-    split_ifs <;> (rw [← map_lfp_Φ]; simp_all [Φ, Φf, iInf_subtype])
+    nth_rw 1 [← map_lfp]
+    simp only [Φ, M.cost, Φf, coe_mk]
+    split_ifs <;> (rw [← map_lfp]; simp_all [Φ, Φf, iInf_subtype, -map_lfp])
     · split_ifs
-      · simp
+      · simp only [top_add]
       · omega
-    · rw [tsum_eq_single ⟨.node (i + j + 1) α, by simp⟩ (by simp)]; simp_all [M]; rfl
+    · rw [tsum_eq_single ⟨.node (i + j + 1) α, by simp⟩ (by simp)]; simp_all only [M,
+      ofRelation_P, tsum_p, node_iff, and_true, true_and, tsum_ite_eq, reduceCtorEq,
+      not_false_eq_true, forall_const, iInf_iInf_eq_left, one_mul]; rfl
 
-theorem lfp_Φ_node_zero_eq_top : M.lfp_Φ M.cost (.node 0 α) = ⊤ := by
-  rw [lfp_Φ_node_eq_add (j:=α), ← map_lfp_Φ]; simp [Φ, Φf]
+theorem lfp_Φ_node_zero_eq_top : lfp (Φ M.cost) (.node 0 α) = ⊤ := by
+  rw [lfp_Φ_node_eq_add (j:=α), ← map_lfp]; simp [Φ, Φf, -map_lfp]
 
-theorem lfp_Φ_node_eq_top : M.lfp_Φ M.cost (.node α β) = ⊤ := by
-  convert_to lfp_Φ M.cost (.node (0 + α) β) = ⊤
+theorem lfp_Φ_node_eq_top : lfp (Φ M.cost) (.node α β) = ⊤ := by
+  convert_to lfp (Φ M.cost) (.node (0 + α) β) = ⊤
   · simp
   · exact lfp_Φ_node_eq_add.symm.trans lfp_Φ_node_zero_eq_top
 
-@[simp] theorem lfp_Φ_eq_top : M.lfp_Φ M.cost .init = ⊤ := by
-  rw [← map_lfp_Φ]; simp [Φ, Φf]
-  exact fun α ↦ ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 α, by simp⟩, by simp [lfp_Φ_node_eq_top, M]⟩
+@[simp] theorem lfp_Φ_eq_top : lfp (Φ M.cost) .init = ⊤ := by
+  rw [← map_lfp]; simp [Φ, Φf, -map_lfp]
+  exact fun α ↦ ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 α, by simp⟩, by
+    simp_all [lfp_Φ_node_eq_top, M, -map_lfp]
+    convert lfp_Φ_node_eq_top
+    simp [Φ, Φf]
+    sorry
+    ⟩
 
 theorem iSup_iInf_EC_lt_iInf_iSup_EC :
     ⨆ n, ⨅ 𝒮, M.EC M.cost 𝒮 n .init < ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init := by simp
@@ -187,6 +196,6 @@ theorem iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ :
   simp
 
 theorem iSup_iInf_EC_lt_lfp_Φ :
-    ⨆ n,  ⨅ 𝒮, M.EC M.cost 𝒮 n .init < M.lfp_Φ M.cost .init := by simp
+    ⨆ n,  ⨅ 𝒮, M.EC M.cost 𝒮 n .init < lfp (Φ M.cost) .init := by simp
 
 end MDP.Counterexample.A
