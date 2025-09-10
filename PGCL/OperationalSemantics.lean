@@ -9,25 +9,19 @@ namespace pGCL
 variable {ϖ : Type*} [DecidableEq ϖ]
 
 @[simp]
-noncomputable def cost_t (X : Exp ϖ) : Termination × States ϖ → ENNReal
+noncomputable def cost_t : Exp ϖ →o Termination × States ϖ → ENNReal :=
+  ⟨fun X c ↦ match c with
   | (.term, σ) => X σ
-  | (.fault, _) => 0
+  | (.fault, _) => 0, fun _ _ _ _ ↦ by
+    simp; split
+    · apply_assumption
+    · rfl⟩
 
 @[simp]
 noncomputable def cost_p : pGCL ϖ × States ϖ → ENNReal
   | conf₀[tick(~ r), σ] => r σ
   | conf₀[~c' ; ~_, σ] => cost_p conf₀[~c', σ]
   | _ => 0
-
-omit [DecidableEq ϖ] in
-@[simp]
-theorem cost_t_mono : Monotone (cost_t (ϖ:=ϖ)) := fun a b hab ↦ by
-  intro ⟨t, σ⟩
-  unfold cost_t
-  cases t
-  · simp
-  · simp
-    apply_assumption
 
 noncomputable instance instSmallStepSemantics :
     SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
@@ -36,11 +30,11 @@ noncomputable instance instSmallStepSemantics :
   h₁ := SmallStep.sums_to_one
   h₂ := SmallStep.progress
   cost_t
-  cost_t_mono
   cost_p
 
 open SmallStepSemantics
 
+attribute [simp] SmallStepSemantics.r
 attribute [simp] SmallStepSemantics.cost_t
 attribute [simp] SmallStepSemantics.cost_p
 
@@ -68,18 +62,8 @@ open scoped Classical in
 theorem act_eq_SmallStep_act :
     instSmallStepSemantics.act (Conf.prog C σ) = (some ·) '' SmallStep.act (C, σ) := by
   ext
-  simp [act, rr, r, SmallStep.act]
-  constructor
-  · simp_all
-    intro p C'
-    split <;> simp_all
-    · grind
-    · grind
-  · rintro ⟨α, ⟨p, (⟨C', σ', h⟩ | ⟨t, σ', h⟩)⟩, _⟩
-    · use p, conf[~C', σ']
-      grind
-    · use p, (.term t σ')
-      grind
+  simp [act, r, SmallStep.act, conf₂_to_conf]
+  grind
 
 @[simp, grind]
 theorem act_seq :
@@ -183,7 +167,8 @@ open scoped Classical in
   simp [aς, psucc, r]
   rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp
 @[simp] theorem aς.assert :
-    instSmallStepSemantics.aς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := by
+    instSmallStepSemantics.aς f (.assert b) = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩
+:= by
   ext X σ
   simp [aς, psucc, r]
   if hb : b σ then
@@ -307,59 +292,25 @@ theorem aς.seq {C₁ C₂ : pGCL ϖ}
     · simp_all
       use .term, σ'
 
-attribute [-simp] Function.iterate_succ in
 theorem dop_le_seq :
       instSmallStepSemantics.dop C ∘ instSmallStepSemantics.dop C'
     ≤ instSmallStepSemantics.dop pgcl {~C ; ~C'} := by
-  intro X σ
-  nth_rw 1 [dop_eq_iter]
-  simp
-  intro n
-  induction n generalizing C C' σ with
-  | zero =>
-    have : ⨅ α ∈ SmallStep.act conf₀[~C, σ], (0 : ENNReal) = 0 :=
-      SmallStep.iInf_act_const
-    nth_rw 2 [← dς_dop_eq_dop]; simp_all [dς]
-  | succ i ih =>
-    nth_rw 2 [← dς_dop_eq_dop]
-    rw [Function.iterate_succ', Function.comp_apply]
-    simp [dς, tsum_succs_univ']
-    refine add_le_add (le_refl _) (iInf₂_mono fun α α' ↦ iInf₂_mono fun hα hα' ↦ ?_)
-    subst_eqs
-    simp
-    apply C'.tsum_after_le' ?_ ?_ ?_ <;> simp [r, psucc]
-    intro p C' σ'
-    split_ifs <;> try rfl
-    gcongr
-    apply le_trans _ (ih _)
-    simp [dς, tsum_succs_univ']
-    rfl
+  apply SmallStepSemantics.dop_le_seq pGCL.seq pGCL.after <;> try simp
+  · simp [psucc, pGCL.after]
+    grind [psucc, pGCL.after]
+  · grind [after_term, pGCL.after]
+  · intros; split <;> simp_all
+  · exact pGCL.after_inj
 
-attribute [-simp] Function.iterate_succ in
 theorem aop_le_seq :
       instSmallStepSemantics.aop C ∘ instSmallStepSemantics.aop C'
     ≤ instSmallStepSemantics.aop pgcl {~C ; ~C'} := by
-  intro X σ
-  nth_rw 1 [aop_eq_iter]
-  simp
-  intro n
-  induction n generalizing C C' σ with
-  | zero =>
-    nth_rw 2 [← aς_aop_eq_aop]; simp_all [aς]
-  | succ i ih =>
-    nth_rw 2 [← aς_aop_eq_aop]
-    rw [Function.iterate_succ', Function.comp_apply]
-    simp [aς, tsum_succs_univ']
-    refine add_le_add (le_refl _) (iSup₂_mono fun α α' ↦ iSup₂_mono fun hα hα' ↦ ?_)
-    subst_eqs
-    simp
-    apply C'.tsum_after_le' ?_ ?_ ?_ <;> simp [r, psucc]
-    intro p C' σ'
-    split_ifs <;> try rfl
-    gcongr
-    apply le_trans _ (ih _)
-    simp [aς, tsum_succs_univ']
-    rfl
+  apply SmallStepSemantics.aop_le_seq pGCL.seq pGCL.after <;> try simp
+  · simp [psucc, pGCL.after]
+    grind [psucc, pGCL.after]
+  · grind [after_term, pGCL.after]
+  · intros; split <;> simp_all
+  · exact pGCL.after_inj
 
 open scoped Classical in
 theorem dwp_le_dop.loop (ih : C.dwp ≤ instSmallStepSemantics.dop C) :
