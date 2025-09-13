@@ -84,11 +84,11 @@ noncomputable def dwp : pGCL ϖ → Exp ϖ →o Exp ϖ
      fun a b hab ↦ by
       simp
       exact ⟨inf_le_left.trans (C₁.dwp'.mono hab), inf_le_right.trans (C₂.dwp'.mono hab)⟩⟩
-  | .loop b C' => ⟨fun X ↦ OrderHom.lfp ⟨
+  | loop b C' => ⟨fun X ↦ OrderHom.lfp ⟨
       (b.iver * C'.dwp' · + b.not.iver * X),
       by intro a b hab; simp; gcongr⟩, fun a b hab ↦ by simp; gcongr; intro; simp; gcongr⟩
   | .tick e => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
-  | .assert b => ⟨(b.iver * ·), fun _ _ h ↦ by simp; gcongr⟩
+  | assert b => ⟨(b.iver * ·), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "dwp⟦" cpgcl_prog "⟧" : term
 syntax "dwp[" term "]⟦" cpgcl_prog "⟧" : term
@@ -118,20 +118,20 @@ def dwp'Unexpander : Lean.PrettyPrinter.Unexpander
 theorem dwp'_eq_wp (C : pGCL ϖ) : C.dwp' = C.dwp := by
   cases C <;> (simp_all [dwp, pGCL.dwp']; rw [WellFounded.fix_eq])
 
-noncomputable def dΦ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
+noncomputable def dΦ (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ := ⟨fun X ↦ φ.iver * (C'.dwp X) + φ.not.iver * f, by
       intro X₁ X₂ h σ
       simp
       gcongr
       apply C'.dwp.mono h⟩
 
-theorem dwp_loop (C' : pGCL ϖ) :
+theorem dwp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) [DecidablePred φ] :
     (C'.loop φ).dwp f = OrderHom.lfp (dΦ φ C' f) := by
   rw [dwp]
   simp
   rfl
 
-theorem dwp_fp (C' : pGCL ϖ) :
+theorem dwp_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
     (dΦ φ C' f) ((C'.loop φ).dwp f) = (C'.loop φ).dwp f := by simp [dwp_loop]
 
 @[simp] theorem dwp.skip : dwp[ϖ]⟦skip⟧ = ⟨(·), fun ⦃_ _⦄ a ↦ a⟩ := rfl
@@ -143,9 +143,11 @@ theorem dwp_fp (C' : pGCL ϖ) :
 := by rw [dwp]; simp
 @[simp] theorem dwp.nonDet : dwp[ϖ]⟦{~C₁}[]{~C₂}⟧ = C₁.dwp ⊓ C₂.dwp := by rw [dwp]; simp; rfl
 @[simp] theorem dwp.tick : dwp[ϖ]⟦tick(~e)⟧ = ⟨fun X ↦ e + X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+open scoped Classical in
 @[simp] theorem dwp.assert :
     dwp[ϖ]⟦assert(~b)⟧ = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
 
+open scoped Classical in
 noncomputable def awp' : pGCL ϖ → Exp ϖ →o Exp ϖ :=
   have : ∀ (C C' : pGCL ϖ), WellFoundedRelation.rel C C' ↔ sizeOf C < sizeOf C' := by aesop
   have : ∀ (a b : ℕ), a < 1 + a + b := by omega
@@ -175,6 +177,7 @@ noncomputable def awp' : pGCL ϖ → Exp ϖ →o Exp ϖ :=
   | pgcl {tick(~e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {assert(~b)} => ⟨(b.iver * ·), fun _ _ h ↦ by simp; gcongr⟩
 
+open scoped Classical in
 noncomputable def awp : pGCL ϖ → Exp ϖ →o Exp ϖ
   | .skip => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
   | .assign x A => ⟨fun X σ ↦ X (σ[x ↦ A σ]), fun ⦃_ _⦄ a i ↦ a _⟩
@@ -191,11 +194,11 @@ noncomputable def awp : pGCL ϖ → Exp ϖ →o Exp ϖ
         exact le_sup_of_le_left (C₁.awp'.mono hab)
       · have : C₂.awp' a ≤ C₂.awp' b := C₂.awp'.mono hab
         exact le_sup_of_le_right (C₂.awp'.mono hab)⟩
-  | .loop b C' => ⟨fun X ↦ OrderHom.lfp ⟨
+  | loop b C' => ⟨fun X ↦ OrderHom.lfp ⟨
       (b.iver * C'.awp' · + b.not.iver * X),
       by intro a b hab; simp; gcongr⟩, fun a b hab ↦ by simp; gcongr; intro; simp; gcongr⟩
   | .tick e => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
-  | .assert b => ⟨(b.iver * ·), fun _ _ h ↦ by simp; gcongr⟩
+  | assert b => ⟨(b.iver * ·), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "awp⟦" cpgcl_prog "⟧" : term
 syntax "awp[" term "]⟦" cpgcl_prog "⟧" : term
@@ -225,20 +228,20 @@ def awp'Unexpander : Lean.PrettyPrinter.Unexpander
 theorem awp'_eq_awp (C : pGCL ϖ) : C.awp' = C.awp := by
   cases C <;> (simp_all [awp, pGCL.awp']; rw [WellFounded.fix_eq])
 
-noncomputable def aΦ (φ : BExpr ϖ) (C' : pGCL ϖ) (f : Exp ϖ) :
+noncomputable def aΦ (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ := ⟨fun X ↦ φ.iver * (C'.awp X) + φ.not.iver * f, by
       intro X₁ X₂ h σ
       simp
       gcongr
       apply C'.awp.mono h⟩
 
-theorem awp_loop (C' : pGCL ϖ) :
+theorem awp_loop (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
     (C'.loop φ).awp f = OrderHom.lfp (aΦ φ C' f) := by
   rw [awp]
   simp
   rfl
 
-theorem dop_fp (C' : pGCL ϖ) :
+theorem dop_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
     (aΦ φ C' f) ((C'.loop φ).awp f) = (C'.loop φ).awp f := by simp [awp_loop]
 
 @[simp] theorem awp.skip : awp[ϖ]⟦skip⟧ = ⟨(·), fun ⦃_ _⦄ a ↦ a⟩ := rfl
@@ -250,6 +253,7 @@ theorem dop_fp (C' : pGCL ϖ) :
 := by rw [awp]; simp
 @[simp] theorem awp.nonDet : awp[ϖ]⟦{~C₁}[]{~C₂}⟧ = C₁.awp ⊔ C₂.awp := by rw [awp]; simp; rfl
 @[simp] theorem awp.tick : awp[ϖ]⟦tick(~e)⟧ = ⟨fun X ↦ e + X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+open scoped Classical in
 @[simp] theorem awp.assert :
     awp[ϖ]⟦assert(~b)⟧ = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
 

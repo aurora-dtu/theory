@@ -3,20 +3,21 @@ import Mathlib.Data.ENNReal.Operations
 namespace pGCL
 
 variable {ϖ : Type*}
-def States (ϖ : Type*) := ϖ → ENNReal
+def States (ϖ : Type*) := ϖ → Nat
 
 instance : Nonempty (States ϖ) := ⟨fun _ ↦ Inhabited.default⟩
 
+abbrev NExp (ϖ : Type*) := States ϖ → Nat
 abbrev Exp (ϖ : Type*) := States ϖ → ENNReal
-abbrev BExpr (ϖ : Type*) := States ϖ → Bool
+abbrev BExpr (ϖ : Type*) := States ϖ → Prop
 def ProbExp (ϖ : Type*) := {e : Exp ϖ // e ≤ 1}
 
-def States.subst [DecidableEq ϖ] (σ : States ϖ) (x : ϖ) (v : ENNReal) : States ϖ :=
+def States.subst [DecidableEq ϖ] (σ : States ϖ) (x : ϖ) (v : Nat) : States ϖ :=
   fun α ↦ if x = α then v else σ α
 
 notation σ "[" x " ↦ " v "]" => States.subst σ x v
 
-def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : Exp ϖ) : Exp ϖ := fun σ ↦ e (σ[x ↦ A σ])
+def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : NExp ϖ) : Exp ϖ := fun σ ↦ e (σ[x ↦ A σ])
 
 @[simp]
 theorem Exp.subst_lift [DecidableEq ϖ] (e : Exp ϖ) : e.subst x A σ = e (σ[x ↦ A σ]) := rfl
@@ -30,11 +31,15 @@ theorem Exp.mul_le_mul (a b c d : Exp ϖ) (hac : a ≤ c) (hac : b ≤ d) : a * 
 
 namespace BExpr
 
-def not (b : BExpr ϖ) : BExpr ϖ := (!b ·)
-def iver (b : BExpr ϖ) : Exp ϖ := (if b · then 1 else 0)
-def probOf (b : BExpr ϖ) : ProbExp ϖ := ⟨(if b · then 1 else 0), by intro; simp; split <;> simp⟩
+def not (b : BExpr ϖ) : BExpr ϖ := (¬b ·)
+def iver (b : BExpr ϖ) [DecidablePred b] : Exp ϖ := (if b · then 1 else 0)
+def probOf (b : BExpr ϖ) [DecidablePred b] : ProbExp ϖ :=
+  ⟨(if b · then 1 else 0), by intro; simp; split <;> simp⟩
 
-variable {b : BExpr ϖ}
+variable {b : BExpr ϖ} [DecidablePred b]
+
+instance : DecidablePred b.not := fun σ ↦
+  if h : b σ then .isFalse (by simp_all [BExpr.not]) else .isTrue (by simp_all [BExpr.not])
 
 @[simp] theorem true_iver (h : b σ = true) : b.iver σ = 1 := by simp [iver, h]
 @[simp] theorem false_iver (h : b σ = false) : b.iver σ = 0 := by simp [iver, h]
