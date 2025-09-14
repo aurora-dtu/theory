@@ -448,7 +448,7 @@ theorem mdp_act_term : i.mdp.act (Conf.term t σ) = {none} := by
 theorem mdp_act_bot : i.mdp.act Conf.bot = {none} := by
   ext; simp [mdp]
 
-instance [instFin : i.FiniteBranching] : i.mdp.FiniteBranching where
+instance instFiniteBrachingMDP [instFin : i.FiniteBranching] : i.mdp.FiniteBranching where
   act_fin C := by
     rcases C with (⟨t, σ⟩ | ⟨C, σ⟩ | _) <;> try simp
     have := instFin.finite (C, σ)
@@ -635,19 +635,14 @@ theorem dop_eq_iter : i.dop = ⨆ n, (i.dς)^[n] ⊥ := by
       · simp [ih]
       · simp
 
-class DemonicExpectationTransformer (P S : Type*) where
-  det : P → 𝔼[S] →o 𝔼[S]
+class DemonicET {P S T A : Type*} [Nonempty A] [i : SmallStepSemantics P S T A]
+    (det : P → 𝔼[S] →o 𝔼[S]) where
+  det_le_dop : det ≤ i.dop
+  det_prefixed_point : i.dς det ≤ det
 
-class SoundDemonicExpectationTransformer (P S T A : Type*) [Nonempty A]
-    [i :  SmallStepSemantics P S T A] [i.mdp.FiniteBranching]
-    [i' : DemonicExpectationTransformer P S] where
-  det_le_dop : i'.det ≤ i.dop
-  det_prefixed_point : i.dς i'.det ≤ i'.det
+variable {det : P → 𝔼[S] →o 𝔼[S]} [i' : i.DemonicET det]
 
-variable [i' : DemonicExpectationTransformer P S] [SoundDemonicExpectationTransformer P S T A]
-
-theorem SoundDemonicExpectationTransformer.det_eq_dop : i'.det = i.dop :=
-  le_antisymm det_le_dop (dop_isLeast i'.det det_prefixed_point)
+theorem DemonicET.det_eq_dop : det = i.dop := det_le_dop.antisymm (dop_isLeast _ det_prefixed_point)
 
 end Demonic
 
@@ -793,19 +788,14 @@ theorem aop_eq_iter : i.aop = ⨆ n, (i.aς)^[n] ⊥ := by
       · simp [ih]
       · simp
 
-class AngelicExpectationTransformer (P S : Type*) where
-  aet : P → 𝔼[S] →o 𝔼[S]
+class AngelicET {P S T A : Type*} [Nonempty A] [i : SmallStepSemantics P S T A]
+    (aet : P → 𝔼[S] →o 𝔼[S]) where
+  aet_le_aop : aet ≤ i.aop
+  aet_prefixed_point : i.aς aet ≤ aet
 
-class SoundAngelicExpectationTransformer (P S T A : Type*) [Nonempty A]
-    [i : SmallStepSemantics P S T A]
-    [i' : AngelicExpectationTransformer P S] where
-  aet_le_aop : i'.aet ≤ i.aop
-  aet_prefixed_point : i.aς i'.aet ≤ i'.aet
+variable {aet : P → 𝔼[S] →o 𝔼[S]} [i' : i.AngelicET aet]
 
-variable [i' : AngelicExpectationTransformer P S] [SoundAngelicExpectationTransformer P S T A]
-
-theorem SoundAngelicExpectationTransformer.aet_eq_aop : i'.aet = i.aop :=
-  le_antisymm aet_le_aop (aop_isLeast i'.aet aet_prefixed_point)
+theorem AngelicET.aet_eq_aop : aet = i.aop := aet_le_aop.antisymm (aop_isLeast _ aet_prefixed_point)
 
 end Angelic
 

@@ -90,10 +90,9 @@ example :
   simp [BoundedRetransmissionProtocol]
   apply k_induction 4
   intro σ
-  simp only [dwp'_eq_wp, dwp.prob, dwp.seq, dwp.assign, Pi.add_apply, mk_comp_mk, coe_mk,
-    Function.comp_apply, Ψ, Function.iterate_succ', Function.iterate_zero, CompTriple.comp_eq,
-    Pi.mul_apply, BExpr.iver, Pi.top_apply, ite_mul, one_mul, zero_mul, Pi.inf_apply, BExpr.not,
-    not_and, not_lt]
+  simp only [dwp.prob, dwp.seq, dwp.assign, Pi.add_apply, mk_comp_mk, coe_mk, Function.comp_apply,
+    Ψ, Function.iterate_succ', Function.iterate_zero, CompTriple.comp_eq, Pi.mul_apply, BExpr.iver,
+    Pi.top_apply, ite_mul, one_mul, zero_mul, Pi.inf_apply, BExpr.not, not_and, not_lt]
   simp only [ProbExp.pick, States.subst, ↓reduceIte, String.reduceEq, Nat.cast_add, Nat.cast_one,
     Pi.add_apply, Pi.mul_apply, p9_10th_inv, mul_ite, mul_zero, Pi.sub_apply, Pi.one_apply,
     nonpos_iff_eq_zero, zero_add, Nat.reduceAdd]
