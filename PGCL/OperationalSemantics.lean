@@ -18,10 +18,13 @@ noncomputable def cost_t : Exp ϖ →o Termination × States ϖ → ENNReal :=
     · rfl⟩
 
 @[simp]
-noncomputable def cost_p : pGCL ϖ × States ϖ → ENNReal
+noncomputable def cost_p₀ : pGCL ϖ × States ϖ → ENNReal
   | conf₀[tick(~ r), σ] => r σ
-  | conf₀[~c' ; ~_, σ] => cost_p conf₀[~c', σ]
+  | conf₀[~c' ; ~_, σ] => cost_p₀ conf₀[~c', σ]
   | _ => 0
+@[simp]
+noncomputable def cost_p : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal :=
+  ⟨fun X c ↦ cost_p₀ c, fun _ _ _ ↦ by rfl⟩
 
 noncomputable instance instSSS :
     SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
@@ -198,10 +201,8 @@ open scoped Classical in
 open scoped Classical in
 @[simp] theorem aς.nonDet : instSSS.aς f (.nonDet C₁ C₂) = f C₁ ⊔ f C₂ := by
   ext X σ
-  simp only [aς, SmallStepSemantics.cost_p, act_eq_SmallStep_act, Set.mem_image, psucc, r,
-    Set.coe_setOf, Set.mem_setOf_eq, SmallStepSemantics.cost_t, cost_t, iSup_exists, iSup_and,
-    OrderHom.coe_mk, cost_p, SmallStep.act_nonDet, Set.mem_insert_iff, Set.mem_singleton_iff,
-    zero_add, OrderHom.coe_sup, Pi.sup_apply]
+  simp only [aς, SmallStepSemantics.cost_p, cost_p, OrderHom.coe_mk, act_eq_SmallStep_act,
+    Set.mem_image, psucc, iSup_exists, iSup_and, cost_p₀, SmallStep.act_nonDet, zero_add]
   apply le_antisymm
   · simp only [iSup_le_iff]
     rintro α α' (⟨⟨_⟩⟩ | ⟨⟨_⟩⟩) ⟨_⟩
