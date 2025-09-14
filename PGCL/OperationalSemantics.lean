@@ -201,8 +201,9 @@ open scoped Classical in
 open scoped Classical in
 @[simp] theorem aς.nonDet : instSSS.aς f (.nonDet C₁ C₂) = f C₁ ⊔ f C₂ := by
   ext X σ
-  simp only [aς, SmallStepSemantics.cost_p, cost_p, OrderHom.coe_mk, act_eq_SmallStep_act,
-    Set.mem_image, psucc, iSup_exists, iSup_and, cost_p₀, SmallStep.act_nonDet, zero_add]
+  simp only [aς, aΦ', cost, SmallStepSemantics.cost_p, cost_p, OrderHom.coe_mk,
+    act_eq_SmallStep_act, Set.mem_image, psucc, r, Set.coe_setOf, iSup_exists, iSup_and, cost_p₀,
+    SmallStep.act_nonDet, zero_add]
   apply le_antisymm
   · simp only [iSup_le_iff]
     rintro α α' (⟨⟨_⟩⟩ | ⟨⟨_⟩⟩) ⟨_⟩
