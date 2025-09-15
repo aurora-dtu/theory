@@ -130,8 +130,10 @@ theorem iInf_EC_eq_specialized (s : State) (s' : M.succs_univ s) :
   (le_iInf_comp _ _).antisymm (le_iInf (iInf_le_of_le ⟨· ∘ .tail, by simp⟩ (EC_le (by simp_all))))
 
 theorem iInf_EC_succ_eq_dΦ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 (n + 1) = M.dΦ c (⨅ 𝒮, EC c 𝒮 n) :=
-  by ext; simp [EC_succ, dΦ, Φf, ← ENNReal.add_iInf, iInf_EC_eq_specialized, ENNReal.mul_iInf,
-      tsum_iInf_EC_comm, iInf_scheduler_eq_iInf_act_iInf_scheduler]
+  by ext; simp only [EC_succ, _root_.iInf_apply, Pi.add_apply, ← ENNReal.add_iInf,
+    iInf_scheduler_eq_iInf_act_iInf_scheduler, dΦ, Φ, Φf, coe_mk, Optimization.sOpt_eq_opt,
+    Optimization.opt, iInf_EC_eq_specialized, P_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf,
+    tsum_iInf_EC_comm]
 
 theorem iInf_EC_eq_dΦ [M.FiniteBranching] : ⨅ 𝒮, EC c 𝒮 n = (M.dΦ c)^[n] ⊥ := by
   induction n with
@@ -177,9 +179,12 @@ theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp (
   apply le_antisymm
   · apply lfp_le
     nth_rw 2 [← map_lfp]
-    simp only [Φℒ, dΦ, coe_mk]
+    simp only [Φℒ, dΦ, Φ, coe_mk, Optimization.sOpt_eq_opt]
     congr! 2 with s
-    exact M.ℒ'_spec c s |>.symm
+    simp [Optimization.opt]
+    have := M.ℒ'_spec c s
+    simp only [iInf_subtype] at this ⊢
+    exact this.symm
   · refine lfp_le _ fun s ↦ ?_
     nth_rw 2 [← map_lfp_Φℒ]
     apply M.dΦ_le_Φℒ

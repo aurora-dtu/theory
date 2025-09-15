@@ -7,15 +7,19 @@ namespace MDP
 variable {State : Type*} {Act : Type*}
 variable {M : MDP State Act}
 
-theorem aΦ_ωScottContinuous : ωScottContinuous (M.aΦ c) := by
+open scoped Optimization.Notation
+
+theorem Φ_𝒜_ωScottContinuous : ωScottContinuous (M.Φ 𝒜 c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
-  simp [aΦ, Φf_ωScottContinuous.map_ωSup]
-  simp [ωSup, ← ENNReal.add_iSup]
+  simp [Φ, Φf_ωScottContinuous.map_ωSup]
+  simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt, iSup_subtype']
   congr
   rw [iSup_comm]
+theorem aΦ_ωScottContinuous : ωScottContinuous (M.aΦ c) := Φ_𝒜_ωScottContinuous
 
-theorem lfp_aΦ_eq_iSup_aΦ : lfp (M.aΦ c) = ⨆ (n : ℕ), (aΦ c)^[n] ⊥ :=
+theorem lfp_Φ_𝒜_eq_iSup_Φ_𝒜 : lfp (M.Φ 𝒜 c) = ⨆ (n : ℕ), (aΦ c)^[n] ⊥ :=
   fixedPoints.lfp_eq_sSup_iterate _ M.aΦ_ωScottContinuous
+theorem lfp_aΦ_eq_iSup_aΦ : lfp (M.aΦ c) = ⨆ (n : ℕ), (aΦ c)^[n] ⊥ := lfp_Φ_𝒜_eq_iSup_Φ_𝒜
 
 theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
       ∑' s' : M.succs_univ s, ⨆ n, ⨆ 𝒮, M.P s α s' * M.EC c 𝒮 n s'
@@ -47,13 +51,13 @@ theorem iSup_iSup_EC_eq_lfp_aΦ [DecidableEq State] :
     | succ n ih =>
       simp [EC_succ]
       apply le_trans (fun s ↦ ?_) h
-      simp [aΦ, Φf]
+      simp [aΦ, Φ, Φf, Optimization.sOpt, iSup_subtype']
       gcongr
       apply le_iSup_of_le ⟨𝒮 {s}, by simp⟩
       gcongr
       apply ih _ h
   · apply lfp_le
-    simp [aΦ]
+    simp [aΦ, Φ, Optimization.sOpt, iSup_subtype']
     intro s
     simp [ENNReal.add_iSup]
     intro α hα
