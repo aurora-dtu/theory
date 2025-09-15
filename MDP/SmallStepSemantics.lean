@@ -15,9 +15,9 @@ inductive Conf (P S T : Type*) where
 
 class SmallStepSemantics (P S T A : Type*) [Nonempty A] where
   r : P × S → A → ENNReal → (P ⊕ T) × S → Prop
-  h₀ : ∀ {c α p c'}, r c α p c' → ¬p = 0
-  h₁ : ∀ {c α p₀ c'}, r c α p₀ c' → ∑' (b) (p : { p // r c α p b }), p.val = 1
-  h₂ : ∀ s, ∃ p a x, r s a p x
+  relation_p_pos : ∀ {c α p c'}, r c α p c' → ¬p = 0
+  succs_sum_to_one : ∀ {c α p₀ c'}, r c α p₀ c' → ∑' (b) (p : { p // r c α p b }), p.val = 1
+  progress : ∀ s, ∃ p a x, r s a p x
 
   cost_p : 𝔼[S] →o P × S → ENNReal
   cost_t : 𝔼[S] →o T × S → ENNReal
@@ -26,7 +26,8 @@ namespace SmallStepSemantics
 
 variable {P S A T : Type*} [Nonempty A] [𝕊 : SmallStepSemantics P S T A]
 
-noncomputable instance : Inhabited A := Classical.inhabited_of_nonempty ‹_›
+noncomputable
+ instance : Inhabited A := Classical.inhabited_of_nonempty ‹_›
 
 @[grind]
 inductive rr : Conf P S T → Option A → ENNReal → Conf P S T → Prop where
@@ -56,17 +57,18 @@ theorem rr_prog :
     ↔ ∃ c'' α', 𝕊.r (C, σ) α' p c'' ∧ conf₂_to_conf c'' = c' ∧ some α' = α := by grind
 
 @[grind]
-theorem h₀' : ∀ {c α p c'}, 𝕊.rr c α p c' → ¬p = 0 := by
-  intro C α p c'; rintro (_ | _) <;> (try simp_all) <;> try apply 𝕊.h₀ ‹_›
+theorem relation_p_pos' : ∀ {c α p c'}, 𝕊.rr c α p c' → ¬p = 0 := by
+  intro C α p c'; rintro (_ | _) <;> (try simp_all) <;> try apply 𝕊.relation_p_pos ‹_›
 @[grind]
-theorem h₁' : ∀ {c α p₀ c'}, 𝕊.rr c α p₀ c' → ∑' (b) (p : { p // 𝕊.rr c α p b }), p.val = 1 := by
+theorem succs_tum_to_one' :
+    ∀ {c α p₀ c'}, 𝕊.rr c α p₀ c' → ∑' (b) (p : { p // 𝕊.rr c α p b }), p.val = 1 := by
   intro C α p c'; rintro (_ | _)
   · rw [tsum_eq_single .bot, tsum_eq_single ⟨1, by grind⟩] <;>
       (try simp only [ENNReal.tsum_eq_zero]) <;> grind
   · rw [tsum_eq_single .bot, tsum_eq_single ⟨1, by grind⟩] <;>
       (try simp only [ENNReal.tsum_eq_zero]) <;> grind
   · rename_i h
-    conv => right; rw [← 𝕊.h₁ h]
+    conv => right; rw [← 𝕊.succs_sum_to_one h]
     apply tsum_eq_tsum_of_ne_zero_bij
       (fun ⟨x, _⟩ ↦ conf₂_to_conf x)
     · intro _; grind
@@ -79,7 +81,7 @@ theorem h₁' : ∀ {c α p₀ c'}, 𝕊.rr c α p₀ c' → ∑' (b) (p : { p /
         congr! <;> grind
       · congr! <;> grind
   · rename_i h
-    conv => right; rw [← 𝕊.h₁ h]
+    conv => right; rw [← 𝕊.succs_sum_to_one h]
     apply tsum_eq_tsum_of_ne_zero_bij
       (fun ⟨x, _⟩ ↦ conf₂_to_conf x)
     · intro ⟨_, _⟩ ⟨_, _⟩; grind
@@ -91,25 +93,16 @@ theorem h₁' : ∀ {c α p₀ c'}, 𝕊.rr c α p₀ c' → ∑' (b) (p : { p /
         congr! <;> grind
       · congr! <;> grind
 
-theorem h₂' : ∀ s, ∃ p a x, 𝕊.rr s a p x := by
+theorem progress' : ∀ s, ∃ p a x, 𝕊.rr s a p x := by
   rintro (⟨t, σ⟩ | ⟨C, σ⟩ | _)
   · use 1, default, .bot; grind
-  · have ⟨p, α, c', h⟩ := 𝕊.h₂ (C, σ)
+  · have ⟨p, α, c', h⟩ := 𝕊.progress (C, σ)
     use p, α, conf₂_to_conf c'
     grind
   · use 1, default, .bot; grind
-theorem h₃ : ∀ {t σ c'}, (∃ α p, 𝕊.rr (Conf.term t σ) α p c') ↔ c' = Conf.bot := by
-  intros
-  constructor
-  · grind
-  · rintro ⟨_⟩; use none, 1; grind
-theorem h₄ : ∀ {c'}, (∃ α p, 𝕊.rr Conf.bot α p c') ↔ c' = Conf.bot := by
-  intro
-  constructor
-  · grind
-  · rintro ⟨_⟩; use none, 1; grind
 
-noncomputable def mdp : MDP (Conf P S T) (Option A) := MDP.ofRelation 𝕊.rr 𝕊.h₀' 𝕊.h₁' 𝕊.h₂'
+noncomputable def mdp : MDP (Conf P S T) (Option A) :=
+  MDP.ofRelation 𝕊.rr 𝕊.relation_p_pos' 𝕊.succs_tum_to_one' 𝕊.progress'
 
 def psucc (C : P) (σ : S) (α : A) : Set (ENNReal × (P ⊕ T) × S) := {s | 𝕊.r (C, σ) α s.fst s.snd}
 
@@ -224,40 +217,65 @@ theorem tsum_succs_univ' (f : 𝕊.mdp.succs_univ c → ENNReal) :
   apply tsum_eq_tsum_of_ne_zero_bij (↑↑·) _ _ <;> try simp_all
   intro ⟨_, _⟩ ⟨_, _⟩; simp; apply SetCoe.ext
 
-@[simp]
-noncomputable def dΦ' (c : 𝕊.mdp.Costs) (C : Conf P S T) (f : 𝕊.mdp.Costs) : ENNReal :=
-    c C + ⨅ α ∈ 𝕊.act C, match C with
-        | .prog C σ =>
-          match α with
-          | some α => ∑' (s : 𝕊.psucc C σ α),
-            s.val.fst *
-              match s.val.snd with
-              | (.inl C', σ') => f (.prog C' σ') | (.inr t, σ') => f (.term t σ')
-          | none => 0
-        | .term _ _ | .bot => match α with | some _ => 0 | none => f .bot
+inductive Optimization where | Angelic | Demonic
+
+namespace Optimization
+
+namespace Notation
+
+scoped notation "𝒜" => Optimization.Angelic
+scoped notation "𝒟" => Optimization.Demonic
+
+end Notation
+
+open scoped Notation
+
+noncomputable def act (O : Optimization) (C : Conf P S T) :
+    (Option A → ENNReal) →o ENNReal :=
+  match O with
+  | 𝒜 => ⟨fun f ↦ ⨆ α ∈ 𝕊.act C, f α, fun _ _ h ↦ by simp only; gcongr; apply h⟩
+  | 𝒟 => ⟨fun f ↦ ⨅ α ∈ 𝕊.act C, f α, fun _ _ h ↦ by simp only; gcongr; apply h⟩
+
+theorem act_gcongr {O : Optimization} {C : Conf P S T} {f₁ f₂ : Option A → ENNReal}
+    (h : ∀ α, f₁ α ≤ f₂ α) : O.act C f₁ ≤ O.act C f₂ := by
+  gcongr
+  apply h
+
+end Optimization
+
+open scoped Optimization.Notation
 
 @[simp]
+noncomputable def Φ' (O : Optimization) (c : 𝕊.mdp.Costs) (C : Conf P S T) (f : 𝕊.mdp.Costs) :
+    ENNReal :=
+  c C + O.act C fun α ↦ match C with
+      | .prog C σ =>
+        match α with
+        | some α => ∑' (s : 𝕊.psucc C σ α),
+          s.val.fst *
+            match s.val.snd with
+            | (.inl C', σ') => f (.prog C' σ') | (.inr t, σ') => f (.term t σ')
+        | none => 0
+      | .term _ _ | .bot => match α with | some _ => 0 | none => f .bot
+
+@[simp, deprecated "Φ' 𝒟" (since := "today")]
+noncomputable def dΦ' (c : 𝕊.mdp.Costs) (C : Conf P S T) (f : 𝕊.mdp.Costs) : ENNReal :=
+  𝕊.Φ' 𝒟 c C f
+
+@[simp, deprecated "Φ' 𝒜" (since := "today")]
 noncomputable def aΦ' (c : 𝕊.mdp.Costs) (C : Conf P S T) (f : 𝕊.mdp.Costs) : ENNReal :=
-    c C + ⨆ α ∈ 𝕊.act C, match C with
-        | .prog C σ =>
-          match α with
-          | some α => ∑' (s : 𝕊.psucc C σ α),
-            s.val.fst *
-              match s.val.snd with
-              | (.inl C', σ') => f (.prog C' σ') | (.inr t, σ') => f (.term t σ')
-          | none => 0
-        | .term _ _ | .bot => match α with | some _ => 0 | none => f .bot
+  𝕊.Φ' 𝒜 c C f
 
 @[simp]
 theorem dΦ_simp {C : Conf P S T} :
-    𝕊.mdp.dΦ c f C = 𝕊.dΦ' c C f
+    𝕊.mdp.dΦ c f C = 𝕊.Φ' 𝒟 c C f
 := by
-  simp [MDP.dΦ, MDP.act, MDP.Φf, iInf_subtype, tsum_succs_univ', -dΦ']
-  simp [dΦ']
+  simp [MDP.dΦ, MDP.act, MDP.Φf, iInf_subtype, tsum_succs_univ', -dΦ', -Φ']
+  simp [Φ', Optimization.act]
   congr! with α hα
   · split <;> split <;> simp [mdp]
-    · rename_i C σ _ _ α _ _
-      have := please (A:=A) (C:=C) (σ:=σ) (α:=α) (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 *
+    · rename_i C σ _ α
+      have := 𝕊.please (A:=A) (C:=C) (σ:=σ) (α:=α) (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 *
         match s.2 with
         | (Sum.inl C', σ') => f (.prog C' σ')
         | (Sum.inr t, σ') => f (.term t σ'))
@@ -278,14 +296,14 @@ theorem dΦ_simp {C : Conf P S T} :
     grind
 @[simp]
 theorem aΦ_simp {C : Conf P S T} :
-    𝕊.mdp.aΦ c f C = 𝕊.aΦ' c C f
+    𝕊.mdp.aΦ c f C = 𝕊.Φ' 𝒜 c C f
 := by
-  simp [MDP.aΦ, MDP.act, MDP.Φf, iSup_subtype, tsum_succs_univ', -aΦ']
-  simp [aΦ']
+  simp [MDP.aΦ, MDP.act, MDP.Φf, iSup_subtype, tsum_succs_univ', -aΦ', -Φ']
+  simp [Φ', Optimization.act]
   congr! with α hα
   · split <;> split <;> simp [mdp]
-    · rename_i C σ _ _ α _ _
-      have := please (A:=A) (C:=C) (σ:=σ) (α:=α) (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 *
+    · rename_i C σ _ α
+      have := 𝕊.please (A:=A) (C:=C) (σ:=σ) (α:=α) (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 *
         match s.2 with
         | (Sum.inl C', σ') => f (.prog C' σ')
         | (Sum.inr t, σ') => f (.term t σ'))
@@ -320,7 +338,7 @@ theorem succs_univ_prog :
 theorem dΦ_bot_eq : (𝕊.mdp.dΦ (𝕊.cost X))^[n] ⊥ .bot = 0 := by
   induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ']
   apply le_antisymm
-  · have ⟨p, α, C', h⟩ := 𝕊.h₂' Conf.bot
+  · have ⟨p, α, C', h⟩ := 𝕊.progress' Conf.bot
     apply iInf_le_of_le α
     apply iInf_le_of_le (by simp [act]; grind)
     simp only [nonpos_iff_eq_zero]
@@ -333,7 +351,7 @@ theorem dΦ_term_eq :
   nth_rw 2 [← add_zero (𝕊.cost X (Conf.term t σ))]
   congr
   apply le_antisymm
-  · have ⟨p, α, C', h⟩ := 𝕊.h₂' (Conf.term t σ)
+  · have ⟨p, α, C', h⟩ := 𝕊.progress' (Conf.term t σ)
     apply iInf_le_of_le α
     apply iInf_le_of_le (by simp [act]; grind)
     simp
@@ -342,12 +360,33 @@ theorem dΦ_term_eq :
 
 @[simp]
 theorem aΦ_bot_eq : (𝕊.mdp.aΦ (𝕊.cost X))^[n] ⊥ .bot = 0 := by
-  induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', act]
+  induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', act, Optimization.act]
 attribute [-simp] dΦ_simp in
 @[simp]
 theorem aΦ_term_eq :
     (𝕊.mdp.aΦ (𝕊.cost X))^[n] ⊥ (.term t σ) = if n = 0 then 0 else 𝕊.cost X (Conf.term t σ) := by
-  induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', act]
+  induction n <;> simp_all [-Function.iterate_succ, Function.iterate_succ', act, Optimization.act]
+
+noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
+  ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦ 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (fun s' ↦
+    match s' with
+    | .prog C' σ' => Y C' X σ'
+    | .term t σ' => 𝕊.cost_t X (t, σ')
+    | .bot => 0),
+  fun a b hab σ ↦ by
+    simp
+    gcongr
+    · apply 𝕊.cost_mono hab
+    · intro α; simp only
+      split <;> gcongr; split
+      · apply (Y _).mono hab
+      · apply 𝕊.cost_t.mono hab⟩),
+  fun a b hab C X σ ↦ by
+    simp
+    gcongr; intro α; simp only
+    split <;> gcongr; split
+    · apply hab
+    · rfl⟩
 
 noncomputable def dς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
@@ -358,7 +397,8 @@ noncomputable def dς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
         simp
         gcongr
         · apply 𝕊.cost_mono h
-        · split <;> gcongr; split
+        · intro α; simp only
+          split <;> gcongr; split
           · apply (Y _).mono h
           · apply 𝕊.cost_mono h⟩),
     by
@@ -367,47 +407,13 @@ noncomputable def dς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
       rintro (_ | ⟨_ , _⟩) <;> try rfl
       apply_assumption⟩
 
-noncomputable def dς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
-  ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦ 𝕊.dΦ' (𝕊.cost X) (.prog C σ) (fun s' ↦
-    match s' with
-    | .prog C' σ' => Y C' X σ'
-    | .term t σ' => 𝕊.cost_t X (t, σ')
-    | .bot => 0),
-  fun a b hab σ ↦ by
-    simp
-    gcongr
-    · apply 𝕊.cost_mono hab
-    · split <;> gcongr; split
-      · apply (Y _).mono hab
-      · apply 𝕊.cost_t.mono hab⟩),
-  fun a b hab C X σ ↦ by
-    simp
-    gcongr; split <;> gcongr; split
-    · apply hab
-    · rfl⟩
+noncomputable abbrev dς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] := 𝕊.ς 𝒟
 
 theorem dς_eq_dς' : 𝕊.dς = 𝕊.dς' := by
   ext Y C X σ
-  simp [dς, dς', cost]
+  simp [dς, ς, dς', cost]
 
-noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
-  ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦ 𝕊.aΦ' (𝕊.cost X) (.prog C σ) (fun s' ↦
-    match s' with
-    | .prog C' σ' => Y C' X σ'
-    | .term t σ' => 𝕊.cost_t X (t, σ')
-    | .bot => 0),
-  fun a b hab σ ↦ by
-    simp
-    gcongr
-    · apply 𝕊.cost_mono hab
-    · split <;> gcongr; split
-      · apply (Y _).mono hab
-      · apply 𝕊.cost_t.mono hab⟩),
-  fun a b hab C X σ ↦ by
-    simp
-    gcongr; split <;> gcongr; split
-    · apply hab
-    · rfl⟩
+noncomputable def aς : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] := 𝕊.ς 𝒜
 
 noncomputable def aς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦
@@ -418,7 +424,8 @@ noncomputable def aς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
         simp
         gcongr
         · apply 𝕊.cost_mono h
-        · split <;> gcongr; split
+        · intro α; simp only
+          split <;> gcongr; split
           · apply (Y _).mono h
           · apply 𝕊.cost_mono h⟩),
     by
@@ -429,7 +436,7 @@ noncomputable def aς' : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o �
 
 theorem aς_eq_aς' : 𝕊.aς = 𝕊.aς' := by
   ext Y C X σ
-  simp [aς, aς', cost]
+  simp [aς, ς, aς', cost]
 
 theorem tsum_ite_left {α β : Type*} [AddCommMonoid α] [TopologicalSpace α] (P : Prop) [Decidable P]
     (x : β → α) : (∑' (b : β), if P then x b else 0) = if P then ∑' (b : β), x b else 0 := by
@@ -537,7 +544,7 @@ theorem dς_dop_eq_dop : 𝕊.dς 𝕊.dop = 𝕊.dop := by
   ext C X σ
   simp [dop]
   rw [← map_lfp]
-  simp [dς, OrderHom.coe_mk, dΦ_simp, cost, dop]
+  simp [dς, ς, OrderHom.coe_mk, dΦ_simp, cost, dop]
 
 theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.dς b ≤ b) : 𝕊.dop ≤ b := by
   rw [dop_eq_iSup_dΦ, iSup_le_iff]
@@ -546,8 +553,8 @@ theorem dop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.dς b ≤ b) : �
   | zero => intros _ _ _; simp
   | succ 𝕊 ih =>
     refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', dς, -Function.iterate_succ, cost]
-    gcongr with α hα
+    simp [Function.iterate_succ', dς, ς, -Function.iterate_succ, cost]
+    gcongr; intro α; simp only
     rcases α with (_ | α)
     · rfl
     · simp only
@@ -571,7 +578,7 @@ theorem dop_eq_iter : 𝕊.dop = ⨆ n, (𝕊.dς)^[n] ⊥ := by
       nth_rw 1 [dΦ_simp]
       nth_rw 1 [dς']
       simp [cost]
-      gcongr with α hα s
+      gcongr; intro α; simp only
       split <;> gcongr; split
       · apply ih
       · split_ifs <;> simp
@@ -586,7 +593,7 @@ theorem dop_eq_iter : 𝕊.dop = ⨆ n, (𝕊.dς)^[n] ⊥ := by
       nth_rw 1 [dΦ_simp]
       nth_rw 1 [dς']
       simp [cost]
-      gcongr with α hα s
+      gcongr; intro α; simp only
       split <;> gcongr; split
       · apply ih
       · rename_i t σ'
@@ -657,8 +664,7 @@ theorem aς_aop_eq_aop : 𝕊.aς 𝕊.aop = 𝕊.aop := by
   ext C X σ
   simp [aop]
   rw [← map_lfp]
-  simp only [aς, OrderHom.coe_mk, aΦ_simp, cost, aΦ', aop]
-  congr!
+  simp only [aς, aΦ_simp, Φ', cost]
   simp; rfl
 
 theorem aop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.aς b ≤ b) : 𝕊.aop ≤ b := by
@@ -668,8 +674,8 @@ theorem aop_isLeast (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.aς b ≤ b) : �
   | zero => intros _ _ _; simp
   | succ 𝕊 ih =>
     refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', aς, -Function.iterate_succ, cost]
-    gcongr with α hα
+    simp [Function.iterate_succ', aς, ς, -Function.iterate_succ, cost]
+    gcongr; intro α; simp only
     rcases α with (_ | α)
     · rfl
     · simp only
@@ -693,7 +699,7 @@ theorem aop_eq_iter : 𝕊.aop = ⨆ n, (𝕊.aς)^[n] ⊥ := by
       nth_rw 1 [aΦ_simp]
       nth_rw 1 [aς']
       simp [cost]
-      gcongr with α hα s
+      gcongr; intro α; simp only
       split <;> gcongr; split
       · apply ih
       · split_ifs <;> simp
@@ -708,7 +714,7 @@ theorem aop_eq_iter : 𝕊.aop = ⨆ n, (𝕊.aς)^[n] ⊥ := by
       nth_rw 1 [aΦ_simp]
       nth_rw 1 [aς']
       simp [cost]
-      gcongr with α hα s
+      gcongr; intro α; simp only
       split <;> gcongr; split
       · apply ih
       · induction n with
@@ -750,7 +756,8 @@ theorem dop_le_seq [𝕊.FiniteBranching] (seq : P → P → P) (after : P → (
     rw [Function.iterate_succ', Function.comp_apply]
     nth_rw 1 [dς]
     nth_rw 2 [dς]
-    simp [h_cost_seq, cost, h_seq_act]
+    rw [ς]
+    simp [h_cost_seq, cost, h_seq_act, Optimization.act]
     refine add_le_add (le_refl _) (iInf₂_mono fun α hα ↦ ?_)
     rcases α with (_ | α)
     · simp [act] at hα
@@ -802,7 +809,8 @@ theorem aop_le_seq (seq : P → P → P) (after : P → (P ⊕ T) × S → (P �
     rw [Function.iterate_succ', Function.comp_apply]
     nth_rw 1 [aς]
     nth_rw 2 [aς]
-    simp [h_cost_seq, cost, h_seq_act]
+    rw [ς]
+    simp [h_cost_seq, cost, h_seq_act, Optimization.act]
     refine add_le_add (le_refl _) (iSup₂_mono fun α hα ↦ ?_)
     rcases α with (_ | α)
     · simp [act] at hα

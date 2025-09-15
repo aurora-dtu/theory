@@ -26,12 +26,11 @@ noncomputable def cost_p₀ : pGCL ϖ × States ϖ → ENNReal
 noncomputable def cost_p : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal :=
   ⟨fun X c ↦ cost_p₀ c, fun _ _ _ ↦ by rfl⟩
 
-noncomputable instance instSSS :
-    SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
+noncomputable instance instSSS : SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
   r := SmallStep
-  h₀ := SmallStep.p_ne_zero
-  h₁ := SmallStep.sums_to_one
-  h₂ := SmallStep.progress
+  relation_p_pos := SmallStep.p_ne_zero
+  succs_sum_to_one := SmallStep.sums_to_one
+  progress := SmallStep.progress
   cost_t
   cost_p
 
