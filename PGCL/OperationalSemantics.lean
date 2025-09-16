@@ -68,9 +68,9 @@ theorem act_seq :
 attribute [simp] iInf_and
 attribute [simp] iSup_and
 
-open MDP (Optimization)
-
 variable {b : BExpr ϖ} [DecidablePred b] {O : Optimization}
+
+open scoped Optimization.Notation
 
 @[simp] theorem ς.skip : 𝕊.ς O f skip = ⟨(· ·), fun ⦃_ _⦄ a ↦ a⟩ := by
   ext X σ
@@ -150,16 +150,7 @@ theorem tsum_succs_univ' {α : Act} (f : 𝕊.psucc C σ α → ENNReal) :
   symm
   apply tsum_eq_tsum_of_ne_zero_bij (↑↑·) _ _ (by simp_all)
   · intro ⟨_, _⟩ ⟨_, _⟩; simp; apply SetCoe.ext
-  · simp_all--; intro _ α p _ _; use α, p
-
-noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ :=
-  match O with
-  | .Angelic => pGCL.awp
-  | .Demonic => pGCL.dwp
-
-@[simp]
-theorem wp_seq {C₁ C₂ : pGCL ϖ} : wp O (.seq C₁ C₂) = (wp O C₁).comp (wp O C₂) := by
-   cases O <;> simp [wp]
+  · simp_all
 
 theorem ς.seq {C₁ C₂ : pGCL ϖ}
     (ih₁ : 𝕊.ς O (wp O) C₁ = C₁.wp O) :
@@ -170,10 +161,8 @@ theorem ς.seq {C₁ C₂ : pGCL ϖ}
   clear α'
   simp [psucc, r]
   apply C₂.tsum_after_eq' <;> simp [pGCL.after]
-  rintro p C' σ' (⟨C', h, ⟨_⟩⟩ | ⟨h, ⟨_⟩⟩) hp h₀
-  · simp_all
-  · simp_all
-    use .term, σ'
+  rintro p C' σ' (⟨C', h, ⟨_⟩⟩ | ⟨h, ⟨_⟩⟩) hp h₀ <;> simp_all
+  use .term, σ'
 
 theorem op_le_seq :
       𝕊.op O C ∘ 𝕊.op O C'
@@ -189,21 +178,16 @@ open scoped Classical in
 theorem wp_le_op.loop (ih : C.wp O ≤ 𝕊.op O C) :
     pgcl { while ~b { ~C } }.wp O ≤ 𝕊.op O (.loop b C (ϖ:=ϖ)) := by
   intro X
-  cases O <;> simp [wp] at ih ⊢
-  -- TOOD: unify proofs
-  all_goals
-    apply OrderHom.lfp_le
-    nth_rw 2 [← ς_op_eq_op]
-    intro σ
-    simp [ς.loop]
-    gcongr
-    apply le_trans (fun _ ↦ ih _) op_le_seq
+  apply OrderHom.lfp_le
+  nth_rw 2 [← ς_op_eq_op]
+  intro σ
+  simp [ς.loop]
+  gcongr
+  apply le_trans (fun _ ↦ ih _) op_le_seq
 
 noncomputable instance instET : 𝕊.ET O (wp O (ϖ:=ϖ)) where
   et_le_op := by
     intro C; induction C with try simp_all; (try rw [← ς_op_eq_op]; cases O <;> simp [wp] <;> done)
-    | assert b =>
-      rw [← ς_op_eq_op]; cases O <;> simp [wp] <;> rfl
     | seq C₁ C₂ ih₁ ih₂ =>
       apply le_trans _ op_le_seq
       intro σ
@@ -211,38 +195,25 @@ noncomputable instance instET : 𝕊.ET O (wp O (ϖ:=ϖ)) where
       exact OrderHom.apply_mono ih₁ (ih₂ σ)
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X
-      cases O
-      all_goals
-        simp [wp]
-        rw [← ς_op_eq_op]
-        simp
-        gcongr <;> apply_assumption
+      rw [← ς_op_eq_op]; simp
+      gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
       intro X
       rw [← ς_op_eq_op]; simp
-      cases O
-      · simp [wp, Optimization.opt₂]
-        exact ⟨le_sup_of_le_left (ih₁ X), le_sup_of_le_right (ih₂ X)⟩
-      · simp [wp, Optimization.opt₂]
-        exact ⟨inf_le_of_left_le (ih₁ X), inf_le_of_right_le (ih₂ X)⟩
+      gcongr <;> apply_assumption
     | loop b C' ih => apply wp_le_op.loop ih
   et_prefixed_point := by
     apply le_of_eq
-    funext C; induction C with try simp_all [ς.seq]; cases O <;> simp_all [wp, awp, dwp] <;> try rfl
-    | seq C₁ C₂ ih₁ ih₂ => rw [ς.seq ih₁]; simp
+    funext C; induction C with try simp_all [ς.seq] <;> try rfl
     | loop b C' ih =>
       rw [ς.loop]
       ext
-      cases O
-      · simp [wp] at ih ⊢
-        nth_rw 2 [← awp_fp]
-        rfl
-      · simp [wp] at ih ⊢
-        nth_rw 2 [← dwp_fp]
-        rfl
+      simp
+      nth_rw 2 [← wp_fp]
+      rfl
 
-example : dwp (ϖ:=ϖ) = 𝕊.op .Demonic := by rw [← instET.et_eq_op]; rfl
-example : awp (ϖ:=ϖ) = 𝕊.op .Angelic := by rw [← instET.et_eq_op]; rfl
+example : dwp (ϖ:=ϖ) = 𝕊.op .Demonic := by rw [← instET.et_eq_op]
+example : awp (ϖ:=ϖ) = 𝕊.op .Angelic := by rw [← instET.et_eq_op]
 
 /-- info: 'pGCL.instET' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

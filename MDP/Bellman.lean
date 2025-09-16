@@ -1,4 +1,5 @@
 import MDP.Paths.Cost
+import MDP.Optimization
 
 open OmegaCompletePartialOrder OrderHom
 
@@ -25,68 +26,6 @@ variable {M : MDP State Act}
 noncomputable def Φf (s : State) (α : Act) : M.Costs →o ENNReal :=
   ⟨fun v ↦ ∑' s' : M.succs_univ s, M.P s α s' * v s', fun _ _ h ↦ by simp; gcongr; apply h⟩
 
-inductive Optimization where | Angelic | Demonic
-
-namespace Optimization
-
-namespace Notation
-
-scoped notation "𝒜" => Optimization.Angelic
-scoped notation "𝒟" => Optimization.Demonic
-
-end Notation
-
-open scoped Notation
-
-variable {ι α : Type*} [CompleteLattice α] (O : Optimization)
-
-def opt₂ (a b : α) : α :=
-  match O with
-    | 𝒜 => a ⊔ b
-    | 𝒟 => a ⊓ b
-
-def opt : (ι → α) →o α :=
-  match O with
-    | 𝒜 => ⟨fun f ↦ ⨆ α, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
-    | 𝒟 => ⟨fun f ↦ ⨅ α, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
-
-def sOpt (S : Set ι) : (ι → α) →o α :=
-  match O with
-    | 𝒜 => ⟨fun f ↦ ⨆ α ∈ S, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
-    | 𝒟 => ⟨fun f ↦ ⨅ α ∈ S, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
-
-theorem sOpt_eq_opt (S : Set ι) (f : ι → α) : O.sOpt S f = O.opt fun (a : S) ↦ f a := by
-  simp [sOpt, opt]
-  split <;> simp [iSup_subtype', iInf_subtype']
-
-@[simp]
-theorem sOpt_singleton {f : ι → α} : O.sOpt {i} f = f i := by
-  simp [sOpt]; split <;> rfl
-@[simp]
-theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt₂ (f a) (f b) := by
-  simp [sOpt, opt₂]; split <;> simp
-  · apply le_antisymm
-    · simp
-    · simp
-      constructor
-      · apply le_iSup_of_le a; simp
-      · apply le_iSup_of_le b; simp
-  · apply le_antisymm
-    · simp
-      constructor
-      · apply iInf_le_of_le a; simp
-      · apply iInf_le_of_le b; simp
-    · simp
-
-@[simp]
-theorem opt₂_apply (f g : γ → α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
-@[simp]
-theorem opt₂_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
-
-end Optimization
-
 open scoped Optimization.Notation
 
 /-- The Bellman operator. -/
@@ -99,7 +38,7 @@ noncomputable abbrev dΦ (c : M.Costs) : M.Costs →o M.Costs :=
   M.Φ 𝒟 c
 
 /-- The _angelic_ Bellman operator. -/
-noncomputable def aΦ (c : M.Costs) : M.Costs →o M.Costs :=
+noncomputable abbrev aΦ (c : M.Costs) : M.Costs →o M.Costs :=
   M.Φ 𝒜 c
 
 /-- The Bellman operator with a fixed scheduler (necessarily `Markovian`). -/
@@ -148,7 +87,7 @@ theorem lfp_Φℒ_eq_iSup_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c �
 theorem lfp_Φℒ_eq_iSup_succ_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n + 1] ⊥ :=
   funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_succ_iterate _ Φℒ_ωScottContinuous
 
-class Optimization.ΦContinuous (O : Optimization) (M : MDP S A) where
+class _root_.Optimization.ΦContinuous (O : Optimization) (M : MDP S A) where
   Φ_continuous : ∀ c, ωScottContinuous (M.Φ O c)
 
 theorem lfp_Φ_eq_iSup_Φ {O : Optimization} [i : O.ΦContinuous M] :
@@ -173,9 +112,9 @@ section FiniteBranching
 
 variable [M.FiniteBranching]
 
-theorem Φ_𝒟_ωScottContinuous : ωScottContinuous (M.dΦ c) := by
+theorem Φ_𝒟_ωScottContinuous : ωScottContinuous (M.Φ 𝒟 c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
-  simp [dΦ, Φ, Φf_ωScottContinuous.map_ωSup]
+  simp [Φ, Φf_ωScottContinuous.map_ωSup]
   simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt_eq_opt]
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))

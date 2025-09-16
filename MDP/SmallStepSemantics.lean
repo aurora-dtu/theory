@@ -199,34 +199,20 @@ def cost_mono : Monotone 𝕊.cost := by
 
 def act (c : Conf P S T) : Set (Option A) := {α | ∃ p c', 𝕊.rr c α p c'}
 
-end SmallStepSemantics
-
-namespace MDP
-
-variable {P S T A : Type*} [Nonempty A] [𝕊 : SmallStepSemantics P S T A]
-
-open scoped Optimization.Notation
-
-noncomputable def Optimization.act (O : Optimization) (C : Conf P S T) :
+noncomputable def _root_.Optimization.act (O : Optimization) (C : Conf P S T) :
     (Option A → ENNReal) →o ENNReal :=
   O.sOpt (𝕊.act C)
 
 @[gcongr]
-theorem Optimization.act_gcongr {O : Optimization} {C : Conf P S T} {f₁ f₂ : Option A → ENNReal}
-    (h : ∀ α, f₁ α ≤ f₂ α) : O.act C f₁ ≤ O.act C f₂ := by
+theorem _root_.Optimization.act_gcongr {O : Optimization} {C : Conf P S T}
+    {f₁ f₂ : Option A → ENNReal} (h : ∀ α, f₁ α ≤ f₂ α) : O.act C f₁ ≤ O.act C f₂ := by
   gcongr
   apply h
 
-end MDP
+open scoped Optimization.Notation
 
-namespace SmallStepSemantics
-
-variable {P S A T : Type*} [Nonempty A] [𝕊 : SmallStepSemantics P S T A]
-
-open MDP (Optimization)
-open scoped MDP.Optimization.Notation
-
-noncomputable def op (O : MDP.Optimization) (C : P) : 𝔼[S] →o 𝔼[S] :=
+-- TODO: consider changing to ∑' π
+noncomputable def op (O : Optimization) (C : P) : 𝔼[S] →o 𝔼[S] :=
   ⟨fun X ↦ (lfp (𝕊.mdp.Φ O <| 𝕊.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
     suffices lfp (𝕊.mdp.Φ O (𝕊.cost a)) ≤ lfp (𝕊.mdp.Φ O (𝕊.cost b)) by exact this _
     gcongr
@@ -238,10 +224,6 @@ theorem tsum_succs_univ' (f : 𝕊.mdp.succs_univ c → ENNReal) :
   symm
   apply tsum_eq_tsum_of_ne_zero_bij (↑↑·) _ _ <;> try simp_all
   intro ⟨_, _⟩ ⟨_, _⟩; simp; apply SetCoe.ext
-
-open MDP (Optimization)
-
-open scoped MDP.Optimization.Notation
 
 @[simp]
 noncomputable def Φ' (O : Optimization) (c : 𝕊.mdp.Costs) (C : Conf P S T) (f : 𝕊.mdp.Costs) :
@@ -261,7 +243,7 @@ theorem Φ_simp {C : Conf P S T} :
     𝕊.mdp.Φ O c f C = 𝕊.Φ' O c C f
 := by
   simp [MDP.Φ, MDP.act, MDP.Φf, tsum_succs_univ', -Φ']
-  simp [Φ', MDP.Optimization.act]
+  simp [Φ', Optimization.act]
   congr! with α hα
   · ext; simp [act, mdp, Function.ne_iff]
     grind
@@ -426,7 +408,7 @@ theorem ς_op_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.ς O (𝕊.op 
   ext C X σ
   simp [op, op]
   rw [← map_lfp]
-  simp [ς, ς, OrderHom.coe_mk, cost, op]
+  simp [ς, OrderHom.coe_mk, cost, op]
 
 theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.ς O b ≤ b) :
     𝕊.op O ≤ b := by
