@@ -144,7 +144,7 @@ theorem iSup_iInf_EC_eq_iSup_dΦ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c �
   by simp_all [iInf_EC_eq_dΦ]
 
 theorem iSup_iInf_EC_eq_lfp_dΦ [M.FiniteBranching] : ⨆ n, ⨅ 𝒮, EC c 𝒮 n = lfp (M.dΦ c) := by
-  simp [lfp_dΦ_eq_iSup_dΦ, iInf_EC_eq_dΦ]
+  simp [lfp_Φ_eq_iSup_Φ, iInf_EC_eq_dΦ]
 
 theorem Φℒ_step_ECℒ (c : M.Costs) (ℒ : 𝔏[M]) :
     EC c ℒ (n + 1) = Φℒ ℒ c (EC c ℒ n) := by

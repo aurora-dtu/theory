@@ -92,7 +92,7 @@ noncomputable def aΦ (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp
 theorem awp_loop (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
     (C'.loop φ).awp f = lfp (aΦ φ C' f) := rfl
 
-theorem dop_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
+theorem awp_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
     (aΦ φ C' f) ((C'.loop φ).awp f) = (C'.loop φ).awp f := by simp [awp_loop]
 
 @[simp] theorem awp.skip : awp[ϖ]⟦skip⟧ = ⟨(·), fun ⦃_ _⦄ a ↦ a⟩ := rfl

@@ -40,6 +40,11 @@ open scoped Notation
 
 variable {ι α : Type*} [CompleteLattice α] (O : Optimization)
 
+def opt₂ (a b : α) : α :=
+  match O with
+    | 𝒜 => a ⊔ b
+    | 𝒟 => a ⊓ b
+
 def opt : (ι → α) →o α :=
   match O with
     | 𝒜 => ⟨fun f ↦ ⨆ α, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
@@ -53,6 +58,32 @@ def sOpt (S : Set ι) : (ι → α) →o α :=
 theorem sOpt_eq_opt (S : Set ι) (f : ι → α) : O.sOpt S f = O.opt fun (a : S) ↦ f a := by
   simp [sOpt, opt]
   split <;> simp [iSup_subtype', iInf_subtype']
+
+@[simp]
+theorem sOpt_singleton {f : ι → α} : O.sOpt {i} f = f i := by
+  simp [sOpt]; split <;> rfl
+@[simp]
+theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt₂ (f a) (f b) := by
+  simp [sOpt, opt₂]; split <;> simp
+  · apply le_antisymm
+    · simp
+    · simp
+      constructor
+      · apply le_iSup_of_le a; simp
+      · apply le_iSup_of_le b; simp
+  · apply le_antisymm
+    · simp
+      constructor
+      · apply iInf_le_of_le a; simp
+      · apply iInf_le_of_le b; simp
+    · simp
+
+@[simp]
+theorem opt₂_apply (f g : γ → α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
+  cases O <;> simp [opt₂]
+@[simp]
+theorem opt₂_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
+  cases O <;> simp [opt₂]
 
 end Optimization
 
@@ -82,7 +113,7 @@ theorem aΦ.monotone' : Monotone M.aΦ := Φ.monotone'
 theorem dΦ_le_Φℒ : dΦ ≤ Φℒ ℒ := fun c f s ↦
   add_le_add (by rfl) <| iInf_le_of_le (ℒ {s}) (iInf_le_of_le (ℒ.val.property {s}) (by rfl))
 
-@[deprecated]
+@[deprecated "lfp (M.Φ O)" (since := "2025-09-15")]
 noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.dΦ
 
 theorem iSup_succ_Φ_eq_iSup_Φ O c :
@@ -92,14 +123,6 @@ theorem iSup_succ_Φ_eq_iSup_Φ_apply O c :
     ⨆ (n : ℕ), (M.Φ O c)^[n + 1] ⊥ x = ⨆ (n : ℕ), (M.Φ O c)^[n] ⊥ x := by
   have := congrFun (iSup_succ_Φ_eq_iSup_Φ O c) x
   simpa
-
-@[deprecated iSup_succ_Φ_eq_iSup_Φ (since := "2025-09-15")]
-theorem iSup_succ_dΦ_eq_iSup_dΦ c : ⨆ (n : ℕ), (M.dΦ c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.dΦ c)^[n] ⊥ :=
-  iSup_succ_Φ_eq_iSup_Φ _ _
-@[deprecated iSup_succ_Φ_eq_iSup_Φ_apply (since := "2025-09-15")]
-theorem iSup_succ_dΦ_eq_iSup_dΦ_apply c :
-    ⨆ (n : ℕ), (M.dΦ c)^[n + 1] ⊥ x = ⨆ (n : ℕ), (M.dΦ c)^[n] ⊥ x :=
-  iSup_succ_Φ_eq_iSup_Φ_apply _ _
 
 noncomputable def lfp_Φℒ (ℒ : 𝔏[M]) : M.Costs → M.Costs := lfp ∘ M.Φℒ ℒ
 
@@ -125,22 +148,47 @@ theorem lfp_Φℒ_eq_iSup_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c �
 theorem lfp_Φℒ_eq_iSup_succ_Φℒ : M.lfp_Φℒ = fun c ℒ ↦ ⨆ n, (Φℒ c ℒ)^[n + 1] ⊥ :=
   funext₂ fun _ _ ↦ fixedPoints.lfp_eq_sSup_succ_iterate _ Φℒ_ωScottContinuous
 
+class Optimization.ΦContinuous (O : Optimization) (M : MDP S A) where
+  Φ_continuous : ∀ c, ωScottContinuous (M.Φ O c)
+
+theorem lfp_Φ_eq_iSup_Φ {O : Optimization} [i : O.ΦContinuous M] :
+    lfp (M.Φ O c) = ⨆ (n : ℕ), (M.Φ O c)^[n] ⊥ :=
+  fixedPoints.lfp_eq_sSup_iterate _ (i.Φ_continuous c)
+theorem lfp_Φ_eq_iSup_succ_Φ {O : Optimization} [i : O.ΦContinuous M] :
+    lfp (M.Φ O c) = ⨆ (n : ℕ), (M.Φ O c)^[n + 1] ⊥ :=
+  lfp_Φ_eq_iSup_Φ.trans <|
+    (Set.eqOn_univ _ _).mp fun c' _ ↦ by simp [← iSup_succ_Φ_eq_iSup_Φ_apply]
+
+theorem Φ_𝒜_ωScottContinuous : ωScottContinuous (M.Φ 𝒜 c) := by
+  refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
+  simp [Φ, Φf_ωScottContinuous.map_ωSup]
+  simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt, iSup_subtype']
+  congr
+  rw [iSup_comm]
+
+instance : Optimization.ΦContinuous 𝒜 M where
+  Φ_continuous := fun _ ↦ Φ_𝒜_ωScottContinuous
+
 section FiniteBranching
 
 variable [M.FiniteBranching]
 
-theorem dΦ_ωScottContinuous : ωScottContinuous (M.dΦ c) := by
+theorem Φ_𝒟_ωScottContinuous : ωScottContinuous (M.dΦ c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
   simp [dΦ, Φ, Φf_ωScottContinuous.map_ωSup]
   simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt_eq_opt]
   congr
   exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
+@[deprecated]
+alias dΦ_ωScottContinuous := Φ_𝒟_ωScottContinuous
 
-theorem lfp_dΦ_eq_iSup_dΦ : lfp (M.dΦ c) = ⨆ (n : ℕ), (dΦ c)^[n] ⊥ :=
-  fixedPoints.lfp_eq_sSup_iterate _ M.dΦ_ωScottContinuous
+instance : Optimization.ΦContinuous 𝒟 M where
+  Φ_continuous := fun _ ↦ Φ_𝒟_ωScottContinuous
 
-theorem lfp_dΦ_eq_iSup_succ_dΦ : lfp (M.dΦ c) = ⨆ (n : ℕ), (dΦ c)^[n + 1] ⊥ :=
-  lfp_dΦ_eq_iSup_dΦ.trans <|
-    (Set.eqOn_univ _ _).mp fun c' _ ↦ by simp [← iSup_succ_Φ_eq_iSup_Φ_apply]
+instance : Optimization.ΦContinuous O M where
+  Φ_continuous _ :=
+    match O with
+    | 𝒜 => MDP.Φ_𝒜_ωScottContinuous
+    | 𝒟 => MDP.Φ_𝒟_ωScottContinuous
 
 end MDP.FiniteBranching
