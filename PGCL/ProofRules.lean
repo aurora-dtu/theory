@@ -1,4 +1,5 @@
 import PGCL.WeakestPre
+import PGCL.WeakestLiberalPre
 import Mathlib.Data.ENNReal.Inv
 import Mathlib.Data.NNReal.Basic
 
@@ -16,8 +17,21 @@ def ite (b : BExpr ϖ) [DecidablePred b] (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .pro
   is one is. -/
 def AST (C : pGCL ϖ) : Prop := C.st.dwp 1 = 1
 
-noncomputable def cwp (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
-  ⟨(C.dwp · / C.st.dwp 1), fun a b hab σ ↦ ENNReal.div_le_div ((dwp _).monotone hab _) (by rfl)⟩
+noncomputable def cwp (O : Optimization) (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
+  ⟨(wp[O]⟦~C⟧ · / wlp[O]⟦~C⟧ 1),
+    fun a b hab σ ↦ ENNReal.div_le_div ((wp _ _).monotone hab _) (by rfl)⟩
+
+syntax "cwp[" term "]⟦" cpgcl_prog "⟧" : term
+
+macro_rules
+| `(cwp[$O]⟦ $p ⟧) => `(pGCL.cwp $O pgcl {$p})
+
+@[app_unexpander pGCL.cwp]
+def cwpUnexpander : Lean.PrettyPrinter.Unexpander
+| `($(_) $o $c) => do
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    `(cwp[$o]⟦$c⟧)
+| _ => throw ()
 
 theorem park_induction (b : BExpr ϖ) [DecidablePred b] (C : pGCL ϖ) (f I) (h : (Φ 𝒟 b C f) I ≤ I) :
     (C.loop b).dwp f ≤ I := lfp_le _ (by simp; exact h)
@@ -80,7 +94,7 @@ example :
   simp [BoundedRetransmissionProtocol]
   apply k_induction 4
   intro σ
-  simp only [dwp.prob, dwp.seq, dwp.assign, Pi.add_apply, mk_comp_mk, coe_mk, Function.comp_apply,
+  simp only [wp.prob, wp.seq, wp.assign, Pi.add_apply, mk_comp_mk, coe_mk, Function.comp_apply,
     Ψ, Function.iterate_succ', Function.iterate_zero, CompTriple.comp_eq, Pi.mul_apply, BExpr.iver,
     Pi.top_apply, ite_mul, one_mul, zero_mul, Pi.inf_apply, BExpr.not, not_and, not_lt]
   simp only [ProbExp.pick, States.subst, ↓reduceIte, String.reduceEq, Nat.cast_add, Nat.cast_one,
@@ -124,5 +138,23 @@ example :
   --   sorry
   -- else
   --   sorry
+
+example {X : Exp ϖ} :
+    cwp[O]⟦skip⟧ X = X := by
+  ext; simp [cwp, wlp]
+example {X : Exp String} :
+      cwp[O]⟦{x := 2; y := 1} [~⟨1/2, fun _ ↦ by simp⟩] {x := 3; y := 2} ; assert(x=2)⟧ X
+    = (X.subst "y" 1).subst "x" 2 := by
+  ext σ
+  simp [cwp, wlp, wp]
+  simp [ProbExp.pick, ProbExp.pickProb]
+  simp [BExpr.iver, BExpr.probOf]
+  split_ifs
+  · simp_all [States.subst]
+  · simp_all [States.subst]
+    rw [mul_comm]
+    simp [ENNReal.mul_div_cancel_right]
+  · simp_all [States.subst]
+  · simp_all [States.subst]
 
 end pGCL

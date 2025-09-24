@@ -15,6 +15,9 @@ def ProbExp (ϖ : Type*) := {e : Exp ϖ // e ≤ 1}
 def States.subst [DecidableEq ϖ] (σ : States ϖ) (x : ϖ) (v : Nat) : States ϖ :=
   fun α ↦ if x = α then v else σ α
 
+@[ext]
+def States.ext {σ₁ σ₂ : States ϖ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
+
 notation σ "[" x " ↦ " v "]" => States.subst σ x v
 
 def Exp.subst [DecidableEq ϖ] (e : Exp ϖ) (x : ϖ) (A : NExp ϖ) : Exp ϖ := fun σ ↦ e (σ[x ↦ A σ])
