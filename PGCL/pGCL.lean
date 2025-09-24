@@ -259,7 +259,7 @@ def tickUnexpander : Unexpander
 #check fun r ↦ pgcl { tick(~r) }
 
 @[app_unexpander pGCL.observe]
-def assertUnexpander : Unexpander
+def observeUnexpander : Unexpander
 | `($(_) $r) => do
   let r ← unexpandBExp r
   `(pgcl { observe($r) })

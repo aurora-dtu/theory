@@ -94,7 +94,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
   := by grind
 @[simp] theorem tick_iff : (conf₀[tick(~ r), σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf₁[⇓, σ]
   := by grind
-@[simp] theorem assert_iff [DecidablePred b] :
+@[simp] theorem observe_iff [DecidablePred b] :
       (conf₀[observe(~b), σ] ⤳[α,p] c')
     ↔ p = 1 ∧ α = .N ∧ c' = (if b σ then conf₁[⇓, σ] else conf₁[↯, σ])
   := by grind
@@ -146,7 +146,7 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
   ext; simp [act]; aesop
 @[simp] theorem act_loop [DecidablePred b] : act conf₀[while ~b {~C}, σ] = {.N} := by simp [act]
 @[simp] theorem act_tick : act conf₀[tick(~ r), σ] = {.N} := by simp [act]
-@[simp] theorem act_assert [DecidablePred r] : act conf₀[observe(~ r), σ] = {.N} := by simp [act]
+@[simp] theorem act_observe [DecidablePred r] : act conf₀[observe(~ r), σ] = {.N} := by simp [act]
 
 instance act_nonempty (s : Conf₀ ϖ) : Nonempty (act s) := by
   obtain ⟨c, σ⟩ := s; induction c <;> simp_all
