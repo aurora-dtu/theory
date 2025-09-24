@@ -22,10 +22,10 @@ inductive SmallStep : Conf₀ ϖ → Act → ENNReal → Conf₁ ϖ → Prop whe
   -- | fault    : SmallStep conf₀[↯, σ]           .N 1 conf₁[⊥]
   | assign   : SmallStep conf₀[~x := ~e, σ]       .N 1 conf₁[⇓, σ[x ↦ e σ]]
   | prob     : SmallStep conf₀[{~C} [~p] {~C}, σ]   .N 1 conf₁[~C, σ]
-  | prob_L   : (h : ¬C₁ = C₂) → (h' : 0 < p.val σ) →
-    SmallStep conf₀[{~C₁} [~p] {~C₂}, σ] .N (p.val σ)     conf₁[~C₁, σ]
-  | prob_R   : (h : ¬C₁ = C₂) → (h' : p.val σ < 1) →
-    SmallStep conf₀[{~C₁} [~p] {~C₂}, σ] .N (1 - p.val σ) conf₁[~C₂, σ]
+  | prob_L   : (h : ¬C₁ = C₂) → (h' : 0 < p σ) →
+    SmallStep conf₀[{~C₁} [~p] {~C₂}, σ] .N (p σ)     conf₁[~C₁, σ]
+  | prob_R   : (h : ¬C₁ = C₂) → (h' : p σ < 1) →
+    SmallStep conf₀[{~C₁} [~p] {~C₂}, σ] .N (1 - p σ) conf₁[~C₂, σ]
   | nonDet_L : SmallStep conf₀[{~C₁} [] {~C₂}, σ]      .L 1 conf₁[~C₁, σ]
   | nonDet_R : SmallStep conf₀[{~C₁} [] {~C₂}, σ]      .R 1 conf₁[~C₂, σ]
   | tick     : SmallStep conf₀[tick(~ r), σ]       .N 1 conf₁[⇓, σ]
@@ -86,7 +86,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
 @[simp] theorem prob_iff :
     (conf₀[{~C₁} [~p] {~C₂},σ] ⤳[α,p'] c') ↔
       α = .N ∧ (if C₁ = C₂ then p' = 1 ∧ c' = conf₁[~C₁,σ] else
-      (p' = p.val σ ∧ 0 < p' ∧ c' = conf₁[~C₁,σ]) ∨ (p' = 1 - p.val σ ∧ 0 < p' ∧ c' = conf₁[~C₂,σ]))
+      (p' = p σ ∧ 0 < p' ∧ c' = conf₁[~C₁,σ]) ∨ (p' = 1 - p σ ∧ 0 < p' ∧ c' = conf₁[~C₂,σ]))
   := by aesop
 @[simp] theorem nonDet_iff :
       (conf₀[{~C₁} [] {~C₂}, σ] ⤳[α,p'] c')
@@ -141,7 +141,7 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
   rintro ⟨_⟩
   split_ifs
   · simp
-  · if 0 < p.val σ then (use p.val σ); simp_all; grind else (use 1 - p.val σ); simp_all
+  · if 0 < p σ then (use p σ); simp_all; grind else (use 1 - p σ); simp_all
 @[simp] theorem act_nonDet : act conf₀[{~C₁} [] {~C₂}, σ] = {.L, .R} := by
   ext; simp [act]; aesop
 @[simp] theorem act_loop [DecidablePred b] : act conf₀[while ~b {~C}, σ] = {.N} := by simp [act]
@@ -180,9 +180,9 @@ noncomputable def succs_fin (c : Conf₀ ϖ) (α : Act) : Finset (Conf₁ ϖ) :=
   | conf₀[assert(~b), σ], .N => if b σ then {conf₁[skip, σ]} else {conf₁[↯, σ]}
   | conf₀[~x := ~E, σ], .N => {conf₁[skip, σ[x ↦ E σ]]}
   | conf₀[{~C₁} [~p] {~C₂}, σ], .N =>
-    if p.val σ = 0
+    if p σ = 0
     then {conf₁[~C₂, σ]}
-    else if p.val σ = 1 then {conf₁[~C₁, σ]} else {conf₁[~C₁, σ], conf₁[~C₂, σ]}
+    else if p σ = 1 then {conf₁[~C₁, σ]} else {conf₁[~C₁, σ], conf₁[~C₂, σ]}
   | conf₀[{~C₁} [] {~_}, σ], .L => {conf₁[~C₁, σ]}
   | conf₀[{~_} [] {~C₂}, σ], .R => {conf₁[~C₂, σ]}
   | conf₀[while ~b {~C}, σ], .N => if b σ then {conf₁[~C ; while ~b {~C}, σ]} else {conf₁[skip, σ]}
@@ -200,9 +200,9 @@ noncomputable def succs_univ_fin (c : Conf₀ ϖ) : Finset (Act × Conf₁ ϖ) :
   | conf₀[assert(~b), σ] => if b σ then {⟨.N, conf₁[skip, σ]⟩} else {⟨.N, conf₁[↯, σ]⟩}
   | conf₀[~x := ~E, σ] => {⟨.N, conf₁[skip, σ[x ↦ E σ]]⟩}
   | conf₀[{~C₁} [~p] {~C₂}, σ] =>
-    if p.val σ = 0
+    if p σ = 0
     then {⟨.N, conf₁[~C₂, σ]⟩}
-    else if p.val σ = 1 then {⟨.N, conf₁[~C₁, σ]⟩} else {⟨.N, conf₁[~C₁, σ]⟩, ⟨.N, conf₁[~C₂, σ]⟩}
+    else if p σ = 1 then {⟨.N, conf₁[~C₁, σ]⟩} else {⟨.N, conf₁[~C₁, σ]⟩, ⟨.N, conf₁[~C₂, σ]⟩}
   | conf₀[{~C₁} [] {~C₂}, σ] => {⟨.L, conf₁[~C₁, σ]⟩, ⟨.R, conf₁[~C₂, σ]⟩}
   | conf₀[while ~b {~C}, σ] =>
     if b σ then {⟨.N, conf₁[~C ; while ~b {~C}, σ]⟩} else {⟨.N, conf₁[skip, σ]⟩}
@@ -222,9 +222,9 @@ noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × C
   | conf₀[~x := ~E, σ] => {⟨.N, 1, conf₁[⇓, σ[x ↦ E σ]]⟩}
   | conf₀[{~C₁} [~p] {~C₂}, σ] =>
     if C₁ = C₂ then {⟨.N, 1, conf₁[~C₁, σ]⟩}
-    else if p.val σ = 0 then {⟨.N, 1, conf₁[~C₂, σ]⟩}
-    else if p.val σ = 1 then {⟨.N, 1, conf₁[~C₁, σ]⟩}
-    else {⟨.N, p.val σ, conf₁[~C₁, σ]⟩, ⟨.N, 1 - p.val σ, conf₁[~C₂, σ]⟩}
+    else if p σ = 0 then {⟨.N, 1, conf₁[~C₂, σ]⟩}
+    else if p σ = 1 then {⟨.N, 1, conf₁[~C₁, σ]⟩}
+    else {⟨.N, p σ, conf₁[~C₁, σ]⟩, ⟨.N, 1 - p σ, conf₁[~C₂, σ]⟩}
   | conf₀[{~C₁} [] {~C₂}, σ] => {⟨.L, 1, conf₁[~C₁, σ]⟩, ⟨.R, 1, conf₁[~C₂, σ]⟩}
   | conf₀[while ~b {~C}, σ] =>
     if b σ then {⟨.N, 1, conf₁[~C ; while ~b {~C}, σ]⟩} else {⟨.N, 1, conf₁[⇓, σ]⟩}

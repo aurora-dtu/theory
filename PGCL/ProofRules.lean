@@ -7,17 +7,7 @@ namespace pGCL
 variable {ϖ : Type*} [DecidableEq ϖ]
 
 open OrderHom
-
-/-- Strip all `tick`s from a program. -/
-def st : pGCL ϖ → pGCL ϖ
-  | pgcl {skip} => pgcl {skip}
-  | pgcl {~x := ~A} => pgcl {~x := ~A}
-  | pgcl {~C₁ ; ~C₂} => pgcl {~C₁.st ; ~C₂.st}
-  | pgcl {{~C₁} [~p] {~C₂}} => pgcl {{~C₁.st} [~p] {~C₂.st}}
-  | pgcl {{~C₁} [] {~C₂}} => pgcl {{~C₁.st} [] {~C₂.st}}
-  | pgcl {while ~b {~C'}} => pgcl {while ~b {~C'.st}}
-  | pgcl {tick(~ _)} => pgcl {skip}
-  | pgcl {assert(~ b)} => pgcl {assert(~b)}
+open Optimization.Notation
 
 def diverge : pGCL ϖ := .loop (fun _ ↦ true) .skip
 def ite (b : BExpr ϖ) [DecidablePred b] (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .prob C₁ b.probOf C₂
@@ -29,7 +19,7 @@ def AST (C : pGCL ϖ) : Prop := C.st.dwp 1 = 1
 noncomputable def cwp (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
   ⟨(C.dwp · / C.st.dwp 1), fun a b hab σ ↦ ENNReal.div_le_div ((dwp _).monotone hab _) (by rfl)⟩
 
-theorem park_induction (b : BExpr ϖ) [DecidablePred b] (C : pGCL ϖ) (f I) (h : (dΦ b C f) I ≤ I) :
+theorem park_induction (b : BExpr ϖ) [DecidablePred b] (C : pGCL ϖ) (f I) (h : (Φ 𝒟 b C f) I ≤ I) :
     (C.loop b).dwp f ≤ I := lfp_le _ (by simp; exact h)
 
 def Ψ (f : Exp ϖ) (Φ : Exp ϖ →o Exp ϖ) : Exp ϖ →o Exp ϖ := ⟨(Φ · ⊓ f), fun a b hab ↦ by

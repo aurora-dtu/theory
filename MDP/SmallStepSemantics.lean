@@ -468,6 +468,8 @@ theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (
           simp only [Function.iterate_succ', Function.comp_apply]
           simp [cost]
 
+noncomputable def olp (c : P) (X : 𝔼[S]) := 1 - 𝕊.op 𝒜 c (1 - X)
+
 class ET {P S T A : Type*} [Nonempty A] (𝕊 : SmallStepSemantics P S T A)
     (O : Optimization) [O.ΦContinuous 𝕊.mdp] (et : P → 𝔼[S] →o 𝔼[S]) where
   et_le_op : et ≤ 𝕊.op O
@@ -479,14 +481,15 @@ theorem ET.et_eq_op : et = 𝕊.op O := et_le_op.antisymm (op_isLeast _ et_prefi
 
 attribute [-simp] Function.iterate_succ in
 theorem op_le_seq
-    (seq : P → P → P) (after : P → (P ⊕ T) × S → (P ⊕ T) × S)
+    (seq : P → P → P) (after : P → (P ⊕ T) × S → (P ⊕ T) × S) (t_const : 𝔼[S])
     (h_cost_seq : ∀ C C' σ X, 𝕊.cost_p X (seq C C', σ) = 𝕊.cost_p (𝕊.op O C' X) (C, σ))
     (h_seq_act : ∀ C C' σ, 𝕊.act (.prog (seq C C') σ) = 𝕊.act (.prog C σ))
     (h_succ : ∀ {C C' σ p α s}, (p, s) ∈ 𝕊.psucc C σ α → (p, after C' s) ∈ 𝕊.psucc (seq C C') σ α)
     (h_after_p : ∀ {C C' σ}, after C' (.inl C, σ) = (.inl (seq C C'), σ))
     (h_after_t : ∀ {t C C' σ}, after C (.inr t, σ) = C' →
-      (C' = (.inl C, σ)) ∨ (C' = (.inr t, σ) ∧ ∀ X, 𝕊.cost_t X (t, σ) = 0))
-    (h_c : ∀ {X t σ}, 𝕊.cost_t X (t, σ) ≤ X σ)
+      (C' = (.inl C, σ)) ∨ (C' = (.inr t, σ) ∧ ∀ X, 𝕊.cost_t X (t, σ) = t_const σ))
+    (h_c : ∀ {X t σ C'}, after C' (Sum.inr t, σ) = (Sum.inl C', σ) →
+      𝕊.cost_t (𝕊.op O C' X) (t, σ) ≤ (𝕊.op O C' X) σ)
     (after_inj : ∀ x, Function.Injective (after x)) :
       𝕊.op O C ∘ 𝕊.op O C' ≤ 𝕊.op O (seq C C') := by
   intro X σ
@@ -502,8 +505,8 @@ theorem op_le_seq
     nth_rw 1 [ς]
     nth_rw 2 [ς]
     simp [h_cost_seq, cost, h_seq_act, Optimization.act]
-    refine add_le_add (le_refl _) ((O.sOpt _).mono fun α ↦ ?_)
-    rcases α with (_ | α)
+    gcongr
+    rintro (_ | α)
     · rfl
     simp
     apply Summable.tsum_le_tsum_of_inj (fun ⟨⟨p, a⟩, ha⟩ ↦ ⟨⟨p, after C' a⟩, h_succ ha⟩) <;> simp
@@ -524,7 +527,7 @@ theorem op_le_seq
           have := h_after_t h
           simp at this
           obtain ⟨⟨_⟩, ⟨_⟩⟩ := this
-          apply h_c
+          apply h_c h
         · rename_i t₀ σ₀ h
           have := h_after_t h
           simp at this

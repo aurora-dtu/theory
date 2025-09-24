@@ -159,6 +159,30 @@ theorem tsum_after_eq' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNRe
         · simp [hf₂' p _ h]
         · simp [hf₂ p _ h])
 
+theorem tsum_after_eq'' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNReal}
+  (hg₂ : ∀ p σ, g (p, conf₁[⇓, σ]) = 0)
+  (hg₂' : ∀ p σ, f (p, conf₁[↯, σ]) = 0 → g (p, conf₁[↯, σ]) = 0)
+  (hg₃ : ∀ p C σ, ¬g (p, conf₁[~C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[~C, σ])
+  (hf : ∀ (a : ENNReal),
+    (∀ (C : pGCL ϖ) (σ : States ϖ),
+        ¬f (a, Sum.inl C, σ) = 0 → g (a, C₂.after (Sum.inl C, σ)) = f (a, Sum.inl C, σ)) ∧
+      ∀ (t : Termination) (σ : States ϖ),
+        ¬f (a, Sum.inr t, σ) = 0 → g (a, C₂.after (Sum.inr t, σ)) = f (a, Sum.inr t, σ)) :
+    (∑' s, g s) = ∑' s, f s :=
+  tsum_eq_tsum_of_ne_zero_bij (fun ⟨(p, C), _⟩ ↦ (p, C₂.after C))
+    (fun ⟨⟨_, a⟩, _⟩ ⟨⟨_, b⟩, _⟩ h ↦ by
+      simp_all only [Prod.exists, Sum.exists, Prod.mk.injEq, Subtype.mk.injEq, true_and]
+      exact C₂.after_inj h.right)
+    (by
+      rintro ⟨p, ⟨(_ | _ | _), σ⟩⟩ <;> simp_all
+      intro h
+      right
+      use .fault, σ
+      simp
+      contrapose! h
+      exact hg₂' p σ h)
+    (by simp; apply hf)
+
 theorem tsum_after_le (C₂ : pGCL ϖ) {f g : Conf₁ ϖ → ENNReal}
   (h₂ : ∀ σ, g conf₁[⇓, σ] ≤ f conf₁[~C₂, σ])
   (h₂ : ∀ σ, g conf₁[↯, σ] ≤ f conf₁[↯, σ])
