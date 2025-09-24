@@ -29,8 +29,8 @@ inductive SmallStep : Conf₀ ϖ → Act → ENNReal → Conf₁ ϖ → Prop whe
   | nonDet_L : SmallStep conf₀[{~C₁} [] {~C₂}, σ]      .L 1 conf₁[~C₁, σ]
   | nonDet_R : SmallStep conf₀[{~C₁} [] {~C₂}, σ]      .R 1 conf₁[~C₂, σ]
   | tick     : SmallStep conf₀[tick(~ r), σ]       .N 1 conf₁[⇓, σ]
-  | assert₁  : b σ → [DecidablePred b] → SmallStep conf₀[assert(~b), σ] .N 1 conf₁[⇓, σ]
-  | assert₂  : ¬b σ → [DecidablePred b] → SmallStep conf₀[assert(~b), σ] .N 1 conf₁[↯, σ]
+  | observe₁  : b σ → [DecidablePred b] → SmallStep conf₀[observe(~b), σ] .N 1 conf₁[⇓, σ]
+  | observe₂  : ¬b σ → [DecidablePred b] → SmallStep conf₀[observe(~b), σ] .N 1 conf₁[↯, σ]
   | seq_L    : SmallStep conf₀[~C₁, σ] α p conf₁[⇓, τ] →
                 SmallStep conf₀[~C₁ ; ~C₂, σ] α p conf₁[~C₂, τ]
   | seq_R    : SmallStep conf₀[~C₁, σ] α p conf₁[~C₁', τ] →
@@ -68,7 +68,7 @@ theorem to_fault :
       (c ⤳[α,p] conf₁[↯, σ])
     ↔ p = 1 ∧ α = .N ∧ (
       (∃ C₁ C₂, c = conf₀[~C₁ ; ~C₂, σ] ∧ conf₀[~C₁, σ] ⤳[.N,p] conf₁[↯, σ]) ∨
-      (∃ b, ∃ (_ : DecidablePred b), c = conf₀[assert(~b), σ] ∧ ¬b σ)) := by
+      (∃ b, ∃ (_ : DecidablePred b), c = conf₀[observe(~b), σ] ∧ ¬b σ)) := by
   grind
 theorem of_to_fault_p (h : c ⤳[α,p] conf₁[↯, σ]) : p = 1 := by grind
 theorem of_to_fault_act (h : c ⤳[α,p] conf₁[↯, σ]) : α = .N := by grind
@@ -95,7 +95,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
 @[simp] theorem tick_iff : (conf₀[tick(~ r), σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf₁[⇓, σ]
   := by grind
 @[simp] theorem assert_iff [DecidablePred b] :
-      (conf₀[assert(~b), σ] ⤳[α,p] c')
+      (conf₀[observe(~b), σ] ⤳[α,p] c')
     ↔ p = 1 ∧ α = .N ∧ c' = (if b σ then conf₁[⇓, σ] else conf₁[↯, σ])
   := by grind
 -- open scoped Classical in
@@ -146,7 +146,7 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
   ext; simp [act]; aesop
 @[simp] theorem act_loop [DecidablePred b] : act conf₀[while ~b {~C}, σ] = {.N} := by simp [act]
 @[simp] theorem act_tick : act conf₀[tick(~ r), σ] = {.N} := by simp [act]
-@[simp] theorem act_assert [DecidablePred r] : act conf₀[assert(~ r), σ] = {.N} := by simp [act]
+@[simp] theorem act_assert [DecidablePred r] : act conf₀[observe(~ r), σ] = {.N} := by simp [act]
 
 instance act_nonempty (s : Conf₀ ϖ) : Nonempty (act s) := by
   obtain ⟨c, σ⟩ := s; induction c <;> simp_all
@@ -177,7 +177,7 @@ noncomputable def succs_fin (c : Conf₀ ϖ) (α : Act) : Finset (Conf₁ ϖ) :=
   -- | conf₀[↯, _], .N => {conf[⊥]}
   | conf₀[skip, σ], .N => {conf₁[⇓, σ]}
   | conf₀[tick(~_), σ], .N => {conf₁[skip, σ]}
-  | conf₀[assert(~b), σ], .N => if b σ then {conf₁[skip, σ]} else {conf₁[↯, σ]}
+  | conf₀[observe(~b), σ], .N => if b σ then {conf₁[skip, σ]} else {conf₁[↯, σ]}
   | conf₀[~x := ~E, σ], .N => {conf₁[skip, σ[x ↦ E σ]]}
   | conf₀[{~C₁} [~p] {~C₂}, σ], .N =>
     if p σ = 0
@@ -197,7 +197,7 @@ noncomputable def succs_univ_fin (c : Conf₀ ϖ) : Finset (Act × Conf₁ ϖ) :
   -- | conf₁[↯, _] => {⟨.N, conf[⊥]⟩}
   | conf₀[skip, σ] => {⟨.N, conf₁[⇓, σ]⟩}
   | conf₀[tick(~_), σ] => {⟨.N, conf₁[skip, σ]⟩}
-  | conf₀[assert(~b), σ] => if b σ then {⟨.N, conf₁[skip, σ]⟩} else {⟨.N, conf₁[↯, σ]⟩}
+  | conf₀[observe(~b), σ] => if b σ then {⟨.N, conf₁[skip, σ]⟩} else {⟨.N, conf₁[↯, σ]⟩}
   | conf₀[~x := ~E, σ] => {⟨.N, conf₁[skip, σ[x ↦ E σ]]⟩}
   | conf₀[{~C₁} [~p] {~C₂}, σ] =>
     if p σ = 0
@@ -218,7 +218,7 @@ noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × C
   -- | conf₁[↯, _] => {⟨.N, 1, conf[⊥]⟩}
   | conf₀[skip, σ] => {⟨.N, 1, conf₁[⇓, σ]⟩}
   | conf₀[tick(~_), σ] => {⟨.N, 1, conf₁[⇓, σ]⟩}
-  | conf₀[assert(~b), σ] => if b σ then {⟨.N, 1, conf₁[⇓, σ]⟩} else {⟨.N, 1, conf₁[↯, σ]⟩}
+  | conf₀[observe(~b), σ] => if b σ then {⟨.N, 1, conf₁[⇓, σ]⟩} else {⟨.N, 1, conf₁[↯, σ]⟩}
   | conf₀[~x := ~E, σ] => {⟨.N, 1, conf₁[⇓, σ[x ↦ E σ]]⟩}
   | conf₀[{~C₁} [~p] {~C₂}, σ] =>
     if C₁ = C₂ then {⟨.N, 1, conf₁[~C₁, σ]⟩}

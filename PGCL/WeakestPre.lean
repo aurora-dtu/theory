@@ -23,7 +23,7 @@ noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
       (b.iver * C'.wp O · + b.not.iver * X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {assert(~b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -61,7 +61,7 @@ variable {x : ϖ} {e : Exp ϖ} {b : BExpr ϖ} {C₁ : pGCL ϖ}
 @[simp] theorem wp.nonDet : wp[O]⟦{~C₁}[]{~C₂}⟧ = O.opt₂ (C₁.wp O) (C₂.wp O) := by ext; simp [wp]
 @[simp] theorem wp.tick : wp[O]⟦tick(~e)⟧ = ⟨fun X ↦ e + X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
 open scoped Classical in
-@[simp] theorem wp.assert :
+@[simp] theorem wp.observe :
     wp[O]⟦assert(~b)⟧ = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
 
 noncomputable abbrev dwp : pGCL ϖ → Exp ϖ →o Exp ϖ := wp 𝒟
@@ -97,7 +97,7 @@ def st : pGCL ϖ → pGCL ϖ
   | pgcl {{~C₁} [] {~C₂}} => pgcl {{~C₁.st} [] {~C₂.st}}
   | pgcl {while ~b {~C'}} => pgcl {while ~b {~C'.st}}
   | pgcl {tick(~ _)} => pgcl {skip}
-  | pgcl {assert(~ b)} => pgcl {assert(~b)}
+  | pgcl {observe(~ b)} => pgcl {observe(~b)}
 
 def Φ.continuous [DecidablePred b] {C' : pGCL ϖ} (ih : ωScottContinuous wp[O]⟦~C'⟧) :
     ωScottContinuous ⇑(Φ O b C' X) := by
@@ -215,7 +215,7 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
             · apply c.mono; omega
         · apply c.mono; omega
   | tick r => intro c; ext σ; simp [ENNReal.add_iSup]
-  | assert r => intro c; ext σ; simp [wp, ENNReal.mul_iSup]
+  | observe r => intro c; ext σ; simp [wp, ENNReal.mul_iSup]
 
 omit [DecidableEq ϖ] in
 theorem Exp.sub_sub_cancel {a b : Exp ϖ} (h : ∀ σ, a σ ≠ ⊤) (h₂ : b ≤ a) : a - (a - b) = b := by
@@ -238,7 +238,7 @@ theorem wp_le_one (C : pGCL ϖ) (X : Exp ϖ) (hX : X ≤ 1) : wp[O]⟦~C.st⟧ X
     · simp [Optimization.opt₂]; exact ⟨ih₁ X hX, ih₂ X hX⟩
     · simp [Optimization.opt₂]; exact inf_le_of_right_le (ih₂ X hX)
   | tick => simp [st, hX]
-  | assert b =>
+  | observe b =>
     simp [st, wp]; intro σ; specialize hX σ; simp_all [BExpr.iver]; split_ifs <;> simp [hX]
   | loop b C' ih =>
     simp [st]
@@ -324,7 +324,7 @@ theorem wp_le_add_right (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ (X + ((fun _ ↦ Y) 
     intro σ
     simp
     sorry
-  | assert b =>
+  | observe b =>
     simp [mul_add]; gcongr
     simp
 

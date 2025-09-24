@@ -155,9 +155,9 @@ def cP' (f : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → Exp ϖ 
   ext X σ
   simp [ς, psucc, r, Optimization.act]
   rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp
-@[simp] theorem ς.assert :
-      (𝕊 cT cP).ς O f (.assert b)
-    = ⟨fun X σ ↦ cP X (.assert b, σ) + i[b] σ * cT X (.term, σ) + (1 - i[b] σ) * cT X (.fault, σ),
+@[simp] theorem ς.observe :
+      (𝕊 cT cP).ς O f (.observe b)
+    = ⟨fun X σ ↦ cP X (.observe b, σ) + i[b] σ * cT X (.term, σ) + (1 - i[b] σ) * cT X (.fault, σ),
         fun _ _ h σ ↦ by
           simp; gcongr
           · apply cP.mono h
@@ -317,7 +317,7 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       gcongr <;> apply_assumption
     | loop b C' ih => apply wp_le_op.loop ih
     | tick r => rw [← ς_op_eq_op]; simp; rfl
-    | assert b => rw [← ς_op_eq_op]; simp; rfl
+    | observe b => rw [← ς_op_eq_op]; simp; rfl
   et_prefixed_point := by
     apply le_of_eq
     funext C; induction C with try simp_all [ς.seq'] <;> (try rfl) <;> try ext; simp
@@ -374,7 +374,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       rw [← ς_op_eq_op]; simp [wfp']
       gcongr <;> apply_assumption
     | loop b C' ih => apply wfp'_le_op.loop ih
-    | assert b => rw [← ς_op_eq_op, wfp']; simp [BExpr.probOf, ProbExp.pick]; rfl
+    | observe b => rw [← ς_op_eq_op, wfp']; simp [BExpr.probOf, ProbExp.pick]; rfl
   et_prefixed_point := by
     apply le_of_eq
     funext C; induction C with try simp_all [ς.seq'']; (try rfl) <;> try ext; simp [wfp']; done
@@ -387,7 +387,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       nth_rw 2 [← wfp'_fp]
       simp [fΦ, ProbExp.pick, -ProbExp.pick_of]
       if hb : b σ then simp [hb] else simp [hb]
-    | assert b =>
+    | observe b =>
       ext X σ
       simp [wfp']
       if hb : b σ then simp [hb] else simp [hb]

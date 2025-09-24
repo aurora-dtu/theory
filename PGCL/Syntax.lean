@@ -279,13 +279,13 @@ macro_rules
 attribute [simp] Nat.ofNat_le
 attribute [simp] Exp.ofString
 
-syntax "assert " bexp : stmt
+syntax "observe " bexp : stmt
 
 macro_rules
-  | `(pgcl { assert $b }) =>
+  | `(pgcl { observe $b }) =>
     `(pgcl {if (~(bexpr {$b})) { skip } else { skip } })
 
-check triple {10} assert 10 < 9 ; x := 10; if (x < 10) { x := x + 1 } else { skip } {x} := by
+check triple {10} observe 10 < 9 ; x := 10; if (x < 10) { x := x + 1 } else { skip } {x} := by
   intro σ; simp [ite, ProbExp.pick, BExpr.lt]
 
 example : triple {10} x := 69; while (x < 10) { x := x + 1 } {x} := by

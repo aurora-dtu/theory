@@ -13,7 +13,7 @@ inductive pGCL (ϖ : Type*) where
   | nonDet : pGCL ϖ → pGCL ϖ → pGCL ϖ
   | loop : (b : BExpr ϖ) → [DecidablePred b] → pGCL ϖ → pGCL ϖ
   | tick : Exp ϖ → pGCL ϖ
-  | assert : (b : BExpr ϖ) → [DecidablePred b] → pGCL ϖ
+  | observe : (b : BExpr ϖ) → [DecidablePred b] → pGCL ϖ
 deriving Inhabited
 
 noncomputable instance pGCL.decidableEq [DecidableEq ϖ] : DecidableEq (pGCL ϖ)
@@ -69,7 +69,7 @@ syntax "{ " cpgcl_prog " }" " [" cpgcl_aexp "] "  "{ " cpgcl_prog " }" : cpgcl_p
 syntax "{ " cpgcl_prog " }" " [" "] "  "{ " cpgcl_prog " }" : cpgcl_prog
 syntax "while " cpgcl_bexp " { " cpgcl_prog " }" : cpgcl_prog
 syntax "tick(" cpgcl_aexp ")"  : cpgcl_prog
-syntax "assert(" cpgcl_bexp ")" : cpgcl_prog
+syntax "observe(" cpgcl_bexp ")" : cpgcl_prog
 
 macro_rules
 -- vars
@@ -99,7 +99,7 @@ macro_rules
 | `(pgcl { { $C₁:cpgcl_prog } [] { $C₂ } }) => `(pGCL.nonDet pgcl {$C₁} pgcl {$C₂})
 | `(pgcl { while $b { $C:cpgcl_prog } }) => `(pGCL.loop pgcl_bexp {$b} pgcl {$C})
 | `(pgcl { tick($r) }) => `(pGCL.tick pgcl_aexp {$r})
-| `(pgcl { assert($b) }) => `(pGCL.assert pgcl_bexp {$b})
+| `(pgcl { observe($b) }) => `(pGCL.observe pgcl_bexp {$b})
 
 set_option linter.style.setOption false
 set_option pp.mvars false
@@ -258,16 +258,16 @@ def tickUnexpander : Unexpander
 #guard_msgs in
 #check fun r ↦ pgcl { tick(~r) }
 
-@[app_unexpander pGCL.assert]
+@[app_unexpander pGCL.observe]
 def assertUnexpander : Unexpander
 | `($(_) $r) => do
   let r ← unexpandBExp r
-  `(pgcl { assert($r) })
+  `(pgcl { observe($r) })
 | _ => throw ()
 
-/-- info: pgcl {assert(false) ; assert(true)} : pGCL ?_ -/
+/-- info: pgcl {observe(false) ; observe(true)} : pGCL ?_ -/
 #guard_msgs in
-#check pgcl { assert(false) ; assert(true) }
+#check pgcl { observe(false) ; observe(true) }
 
 end Syntax
 

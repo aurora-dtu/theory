@@ -23,7 +23,7 @@ noncomputable def wfp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp �
       (fun Y ↦ b.probOf.pickProb (C'.wfp O Y) X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {assert(~b)} => ⟨(b.probOf.pickProb · 1), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨(b.probOf.pickProb · 1), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wfp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -50,7 +50,7 @@ noncomputable def wfp' (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
       (fun Y ↦ b.probOf.pick (C'.wfp' O Y) X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {assert(~b)} => ⟨(b.probOf.pick · 1), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨(b.probOf.pick · 1), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wfp'[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -103,7 +103,7 @@ theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
       nth_rw 2 [← map_lfp]
       simp [-map_lfp]
       rfl
-  | assert => rfl
+  | observe => rfl
 
 noncomputable def fΦ (O : Optimization) (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ :=
@@ -131,7 +131,7 @@ noncomputable def wlp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp �
       (fun Y ↦ b.probOf.pickProb (C'.wlp O Y) X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {assert(~b)} => ⟨(b.probOf * ·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨(b.probOf * ·), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wlp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -158,7 +158,7 @@ noncomputable def wlp' (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp 
       (fun Y ↦ b.probOf.pickProb (C'.wlp' O Y) X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {assert(~b)} => ⟨(b.probOf.pickProb · 1), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨(b.probOf.pickProb · 1), fun _ _ h ↦ by simp; gcongr⟩
 
 def wfp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp O) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
@@ -336,7 +336,7 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
       else
         simp [hb, BExpr.probOf, ProbExp.pickProb]
   | tick => ext; simp [st, wlp, wfp]
-  | assert b =>
+  | observe b =>
     ext σ; simp [st, wlp, wfp, BExpr.probOf, ProbExp.pickProb]
     if hb : b σ then
       simp [hb]
@@ -546,7 +546,7 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
 --         gcongr
 --         apply (wp _ _).mono hab
 --   | tick => ext; simp [st, wlp']
---   | assert b =>
+--   | observe b =>
 --     ext σ; simp [st, wlp', wp, BExpr.probOf, ProbExp.pickProb]
 --     if b σ then
 --       simp_all only [↓reduceIte, tsub_self, add_zero, BExpr.true_iver, one_mul,
@@ -653,7 +653,7 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
 -- theorem wlp_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
 --     wp 𝒟 C.st X + wlp 𝒟 C.st 0 = wlp 𝒟 C.st X := by
 --   -- let x : ϖ := sorry
---   -- if C = pgcl { {~x := 1} [] { { assert(false) } [~⟨1/2, by sorry⟩] { skip } } } then
+--   -- if C = pgcl { {~x := 1} [] { { observe(false) } [~⟨1/2, by sorry⟩] { skip } } } then
 --   --   subst_eqs
 --   --   simp [st, wlp, Optimization.opt₂, wp]
 --   --   ext σ;
@@ -934,7 +934,7 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
 --         gcongr
 --         apply (wp _ _).mono hab
 --   | tick => ext; simp [st, wlp]
---   | assert b =>
+--   | observe b =>
 --     ext σ; simp [st, wlp, wp, BExpr.probOf, BExpr.iver]
 
 end pGCL

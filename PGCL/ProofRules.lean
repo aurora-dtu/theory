@@ -143,7 +143,7 @@ example {X : Exp ϖ} :
     cwp[O]⟦skip⟧ X = X := by
   ext; simp [cwp, wlp]
 example {X : Exp String} :
-      cwp[O]⟦{x := 2; y := 1} [~⟨1/2, fun _ ↦ by simp⟩] {x := 3; y := 2} ; assert(x=2)⟧ X
+      cwp[O]⟦{x := 2; y := 1} [~⟨1/2, fun _ ↦ by simp⟩] {x := 3; y := 2} ; observe(x=2)⟧ X
     = (X.subst "y" 1).subst "x" 2 := by
   ext σ
   simp [cwp, wlp, wp]
