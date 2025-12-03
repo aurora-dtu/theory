@@ -171,11 +171,11 @@ instance instNonemptySuccs₀ [M.FiniteBranching] (α : M.act s) : Nonempty (M.s
   exact M.instNonemptySuccs α
 
 theorem prev_iff_succs : s' ∈ M.prev α s ↔ s ∈ M.succs α s' := by simp [prev]
-@[simp]
+@[grind, simp]
 theorem prev_univ_iff_succs_univ : s' ∈ M.prev_univ s ↔ s ∈ M.succs_univ s' := by
   simp [prev_univ, prev_iff_succs, succs_univ, succs]
 
-@[simp] theorem succs_implies_succs_univ (s' : M.succs α s) : ↑s' ∈ M.succs_univ s := by
+@[grind, simp] theorem succs_implies_succs_univ (s' : M.succs α s) : ↑s' ∈ M.succs_univ s := by
   obtain ⟨s', h⟩ := s'
   simp [succs_univ]
   use α

@@ -45,8 +45,11 @@ noncomputable abbrev aΦ (c : M.Costs) : M.Costs →o M.Costs :=
 noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
   ⟨fun v s ↦ c s + Φf s (ℒ {s}) v, by intro _ _ _ _; simp; gcongr⟩
 
+@[mono]
 theorem Φ.monotone' : Monotone (M.Φ O) := fun _ _ h _ _ ↦ by simp [Φ]; gcongr; exact h _
+@[mono]
 theorem dΦ.monotone' : Monotone M.dΦ := Φ.monotone'
+@[mono]
 theorem aΦ.monotone' : Monotone M.aΦ := Φ.monotone'
 
 theorem dΦ_le_Φℒ : dΦ ≤ Φℒ ℒ := fun c f s ↦

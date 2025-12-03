@@ -28,20 +28,16 @@ noncomputable def cost_t' : Exp ϖ →o Termination × States ϖ → ENNReal :=
     · rfl⟩
 
 @[simp]
-noncomputable def cost_p₀ : pGCL ϖ × States ϖ → ENNReal
+noncomputable def cost_p : pGCL ϖ × States ϖ → ENNReal
   | conf₀[tick(~ r), σ] => r σ
-  | conf₀[~c' ; ~_, σ] => cost_p₀ conf₀[~c', σ]
+  | conf₀[~c' ; ~_, σ] => cost_p conf₀[~c', σ]
   | _ => 0
-@[simp]
-noncomputable def cost_p : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal :=
-  ⟨fun X c ↦ cost_p₀ c, fun _ _ _ ↦ by rfl⟩
 
 @[simp]
-noncomputable def cost_p' : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal :=
-  ⟨fun X c ↦ 0, fun _ _ _ ↦ by rfl⟩
+noncomputable def cost_p' : pGCL ϖ × States ϖ → ENNReal := 0
 
 noncomputable instance 𝕊
-    (cT : Exp ϖ →o Termination × States ϖ → ENNReal) (cP : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal) :
+    (cT : Exp ϖ →o Termination × States ϖ → ENNReal) (cP : pGCL ϖ × States ϖ → ENNReal) :
     SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
   r := SmallStep
   relation_p_pos := SmallStep.p_ne_zero
@@ -53,7 +49,7 @@ noncomputable instance 𝕊
 noncomputable instance : SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act := 𝕊 cost_t cost_p
 
 variable (cT : Exp ϖ →o Termination × States ϖ → ENNReal)
-variable (cP : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal)
+variable (cP : pGCL ϖ × States ϖ → ENNReal)
 
 -- @[simp] alias cP := cost_p
 
@@ -95,17 +91,15 @@ variable {b : BExpr ϖ} [DecidablePred b] {O : Optimization}
 
 open scoped Optimization.Notation
 
-omit [DecidableEq ϖ] in
-@[simp] theorem Exp.zero_add (g : Exp ϖ) : ((fun _ ↦ 0) + g) = g := by ext; simp
-omit [DecidableEq ϖ] in
-@[simp] theorem Exp.add_zero (g : Exp ϖ) : (g + (fun _ ↦ 0)) = g := by ext; simp
-
 namespace OrderHom
 
 variable {α β : Type*} [Preorder α] [Preorder β] [Add β] [AddLeftMono β] [AddRightMono β]
 
-instance : Add (α →o β) where
+instance instAdd : Add (α →o β) where
   add a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
+@[simp]
+instance instHAdd : HAdd (α →o β) (α →o β) (α →o β) where
+  hAdd a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
 @[simp] theorem add_apply (f g : α →o β) : (f + g) x = f x + g x := by rfl
 @[simp] theorem zero_add {β : Type*} [Preorder β] [AddZeroClass β] [AddLeftMono β] [AddRightMono β]
     (g : α →o β) : ((⟨fun _ ↦ 0, monotone_const⟩ : α →o β) + g) = g := by ext; simp
@@ -117,82 +111,102 @@ instance {α β : Type*} [Preorder β] [Add β] [i : AddRightMono β] : AddRight
 instance {α β : Type*} [Preorder β] [Add β] [i : AddLeftMono β] : AddLeftMono (α → β) where
   elim a b c h i := by simp only [Pi.add_apply]; gcongr; apply h
 
-end OrderHom
+variable {ι : Type*}
 
 @[simp]
-def cP' (f : Exp ϖ →o pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → Exp ϖ →o Exp ϖ :=
-  fun C ↦ ⟨fun X σ ↦ f X (C, σ), fun a b h σ ↦ by simp; apply f.mono h⟩
+theorem mk_apply {f} {h} {b : ι} :
+    ({toFun := f, monotone' := h} : α →o (ι → β)) a b = f a b := by rfl
+@[simp]
+theorem mk_apply' {f} {h} {b : ι} :
+    DFunLike.coe ({toFun := f, monotone' := h} : α →o (ι → β)) a b = f a b := by rfl
+@[simp]
+theorem comp_apply' {ι : Type*} {γ : Type*} [Preorder γ] {f : β →o (ι → γ)} {g : α →o β} {b : ι} :
+    (OrderHom.comp f g) a b = f (g a) b := rfl
+
+
+end OrderHom
+
+-- instance : Coe (𝔼[States ϖ] →o 𝔼[States ϖ]) (Exp ϖ →o Exp ϖ) where
+--   coe x := x
+
+-- instance : HAdd (Exp ϖ →o Exp ϖ) (Exp ϖ →o Exp ϖ) (Exp ϖ →o Exp ϖ) := OrderHom.instHAdd
+
+@[reducible, simp]
+noncomputable instance : HAdd (Exp ϖ →o Exp ϖ) (𝔼[States ϖ] →o 𝔼[States ϖ]) (Exp ϖ →o Exp ϖ) where
+  hAdd a b :=
+    let b' : Exp ϖ →o Exp ϖ := b
+    a + b'
+
+@[simp]
+def cP' (f : pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → Exp ϖ →o Exp ϖ :=
+  fun C ↦ ⟨fun X σ ↦ f (C, σ), fun a b h σ ↦ by simp⟩
 
 @[simp] theorem ς.skip :
       (𝕊 cT cP).ς O f skip
-    = ⟨(fun X σ ↦ cP X (pgcl {skip}, σ) + cT X (.term, σ)),
+    = ⟨(fun X σ ↦ cP (pgcl {skip}, σ) + cT X (.term, σ)),
         fun _ _ h _ ↦ by
-          simp; gcongr
-          · apply cP.mono h
-          · apply cT.mono h⟩ := by
+          simp; gcongr; apply cT.mono h⟩ := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
-  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp
+  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp; rfl
 @[simp] theorem ς.assign :
       (𝕊 cT cP).ς O f (pgcl {~x := ~e})
     -- = ⟨fun X σ ↦ X (σ[x ↦ e σ]), fun _ _ h σ ↦ h (σ[x ↦ e σ])⟩ := by
-    = ⟨fun X σ ↦ cP X (.assign x e, σ) + cT X (.term, σ[x ↦ e σ]),
+    = ⟨fun X σ ↦ cP (.assign x e, σ) + cT X (.term, σ[x ↦ e σ]),
         fun _ _ h _ ↦ by
-          simp
-          gcongr
-          · apply cP.mono h
-          · apply cT.mono h⟩ := by
+          simp; gcongr; apply cT.mono h⟩ := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
-  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ[x ↦ e σ]]), by simp⟩] <;> simp
+  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ[x ↦ e σ]]), by simp⟩] <;> simp; rfl
 @[simp] theorem ς.tick {t} :
       (𝕊 cT cP).ς O f (.tick t)
-    = ⟨fun X σ ↦ cP X (.tick t, σ) + cT X (.term, σ),
+    = ⟨fun X σ ↦ cP (.tick t, σ) + cT X (.term, σ),
         fun _ _ h _ ↦ by
-          simp; gcongr
-          · apply cP.mono h
-          · apply cT.mono h⟩ := by
+          simp; gcongr; apply cT.mono h⟩ := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
-  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp
+  rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp; rfl
 @[simp] theorem ς.observe :
       (𝕊 cT cP).ς O f (.observe b)
-    = ⟨fun X σ ↦ cP X (.observe b, σ) + i[b] σ * cT X (.term, σ) + (1 - i[b] σ) * cT X (.fault, σ),
+    = ⟨fun X σ ↦ cP (.observe b, σ) + i[b] σ * cT X (.term, σ) + (1 - i[b] σ) * cT X (.fault, σ),
         fun _ _ h σ ↦ by
           simp; gcongr
-          · apply cP.mono h
           all_goals apply cT.mono h⟩
 := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
   if hb : b σ then
-    rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp [hb]⟩] <;> simp [hb]
+    rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp [hb]⟩] <;> simp [hb]; rfl
   else
-    rw [tsum_eq_single ⟨(1, conf₁[↯, σ]), by simp [hb]⟩] <;> simp [hb]
+    rw [tsum_eq_single ⟨(1, conf₁[↯, σ]), by simp [hb]⟩] <;> simp [hb]; rfl
 @[simp] theorem ς.prob :
       (𝕊 cT cP).ς O f (.prob C₁ p C₂)
     = cP' cP (.prob C₁ p C₂) + ⟨fun X ↦ p.pick (f C₁ X) (f C₂ X), fun a b h ↦ by simp; gcongr⟩ := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
+  simp only [DFunLike.coe]
+  simp
   if h₁₂ : C₁ = C₂ then
     subst_eqs
     simp_all only [ProbExp.pick_same]
-    rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp⟩] <;> simp
+    rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp⟩] <;> simp; rfl
   else if hp₀ : p σ = 0 then
     have h₂₁ : ¬C₂ = C₁ := by grind
     rw [tsum_eq_single ⟨(1, conf₁[~C₂, σ]), by simp [h₁₂, h₂₁, hp₀]⟩] <;> simp_all [ProbExp.pick]
-    grind
+    · rfl
+    · grind
   else if hp₁ : p σ = 1 then
     have h₂₁ : ¬C₂ = C₁ := by grind
     rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp [hp₁, h₁₂]⟩]
       <;> simp_all [ProbExp.pick]
-    grind
+    · rfl
+    · grind
   else
     simp_all only [ProbExp.not_zero_off, ProbExp.lt_one_iff]
     rw [ENNReal.tsum_eq_add_tsum_ite ⟨(p σ, conf₁[~C₁, σ]), by simp [h₁₂, hp₀]⟩]
     simp_all only
     rw [tsum_eq_single ⟨(1 - p σ, conf₁[~C₂, σ]), by simp [h₁₂, hp₁]⟩] <;> simp
-    · simp [ProbExp.pick, -ProbExp.pick_of]; grind
+    · simp [ProbExp.pick]; grind
     · grind
 open scoped Classical in
 @[simp] theorem ς.nonDet :
@@ -200,9 +214,11 @@ open scoped Classical in
   ext X σ
   have : ((fun x ↦ some x) '' {Act.L, Act.R}) = {some .L, some .R} := by ext; simp; grind
   simp [ς, psucc, r, Optimization.act, this]
+  simp only [DFunLike.coe]; simp only [OrderHom.toFun_eq_coe, Exp.add_apply]
+  rw [Optimization.opt₂_apply]
   congr
-  · rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp⟩] <;> simp
-  · rw [tsum_eq_single ⟨(1, conf₁[~C₂, σ]), by simp⟩] <;> simp
+  · rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp⟩] <;> simp; rfl
+  · rw [tsum_eq_single ⟨(1, conf₁[~C₂, σ]), by simp⟩] <;> simp; rfl
 
 open scoped Classical in
 theorem ς.loop :
@@ -216,11 +232,12 @@ theorem ς.loop :
 := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
+  simp only [DFunLike.coe]; simp only [OrderHom.toFun_eq_coe, Exp.add_apply]
   congr
   if hb : b σ then
-    rw [tsum_eq_single ⟨(1, conf₁[~C ; while ~b { ~C }, σ]), by simp [hb]⟩] <;> simp [hb]
+    rw [tsum_eq_single ⟨(1, conf₁[~C ; while ~b { ~C }, σ]), by simp [hb]⟩] <;> simp [hb]; rfl
   else
-    rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp [hb]⟩] <;> simp [hb]
+    rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp [hb]⟩] <;> simp [hb]; rfl
 
 open scoped Classical in
 theorem tsum_succs_univ' {α : Act} (f : (𝕊 cT cP).psucc C σ α → ENNReal) :
@@ -241,19 +258,26 @@ theorem ς.seq' {C₁ C₂ : pGCL ϖ}
     (ih₁ : (𝕊 cost_t cost_p).ς O (wp O) C₁ = C₁.wp O) :
     (𝕊 cost_t cost_p).ς O (wp O) (pgcl {~C₁ ; ~C₂}) = (wp O C₁).comp (wp O C₂) := by
   ext X σ
-  simp [← ih₁, ς, tsum_succs_univ', Optimization.act]
+  simp [← ih₁, ς, tsum_succs_univ', Optimization.act, OrderHom.comp]
+  simp only [DFunLike.coe]
+  simp
   congr! 5 with α' α
   clear α'
   simp [psucc, r]
   apply C₂.tsum_after_eq' <;> simp [pGCL.after]
-  rintro p C' σ' (⟨C', h, ⟨_⟩⟩ | ⟨h, ⟨_⟩⟩) hp h₀ <;> simp_all
-  · use .term, σ'
+  · rintro p C' σ' (⟨C', h, ⟨_⟩⟩ | ⟨h, ⟨_⟩⟩) hp h₀ <;> simp_all [OrderHom.comp]
+    · simp only [DFunLike.coe] at h₀; simp only [OrderHom.toFun_eq_coe, Function.comp_apply] at h₀
+      exact .inl h₀
+    · use .term, σ'; simp_all; exact h₀
+  · grind
+  · intros; rfl
 
 theorem ς.seq'' {C₁ C₂ : pGCL ϖ}
     (ih₁ : (𝕊 cost_t' cost_p').ς O (wfp' O) C₁ = C₁.wfp' O) :
     (𝕊 cost_t' cost_p').ς O (wfp' O) (pgcl {~C₁ ; ~C₂}) = (wfp' O C₁).comp (wfp' O C₂) := by
   ext X σ
   simp [← ih₁, ς, tsum_succs_univ', Optimization.act]
+  simp only [OrderHom.comp, DFunLike.coe]; simp only [OrderHom.toFun_eq_coe, Function.comp_apply]
   congr! 4 with α' α
   clear α'
   simp [psucc, r]
@@ -263,7 +287,11 @@ theorem ς.seq'' {C₁ C₂ : pGCL ϖ}
     exact C₂.after_inj h.right
   · rintro ⟨p, (C | t), σ⟩ <;> simp [after]
     · rintro (⟨C', h₁, ⟨_⟩⟩ | h)
-      · simp_all [wfp']
+      · simp_all [wfp', OrderHom.comp]
+        rw [pGCL.OrderHom.mk_apply]
+        simp_all
+        intro _ h
+        exact .inl h
       · grind
     · intros
       simp_all
@@ -271,20 +299,25 @@ theorem ς.seq'' {C₁ C₂ : pGCL ϖ}
       use .fault, σ
       simp_all
   · simp [after, wfp']
-    grind
+    sorry
+    -- grind
 
 theorem op_le_seq [(𝕊 cT cP).mdp.FiniteBranching]
     (t_const : Exp ϖ)
-    (hp : ∀ X C C' σ, cP X (pgcl {~C ; ~C'}, σ) = cP X (C, σ))
-    (hp' : ∀ X C σ, cP X (C, σ) = cP 0 (C, σ))
+    (hp : ∀ C C' σ, cP (pgcl {~C ; ~C'}, σ) = cP (C, σ))
     (ht : ∀ X σ, cT X (Termination.term, σ) ≤ X σ)
     (ht' : ∀ X σ, cT X (Termination.fault, σ) = t_const σ) :
       (𝕊 cT cP).op O C ∘ (𝕊 cT cP).op O C'
     ≤ (𝕊 cT cP).op O pgcl {~C ; ~C'} := by
   apply (𝕊 cT cP).op_le_seq pGCL.seq pGCL.after t_const <;> try simp [hp, hp']
+  · intros; apply hp
+  · simp [psucc, pGCL.after]
   · simp [psucc, pGCL.after]
     grind [psucc, pGCL.after]
-  · grind [after_term, pGCL.after]
+  · simp [psucc, pGCL.after]
+    -- grind [after_term, pGCL.after]
+  · simp [psucc, pGCL.after]
+    grind [after_term, pGCL.after]
   · intros; subst_eqs; apply ht
   · exact pGCL.after_inj
 
@@ -304,8 +337,10 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
     intro C; induction C with try simp_all; (try rw [← ς_op_eq_op]; cases O <;> simp [wp] <;> done)
     | seq C₁ C₂ ih₁ ih₂ =>
       apply le_trans _ (op_le_seq cost_t cost_p 0 _ _ _ _) <;> simp
-      intro σ
+      intro X
+      simp []
       simp
+      simp [OrderHom.comp, Funciton.comp]
       exact OrderHom.apply_mono ih₁ (ih₂ σ)
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X

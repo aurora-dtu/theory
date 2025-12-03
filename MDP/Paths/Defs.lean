@@ -127,10 +127,13 @@ theorem ext {π₁ π₂ : M.Path} (h₁ : ‖π₁‖ = ‖π₂‖)
   simp [length] at h₁ hi
   convert h₂ i (by simp [length]; omega)
 
-theorem ext_states {π₁ π₂ : M.Path} (h : π₁.states = π₂.states) : π₁ = π₂ := by
+theorem eq_iff {π₁ π₂ : M.Path} : π₁ = π₂ ↔ π₁.states = π₂.states := by
   obtain ⟨_, _, _⟩ := π₁
   obtain ⟨_, _, _⟩ := π₂
-  simp_all
+  grind
+
+theorem ext_states {π₁ π₂ : M.Path} (h : π₁.states = π₂.states) : π₁ = π₂ := by
+  simp [eq_iff, h]
 
 @[simp]
 theorem mk_states (states : List State) {h₁} {h₂} :
@@ -228,22 +231,22 @@ theorem succs_last (π' : π.succs_univ) : π'.val.last ∈ M.succs_univ π.last
   simp
   simp_all [last]
 
-@[simp]
+@[grind, simp]
 theorem singleton_length : ({s} : M.Path).length = 1 := by simp [instSingleton]
-@[simp]
+@[grind, simp]
 theorem extend_length : ‖π.extend s‖ = ‖π‖ + 1 := by simp [extend]
-@[simp]
+@[grind, simp]
 theorem prepend_length : ‖π.prepend s‖ = ‖π‖ + 1 := by simp [prepend]
-@[simp]
+@[grind, simp]
 theorem tail_length :
     ‖π.tail‖ = if 1 < ‖π‖ then ‖π‖ - 1 else ‖π‖ := by
   simp [tail]; split_ifs <;> simp_all
-@[simp]
+@[grind, simp]
 theorem prev_length : ‖π.prev‖ = if 1 < ‖π‖ then ‖π‖ - 1 else ‖π‖ := by
   simp [prev]; split_ifs <;> simp_all
-@[simp]
+@[grind, simp]
 theorem take_length : ‖π.take n‖ = min (n + 1) ‖π‖ := by simp [take]
-@[simp]
+@[grind, simp]
 theorem succs_length (π' : π.succs_univ) : ‖π'.val‖ = ‖π‖ + 1 := by
   rcases π' with ⟨π', ⟨_⟩, hπ'⟩
   simp; split_ifs; omega

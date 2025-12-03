@@ -1,0 +1,46 @@
+name = "pgcl"
+version = "0.1.0"
+keywords = ["math"]
+defaultTargets = ["PGCL"]
+
+[leanOptions]
+pp.unicode.fun = true # pretty-prints `fun a ↦ b`
+# autoImplicit = false
+linter.docPrime = false
+linter.hashCommand = true
+linter.oldObtain = true
+linter.style.cases = true
+linter.style.cdot = true
+linter.style.docString = true
+linter.style.dollarSyntax = true
+linter.style.header = true
+linter.style.lambdaSyntax = true
+linter.style.longLine = true
+linter.style.missingEnd = true
+linter.style.multiGoal = true
+linter.style.openClassical = true
+linter.style.refine = true
+linter.style.setOption = true
+
+[[require]]
+scope = "wvhulle"
+name = "ennreal-arith"
+rev = "main"           # or a specific commit
+
+[[require]]
+name = "smt"
+scope = "ufmg-smite"
+rev = "main"
+
+[[require]]
+name = "mathlib"
+scope = "leanprover-community"
+
+[[lean_lib]]
+name = "PGCL"
+
+[[lean_lib]]
+name = "MDP"
+
+[[lean_lib]]
+name = "STDX"

@@ -1,9 +1,9 @@
 import Mathlib.Data.Finset.Insert
 import Lean.PrettyPrinter.Delaborator.Basic
 
-class Subst (W Var E : Type) where
+class Subst (W Var : Type*) (E : outParam (Var → Type*)) where
   /-- Written using `a[x ↦ e]`. Substitutes all `x` in `a` with `e`. -/
-  subst : W → Var → E → W
+  subst : W → (v : Var) → E v → W
 
 @[inherit_doc Subst.subst]
 syntax:max term noWs "[" withoutPosition(term) ppHardSpace "↦" ppHardSpace withoutPosition(term) "]"
@@ -16,5 +16,5 @@ def Subst.substUnexpander : Unexpander
 | `($(_) $m $x $v) => `($m[$x ↦ $v])
 | _ => throw ()
 
-instance [BEq α] [Hashable α] : Subst (Std.HashMap α β) α β where
+instance [BEq α] [Hashable α] : Subst (Std.HashMap α β) α (fun _ ↦ β) where
   subst m x v := m.insert x v

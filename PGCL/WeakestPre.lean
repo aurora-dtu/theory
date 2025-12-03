@@ -12,7 +12,7 @@ variable {ϖ : Type*} [DecidableEq ϖ]
 
 noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X σ ↦ X (σ[x ↦ A σ]), fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
   | pgcl {~C₁; ~C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
   | pgcl {{~C₁} [~p] {~C₂}} =>
     ⟨fun X ↦ p.pick (C₁.wp O X) (C₂.wp O X),
@@ -20,7 +20,7 @@ noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {{~C₁}[]{~C₂}} =>
     ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
   | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp ⟨
-      (b.iver * C'.wp O · + b.not.iver * X),
+      (i[b] * C'.wp O · + i[b.not] * X),
       fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(~b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
@@ -39,7 +39,7 @@ def wpUnexpander : Lean.PrettyPrinter.Unexpander
 
 noncomputable def Φ (O : Optimization) (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp ϖ) :
     Exp ϖ →o Exp ϖ :=
-  ⟨fun X ↦ φ.iver * wp[O]⟦~C'⟧ X + φ.not.iver * f, by intro _ _ _; simp; gcongr⟩
+  ⟨fun X ↦ i[φ] * wp[O]⟦~C'⟧ X + i[φ.not] * f, by intro _ _ _; simp; gcongr⟩
 
 variable {O : Optimization}
 
@@ -51,18 +51,38 @@ theorem wp_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
 
 variable {x : ϖ} {e : Exp ϖ} {b : BExpr ϖ} {C₁ : pGCL ϖ}
 
-@[simp] theorem wp.skip : wp[O]⟦skip⟧ = ⟨(·), fun (_ _ : Exp ϖ) a ↦ a⟩ := rfl
-@[simp] theorem wp.assign :
-    wp[O]⟦~x := ~A⟧ = ⟨fun X σ ↦ X (σ[x ↦ A σ]), fun _ _ h _ ↦ h _⟩ := rfl
-@[simp] theorem wp.seq : wp[O]⟦~C₁ ; ~C₂⟧ = OrderHom.comp (C₁.wp O) (C₂.wp O) := rfl
-@[simp] theorem wp.prob :
-    wp[O]⟦{~C₁}[~p]{~C₂}⟧ = ⟨fun X ↦ p.pick (C₁.wp O X) (C₂.wp O X), fun _ _ _ ↦ by simp; gcongr⟩
+-- @[simp] theorem wp.skip : wp[O]⟦skip⟧ = ⟨(·), fun (_ _ : Exp ϖ) a ↦ a⟩ := rfl
+-- @[simp] theorem wp.assign :
+--     wp[O]⟦~x := ~A⟧ = ⟨fun X ↦ X[x ↦ A], fun _ _ h _ ↦ h _⟩ := rfl
+-- @[simp] theorem wp.seq : wp[O]⟦~C₁ ; ~C₂⟧ = OrderHom.comp (C₁.wp O) (C₂.wp O) := rfl
+-- @[simp] theorem wp.prob :
+--     wp[O]⟦{~C₁}[~p]{~C₂}⟧ = ⟨fun X ↦ p.pick (C₁.wp O X) (C₂.wp O X), fun _ _ _ ↦ by simp; gcongr⟩
+-- := rfl
+-- @[simp] theorem wp.nonDet : wp[O]⟦{~C₁}[]{~C₂}⟧ = O.opt₂ (C₁.wp O) (C₂.wp O) := by ext; simp [wp]
+-- @[simp] theorem wp.tick : wp[O]⟦tick(~e)⟧ = ⟨fun X ↦ e + X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+-- open scoped Classical in
+-- @[simp] theorem wp.observe :
+--     wp[O]⟦observe(~b)⟧ = ⟨fun X ↦ i[b] * X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+
+section
+
+variable {X : Exp ϖ}
+
+@[simp] theorem wp.skip_apply : wp[O]⟦skip⟧ X = X := rfl
+@[simp] theorem wp.assign_apply :
+    wp[O]⟦~x := ~A⟧ X = X[x ↦ A] := rfl
+@[simp] theorem wp.seq_apply : wp[O]⟦~C₁ ; ~C₂⟧ X = wp[O]⟦~C₁⟧ (wp[O]⟦~C₂⟧ X) := rfl
+@[simp] theorem wp.prob_apply :
+    wp[O]⟦{~C₁}[~p]{~C₂}⟧ X = p.pick (C₁.wp O X) (C₂.wp O X)
 := rfl
-@[simp] theorem wp.nonDet : wp[O]⟦{~C₁}[]{~C₂}⟧ = O.opt₂ (C₁.wp O) (C₂.wp O) := by ext; simp [wp]
-@[simp] theorem wp.tick : wp[O]⟦tick(~e)⟧ = ⟨fun X ↦ e + X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+@[simp] theorem wp.nonDet_apply : wp[O]⟦{~C₁}[]{~C₂}⟧ X = O.opt₂ (C₁.wp O X) (C₂.wp O X) := by
+  ext; simp [wp]
+@[simp] theorem wp.tick_apply : wp[O]⟦tick(~e)⟧ X = e + X := rfl
 open scoped Classical in
-@[simp] theorem wp.observe :
-    wp[O]⟦observe(~b)⟧ = ⟨fun X ↦ b.iver * X, fun _ _ _ ↦ by simp; gcongr⟩ := rfl
+@[simp] theorem wp.observe_apply :
+    wp[O]⟦observe(~b)⟧ X = i[b] * X := rfl
+
+end
 
 noncomputable abbrev dwp : pGCL ϖ → Exp ϖ →o Exp ϖ := wp 𝒟
 noncomputable abbrev awp : pGCL ϖ → Exp ϖ →o Exp ϖ := wp 𝒜
@@ -111,21 +131,20 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
   simp [ωSup]
   induction C with (try simp; done)
+  | assign x e => intro c; ext σ; simp
   | seq C₁ C₂ ih₁ ih₂ =>
     intro c
     simp [ih₂]
-    have : ∀ i a, wp[O]⟦~C₂⟧ (c i) a = c.map wp[O]⟦~C₂⟧ i a := by simp
+    have : ∀ i, wp[O]⟦~C₂⟧ (c i) = c.map wp[O]⟦~C₂⟧ i := by simp
     simp only [this, ih₁]
-    rfl
   | prob C₁ p C₂ ih₁ ih₂ =>
-    simp [ProbExp.pick, -ProbExp.pick_of]
+    simp [ProbExp.pick]
     intro C
     ext σ
-    simp [-ProbExp.pick_of, ENNReal.mul_iSup, ih₁, ih₂]
+    simp [ENNReal.mul_iSup, ih₁, ih₂]
     rw [ENNReal.iSup_add_iSup]
-    simp
     intro i j; use i ⊔ j
-    apply ProbExp.pick_le <;> gcongr <;> grind
+    gcongr <;> apply (wp _ _).mono <;> gcongr <;> omega
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp
     simp [ih₁, ih₂]; clear ih₁ ih₂
@@ -168,7 +187,7 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
     rw [iSup_comm]
     congr with i
     suffices (⇑(Φ O b C' fun a ↦ ⨆ i, c i a))^[i] ⊥ = ⨆ i_1, (⇑(Φ O b C' (c i_1)))^[i] ⊥ by
-      have := congrFun this σ; simpa
+      replace := congrFun this σ; simp at this; convert this; simp
     clear σ
     induction i with
     | zero => simp
@@ -198,7 +217,6 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
           simp only [DFunLike.coe] at ih
           simp at ih
           convert ih
-          simp
       · intro j k
         use j ⊔ k
         gcongr
@@ -239,13 +257,13 @@ theorem wp_le_one (C : pGCL ϖ) (X : Exp ϖ) (hX : X ≤ 1) : wp[O]⟦~C.st⟧ X
     · simp [Optimization.opt₂]; exact inf_le_of_right_le (ih₂ X hX)
   | tick => simp [st, hX]
   | observe b =>
-    simp [st, wp]; intro σ; specialize hX σ; simp_all [BExpr.iver]; split_ifs <;> simp [hX]
+    simp [st]; intro σ; specialize hX σ; simp_all [BExpr.iver]; split_ifs <;> simp [hX]
   | loop b C' ih =>
     simp [st]
     apply lfp_le
     intro σ
     specialize hX σ
-    simp_all [BExpr.iver, BExpr.not]
+    simp_all [BExpr.iver]
     split_ifs
     · simp; apply ih; rfl
     · simp; apply hX
@@ -305,8 +323,9 @@ theorem wp_le_add (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ X + wp[𝒟]⟦~C.st⟧ Y 
     simp [ProbExp.pick]
     ring_nf; rfl
 
-theorem wp_le_add_right (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ (X + ((fun _ ↦ Y) : Exp ϖ)) ≤ wp[𝒟]⟦~C.st⟧ X + (fun _ ↦ Y) := by
-  induction C generalizing X Y with try simp [wp, st]; (try intro; simp [mul_add]; done)
+open scoped Classical in
+theorem wp_le_add_right {X : Exp ϖ} {Y : ENNReal} (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ (X + Y) ≤ wp[𝒟]⟦~C.st⟧ X + Y := by
+  induction C generalizing X Y with try simp [wp, st]
   | seq C₁ C₂ ih₁ ih₂ =>
     grw [← ih₁, ih₂]
   | loop b C' ih =>
@@ -315,7 +334,7 @@ theorem wp_le_add_right (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ (X + ((fun _ ↦ Y) 
     simp [Optimization.opt₂]
     grw [ih₁, ih₂]
     intro σ
-    simp only [Pi.inf_apply, Pi.add_apply]
+    simp only [Exp.min_apply, Exp.add_apply]
     rw [min_add]
   | prob C₁ p C₂ ih₁ ih₂ =>
     grw [ih₁, ih₂]

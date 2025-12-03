@@ -19,7 +19,7 @@ class SmallStepSemantics (P S T A : Type*) [Nonempty A] where
   succs_sum_to_one : ∀ {c α p₀ c'}, r c α p₀ c' → ∑' (b) (p : { p // r c α p b }), p.val = 1
   progress : ∀ s, ∃ p a x, r s a p x
 
-  cost_p : 𝔼[S] →o P × S → ENNReal
+  cost_p : P × S → ENNReal
   cost_t : 𝔼[S] →o T × S → ENNReal
 
 namespace SmallStepSemantics
@@ -185,15 +185,16 @@ theorem please (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNR
 def cost (X : 𝔼[S]) : 𝕊.mdp.Costs
   | .bot => 0
   | .term t σ => 𝕊.cost_t X (t, σ)
-  | .prog C σ => 𝕊.cost_p X (C, σ)
+  | .prog C σ => 𝕊.cost_p (C, σ)
 
+@[mono]
 def cost_mono : Monotone 𝕊.cost := by
   intro a b h c
   simp [cost]
   split
   · rfl
   · apply 𝕊.cost_t.mono h
-  · apply 𝕊.cost_p.mono h
+  · rfl
 
 @[simp] theorem cost_bot (X) : 𝕊.cost X .bot = 0 := by rfl
 
@@ -305,9 +306,15 @@ noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
       · apply 𝕊.cost_t.mono hab⟩),
   fun a b hab C X σ ↦ by
     simp
+    mono
     gcongr; split <;> gcongr; split
     · apply hab
     · rfl⟩
+
+example : 𝕊.ς O Y C = sorry := by
+  ext X σ
+  simp [ς, cost]
+  sorry
 
 theorem tsum_ite_left {α β : Type*} [AddCommMonoid α] [TopologicalSpace α] (P : Prop) [Decidable P]
     (x : β → α) : (∑' (b : β), if P then x b else 0) = if P then ∑' (b : β), x b else 0 := by
@@ -385,7 +392,8 @@ theorem op_eq_iSup_Φ [Optimization.ΦContinuous O 𝕊.mdp] :
     | zero => simp
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
-      exact apply_mono (MDP.Φ.monotone' (𝕊.cost_mono h)) ih⟩ := by
+      mono
+      apply MDP.Φ.monotone' (𝕊.cost_mono h)⟩ := by
   unfold op
   ext C
   simp [𝕊.mdp.lfp_Φ_eq_iSup_Φ]
@@ -482,7 +490,7 @@ theorem ET.et_eq_op : et = 𝕊.op O := et_le_op.antisymm (op_isLeast _ et_prefi
 attribute [-simp] Function.iterate_succ in
 theorem op_le_seq
     (seq : P → P → P) (after : P → (P ⊕ T) × S → (P ⊕ T) × S) (t_const : 𝔼[S])
-    (h_cost_seq : ∀ C C' σ X, 𝕊.cost_p X (seq C C', σ) = 𝕊.cost_p (𝕊.op O C' X) (C, σ))
+    (h_cost_seq : ∀ C C' σ, 𝕊.cost_p (seq C C', σ) = 𝕊.cost_p (C, σ))
     (h_seq_act : ∀ C C' σ, 𝕊.act (.prog (seq C C') σ) = 𝕊.act (.prog C σ))
     (h_succ : ∀ {C C' σ p α s}, (p, s) ∈ 𝕊.psucc C σ α → (p, after C' s) ∈ 𝕊.psucc (seq C C') σ α)
     (h_after_p : ∀ {C C' σ}, after C' (.inl C, σ) = (.inl (seq C C'), σ))
@@ -492,6 +500,14 @@ theorem op_le_seq
       𝕊.cost_t (𝕊.op O C' X) (t, σ) ≤ (𝕊.op O C' X) σ)
     (after_inj : ∀ x, Function.Injective (after x)) :
       𝕊.op O C ∘ 𝕊.op O C' ≤ 𝕊.op O (seq C C') := by
+  -- rw [← lfp_ς_eq_op]
+  -- intro X
+  -- simp
+  -- have := fun a h ↦ lfp_le (𝕊.ς O) (a:=a) h C ((lfp (𝕊.ς O) C') X)
+  -- simp at this
+  -- apply le_trans (this _ _)
+
+
   intro X σ
   simp
   nth_rw 1 [op_eq_iter]
