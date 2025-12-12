@@ -307,7 +307,10 @@ noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
   fun a b hab C X σ ↦ by
     simp
     mono
-    gcongr; split <;> gcongr; split
+    intro α
+    simp only
+    split <;> gcongr
+    split
     · apply hab
     · rfl⟩
 

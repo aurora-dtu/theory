@@ -127,7 +127,7 @@ instance [M.FiniteBranching] : Finite 𝔖[M,s,≤n] := by
   · simp_all
     use Scheduler.mk' fun π ↦ if h : π ∈ Path[M,s,≤n] then ⟨a ⟨π, h⟩, by
       have := (a ⟨π, h⟩).prop
-      simp_all [-Finset.coe_mem]⟩ else default
+      simp_all only [act₀_mem_iff_act_mem]⟩ else default
     simp
 instance [M.FiniteBranching] : Fintype 𝔖[M,s,≤n] :=
   Fintype.ofFinite 𝔖[M,s,≤n]

@@ -1,5 +1,5 @@
-import MDP.Paths.Cost
 import MDP.Optimization
+import MDP.Paths.Cost
 
 open OmegaCompletePartialOrder OrderHom
 
@@ -75,9 +75,9 @@ theorem Φf_ωScottContinuous : ωScottContinuous (M.Φf s a) := by
   simp [Φf, ωSup, ENNReal.mul_iSup, ENNReal.tsum_eq_iSup_sum]
   rw [iSup_comm]
   congr with Z
-  refine ENNReal.finsetSum_iSup_of_monotone fun S _ _ h ↦ ?_
+  refine ENNReal.finsetSum_iSup_of_monotone fun S i j h ↦ ?_
   gcongr
-  exact OrderHomClass.GCongr.mono c h S
+  exact c.mono h S
 
 theorem Φℒ_ωScottContinuous : ωScottContinuous (M.Φℒ c ℒ) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_

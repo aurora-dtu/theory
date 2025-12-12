@@ -39,7 +39,6 @@ theorem EC_le_succ [DecidableEq State] : M.EC c 𝒮 n s ≤ M.EC c 𝒮 (n + 1)
     · intro ⟨x, _⟩ _ ⟨y, _⟩ _ h
       simp_all
       contrapose h
-      simp_all
       have := congrArg Path.last h
       simp at this
       exact this
