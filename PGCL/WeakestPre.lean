@@ -119,7 +119,7 @@ def st : pGCL ϖ → pGCL ϖ
   | pgcl {tick(~ _)} => pgcl {skip}
   | pgcl {observe(~ b)} => pgcl {observe(~b)}
 
-def Φ.continuous [DecidablePred b] {C' : pGCL ϖ} (ih : ωScottContinuous wp[O]⟦~C'⟧) :
+def Φ.continuous' [DecidablePred b] {C' : pGCL ϖ} (ih : ωScottContinuous wp[O]⟦~C'⟧) :
     ωScottContinuous ⇑(Φ O b C' X) := by
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom] at ih ⊢
   intro c
@@ -127,6 +127,7 @@ def Φ.continuous [DecidablePred b] {C' : pGCL ϖ} (ih : ωScottContinuous wp[O]
   ext σ
   simp [ih, ENNReal.mul_iSup, ENNReal.iSup_add]
 
+@[simp]
 def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
   simp [ωSup]
@@ -181,13 +182,13 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
     ext σ
     replace ih : ωScottContinuous ⇑wp[O]⟦~C'⟧ := by
       simpa [ωScottContinuous_iff_map_ωSup_of_orderHom]
-    rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous ih)]
-    conv => right; arg 1; ext; rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous ih)]
+    rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous' ih)]
+    conv => right; arg 1; ext; rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous' ih)]
     simp
     rw [iSup_comm]
     congr with i
     suffices (⇑(Φ O b C' fun a ↦ ⨆ i, c i a))^[i] ⊥ = ⨆ i_1, (⇑(Φ O b C' (c i_1)))^[i] ⊥ by
-      replace := congrFun this σ; simp at this; convert this; simp
+      replace := congrFun this σ; simp at this; convert this; -- simp
     clear σ
     induction i with
     | zero => simp
@@ -217,6 +218,7 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
           simp only [DFunLike.coe] at ih
           simp at ih
           convert ih
+          simp only [_root_.iSup_apply]
       · intro j k
         use j ⊔ k
         gcongr
@@ -234,6 +236,15 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
         · apply c.mono; omega
   | tick r => intro c; ext σ; simp [ENNReal.add_iSup]
   | observe r => intro c; ext σ; simp [wp, ENNReal.mul_iSup]
+
+@[simp]
+def Φ.continuous [DecidablePred b] {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ O b C' X) :=
+  continuous' (wp.continuous C')
+
+theorem wp_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) [DecidablePred φ] :
+    wp[O]⟦while ~φ{~C'}⟧ f = ⨆ n, (⇑(Φ O φ C' f))^[n] 0 := by
+  rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Φ.continuous]
+  rfl
 
 omit [DecidableEq ϖ] in
 theorem Exp.sub_sub_cancel {a b : Exp ϖ} (h : ∀ σ, a σ ≠ ⊤) (h₂ : b ≤ a) : a - (a - b) = b := by
@@ -288,8 +299,7 @@ theorem wp_le_add (C : pGCL ϖ) : wp[𝒟]⟦~C.st⟧ X + wp[𝒟]⟦~C.st⟧ Y 
     grw [ih₁, ih₂]
   | loop b C' ih =>
     simp [st]
-    simp [wp_loop]
-    simp [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous (wp.continuous C'.st))]
+    simp [wp_loop_eq_iter]
     intro σ
     simp
     rw [ENNReal.iSup_add_iSup]

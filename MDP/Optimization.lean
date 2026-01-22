@@ -1,4 +1,5 @@
-import Mathlib.Order.ConditionallyCompleteLattice.Basic
+import Mathlib.Data.ENNReal.Operations
+import Mathlib.Data.ENNReal.Inv
 import Mathlib.Order.Hom.Order
 import Mathlib.Order.OmegaCompletePartialOrder
 
@@ -70,4 +71,32 @@ theorem opt₂_le {a b c d : α} (hac : a ≤ c) (hbd : b ≤ d) : O.opt₂ a b 
   · exact inf_le_of_left_le hac
   · exact inf_le_of_right_le hbd
 
+@[grind =, simp]
+theorem 𝒜_opt {f : ι → α} : (𝒜 : Optimization).opt f = iSup f := rfl
+@[grind =, simp]
+theorem 𝒟_opt {f : ι → α} : (𝒟 : Optimization).opt f = iInf f := rfl
+
+@[grind =, simp]
+theorem opt_apply {f : ι → β → α} : O.opt f s = O.opt (f · s) := by
+  cases O <;> simp [opt]
+
+@[simp]
+theorem opt_const [Nonempty ι] {x : α} : O.opt (fun (_ : ι) ↦ x) = x := by
+  cases O <;> simp [opt]
+
+theorem ENNReal_add_opt [Nonempty ι] {f : ι → ENNReal} :
+    O.opt (fun (i : ι) ↦ a + f i) = a + O.opt f := by
+  cases O <;> simp [ENNReal.add_iSup, ENNReal.add_iInf]
+theorem ENNReal_opt_add [Nonempty ι] {f : ι → ENNReal} :
+    O.opt (fun (i : ι) ↦ f i + a) = O.opt f + a := by
+  cases O <;> simp [ENNReal.iSup_add, ENNReal.iInf_add]
+theorem ENNReal_mul_opt [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
+    O.opt (fun (i : ι) ↦ a * f i) = a * O.opt f := by
+  cases O <;> simp [ENNReal.mul_iSup, ENNReal.mul_iInf, ha]
+theorem ENNReal_opt_mul [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
+    O.opt (fun (i : ι) ↦ f i * a) = O.opt f * a := by
+  cases O <;> simp [ENNReal.iSup_mul, ENNReal.iInf_mul, ha]
+
 end Optimization
+
+#min_imports

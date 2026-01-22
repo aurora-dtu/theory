@@ -153,6 +153,7 @@ theorem Path.succs_states_getElem' {π π' : M.Path} (hπ' : π' ∈ π.succs) (
     π'.states[i]'(by simp; grind) = π[i] := by
   grind [succs]
 
+/-- NOTE: this is the dependent version of `pmf'` -/
 noncomputable def Path.pmf (π : M.Path) : PMF π.succs :=
   (M.P (π.states[‖π‖ - 1]'(by grind))).bindOnSupport
     (fun s hs ↦
@@ -287,15 +288,18 @@ instance : IsProbabilityMeasure (Path.lifted (M:=M)) :=
   Measure.instIsProbabilityMeasureForallInfinitePi _
 
 noncomputable instance {π : M.Path} : Inhabited π.succs :=
-  let h := (M.P (π.states.getLast (by grind))).support_nonempty
+  let h := (M.P (π.states.getLast π.nonempty)).support_nonempty
   let s' := h.choose
-  let hs' : s' ∈ (M.P (π.states.getLast (by exact π.nonempty))).support := h.choose_spec
+  let hs' : s' ∈ (M.P (π.states.getLast π.nonempty)).support := h.choose_spec
   ⟨⟨{states := π.states ++ [s'], property := by simp at hs'; grind}, by simp [Path.succs]⟩⟩
 
 @[grind]
 noncomputable def embed.help (f : (π : M.Path) → π.succs) : ℕ → M.Path
-  | 0 => ⟨[M.ι], by grind, by simp, by grind, by grind⟩
+  | 0 => default
   | n + 1 => f (help f n)
+theorem embed.help_eq (f : (π : M.Path) → π.succs) : embed.help f n = (f ·)^[n] default := by
+  fun_induction help with simp_all [-Function.iterate_succ, Function.iterate_succ'] <;> grind
+
 @[grind =, simp]
 theorem embed.help_length : ‖embed.help (M:=M) f n‖ = n + 1 := by
   fun_induction help with grind
@@ -473,8 +477,7 @@ theorem Pr_cyl_help (π : M.Path) :
     have : π' = π.take ⟨i, by omega⟩ := by grind [Path.take]
     subst_eqs
     split_ifs at h''
-    · use ⟨i, by grind⟩
-      grind only [take, = take_length, = min_def]
+    · use ⟨i, by grind⟩; grind only [take, = take_length, = min_def]
     · grind only [= take_length, take, = List.take_take, = min_def, = List.take_length]
   · intro ⟨i, hi⟩ h
     grind only [take, = List.length_take, = List.take_add, = min_def, = List.getElem_append,
@@ -487,8 +490,7 @@ theorem Pr_cyl (π : M.Path) :
   simp [Pr]
   rw [Measure.map_apply (by measurability) (by measurability)]
   simp [lifted, Path.Cyl_eq_cylinder]
-  rw [Measure.infinitePi_cylinder _ (DiscreteMeasurableSpace.forall_measurableSet _)]
-  rw [Path.theSet_eq_pi, Measure.pi_pi]
+  rw [Measure.infinitePi_cylinder _ (by measurability), Path.theSet_eq_pi, Measure.pi_pi]
   simp only [Finset.univ_eq_attach, Path.measure, instMeasurableSpacePath, pmf_toMeasure_apply,
     pmf'_toMeasure_apply, Set.mem_image, Set.mem_setOf_eq, Subtype.exists, exists_and_left,
     exists_prop, exists_eq_right_right]

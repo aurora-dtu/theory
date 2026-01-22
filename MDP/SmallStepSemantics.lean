@@ -1,12 +1,14 @@
 import MDP.Bellman
 import MDP.Relational
 import MDP.SupSup
+import Mathlib.Tactic.Monotonicity.Basic
 
 open OrderHom OmegaCompletePartialOrder
 
-abbrev 𝔼 (S : Type*) := S → ENNReal
-
-notation "𝔼[" S "]" => 𝔼 S
+-- abbrev 𝔼 (S : Type*) := S → ENNReal
+-- notation "𝔼[" S "]" => 𝔼 S
+-- abbrev 𝔼 (S : Type*) := S → ENNReal
+notation "𝔼[" S "]" => S → ENNReal
 
 inductive Conf (P S T : Type*) where
   | term (t : T) (σ : S)
@@ -305,19 +307,22 @@ noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
       · apply (Y _).mono hab
       · apply 𝕊.cost_t.mono hab⟩),
   fun a b hab C X σ ↦ by
-    simp
-    mono
-    intro α
-    simp only
-    split <;> gcongr
+    simp only [Φ']
+    gcongr with α
+    split <;> try rfl
+    gcongr
     split
     · apply hab
     · rfl⟩
 
-example : 𝕊.ς O Y C = sorry := by
-  ext X σ
-  simp [ς, cost]
-  sorry
+theorem ς_apply : 𝕊.ς O Y C X = fun σ ↦ 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
+    | .prog C' σ' => Y C' X σ'
+    | .term t σ' => 𝕊.cost_t X (t, σ')
+    | .bot => 0) := rfl
+theorem ς_apply' : 𝕊.ς O Y C X σ = 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
+    | .prog C' σ' => Y C' X σ'
+    | .term t σ' => 𝕊.cost_t X (t, σ')
+    | .bot => 0) := rfl
 
 theorem tsum_ite_left {α β : Type*} [AddCommMonoid α] [TopologicalSpace α] (P : Prop) [Decidable P]
     (x : β → α) : (∑' (b : β), if P then x b else 0) = if P then ∑' (b : β), x b else 0 := by
@@ -419,7 +424,7 @@ theorem ς_op_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.ς O (𝕊.op 
   ext C X σ
   simp [op, op]
   rw [← map_lfp]
-  simp [ς, OrderHom.coe_mk, cost, op]
+  simp [ς_apply, OrderHom.coe_mk, cost, op]
 
 theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.ς O b ≤ b) :
     𝕊.op O ≤ b := by
@@ -429,7 +434,7 @@ theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →
   | zero => intros _ _ _; simp
   | succ 𝕊 ih =>
     refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', ς, -Function.iterate_succ, cost]
+    simp [Function.iterate_succ', ς_apply, -Function.iterate_succ, cost]
     gcongr with α
     rcases α with (_ | α)
     · rfl
@@ -452,7 +457,7 @@ theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Φ_simp]
-      nth_rw 1 [ς]
+      nth_rw 1 [ς_apply]
       simp [cost]
       gcongr with α
       split <;> gcongr; split
@@ -467,7 +472,7 @@ theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (
     | succ n ih =>
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Φ_simp]
-      nth_rw 1 [ς]
+      nth_rw 1 [ς_apply]
       simp [cost]
       gcongr with α
       split <;> gcongr; split
@@ -521,8 +526,8 @@ theorem op_le_seq
   | succ n ih =>
     nth_rw 2 [← ς_op_eq_op]
     rw [Function.iterate_succ', Function.comp_apply]
-    nth_rw 1 [ς]
-    nth_rw 2 [ς]
+    nth_rw 1 [ς_apply]
+    nth_rw 1 [ς_apply']
     simp [h_cost_seq, cost, h_seq_act, Optimization.act]
     gcongr
     rintro (_ | α)

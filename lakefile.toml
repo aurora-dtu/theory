@@ -44,3 +44,6 @@ name = "MDP"
 
 [[lean_lib]]
 name = "STDX"
+
+[[lean_lib]]
+name = "HeyLo"

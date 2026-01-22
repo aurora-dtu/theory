@@ -65,7 +65,7 @@ def wfp'Unexpander : Lean.PrettyPrinter.Unexpander
 | _ => throw ()
 
 theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
-  induction C generalizing X with try simp [wfp, wfp', *]; done
+  induction C generalizing X with try simp [wfp, wfp', *]; (try rfl); done
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [wfp, wfp', ← ih₁, ← ih₂]; ext; simp [Optimization.opt₂]
     cases O <;> simp
@@ -96,7 +96,6 @@ theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
       simp
       nth_rw 2 [← map_lfp]
       simp [-map_lfp, ih]
-      rfl
     · apply lfp_le
       simp [← ih]
       nth_rw 2 [← map_lfp]
@@ -294,10 +293,9 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
           set f := (fun Y ↦ b.probOf.pickProb (wfp[𝒜]⟦~C'.st⟧ Y) (1 - X))^[i]
           set g := (fun Y ↦ b.probOf.pickProb (1 - wfp[𝒜]⟦~C'.st⟧ (1 - Y)) X)^[i]
           if b σ then
-            simp_all only [BExpr.probOf, ProbExp.pickProb_apply, ProbExp.pick, ProbExp.coe_exp_coe,
-              Exp.add_apply, Exp.mul_apply, BExpr.true_iver, ProbExp.exp_coe_apply, one_mul,
-              Exp.sub_apply, Exp.one_apply, tsub_self, ProbExp.sub_apply, ProbExp.one_apply,
-              zero_mul, add_zero]
+            simp_all only [BExpr.probOf, ProbExp.pickProb_apply, ProbExp.pick, Exp.add_apply,
+              Exp.mul_apply, ProbExp.coe_apply, BExpr.true_iver, one_mul, Exp.sub_apply,
+              Exp.one_apply, tsub_self, ProbExp.sub_apply, ProbExp.one_apply, zero_mul, add_zero]
             gcongr
             apply (wfp _ _).mono
             intro σ
@@ -305,10 +303,9 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
             exact tsub_le_iff_left.mp (ih σ)
           else
             simp_all only [tsub_le_iff_right, BExpr.probOf, ProbExp.pickProb_apply, ProbExp.pick,
-              ProbExp.coe_exp_coe, Exp.add_apply, Exp.mul_apply, Bool.false_eq_true,
-              BExpr.false_iver, ProbExp.exp_coe_apply, zero_mul, Exp.sub_apply, Exp.one_apply,
-              tsub_zero, ProbExp.sub_apply, ProbExp.one_apply, one_mul, zero_add,
-              ProbExp.one_sub_one_sub_apply, le_refl]
+              Exp.add_apply, Exp.mul_apply, ProbExp.coe_apply, Bool.false_eq_true, BExpr.false_iver,
+              zero_mul, Exp.sub_apply, Exp.one_apply, tsub_zero, ProbExp.sub_apply,
+              ProbExp.one_apply, one_mul, zero_add, ProbExp.one_sub_one_sub_apply, le_refl]
     · refine ωScottContinuous.of_monotone_map_ωSup ?_
       apply Exists.intro
       · simp [ωSup]

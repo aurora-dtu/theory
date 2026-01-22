@@ -4,10 +4,12 @@ open Lean
 
 class Scope (α : Sort*) where
   root : Type*
+  names : Array Name
   fields : Array (Name × Type*)
 
 def Scope.coe (α : Sort*) {β : Sort*} [inst : Scope α] : Scope β where
   root := inst.root
+  names := inst.names
   fields := inst.fields
 
 instance Pi.instScope {α β : Type*} [i : Scope α] : Scope (α → β) := i.coe
@@ -17,6 +19,16 @@ structure Vars where
   a : ℕ
   b : Bool
   c : Bool
+
+universe u v
+def ReturnType {α : Type u} {β : Type v} (_ : α → β) : Type v := β
+
+structure Vars' (α : Type*) where
+  a : ℕ
+  b : Bool → α
+  c : Bool
+
+#check Vars'.b
 
 abbrev Vars.isName (n : Lean.Name) : Prop := n = `a ∨ n = `b ∨ n = `c
 
@@ -39,8 +51,14 @@ def Vars.subst (V : Vars) (n : Lean.Name) (h : Vars.isName n := by grind) :
 
 instance : Scope Vars where
   root := Vars
+  names := #[`a, `b, `c]
   fields := #[(`a, ℕ), (`b, Bool → Bool), (`c, ENNReal)]
 
+def collectNames (e : Expr) : Array Name :=
+  match e with
+  | .app (.app _ (.app _ (.lit (.strVal n)))) r =>
+    #[.mkSimple n] ++ collectNames r
+  | _ => #[]
 def collectArgs (e : Expr) : Array (Name × Expr) :=
   match e with
   | .app (.app _ (.app (.app _ (.app _ (.lit (.strVal n)))) t)) r =>
@@ -56,6 +74,10 @@ def scopeFields (name : TSyntax `term) : TermElabM (Array (Name × Expr)) := do
   let fieldsExpr ← (elabTermAndSynthesize (← `(term|Scope.fields $name)) none)
   return collectArgs ((← whnf fieldsExpr).getArg! 1)
 open Lean Elab Command Term Meta in
+def scopeNames (name : TSyntax `term) : TermElabM (Array Name) := do
+  let namesExpr ← (elabTermAndSynthesize (← `(term|Scope.names $name)) none)
+  return collectNames ((← whnf namesExpr).getArg! 1)
+open Lean Elab Command Term Meta in
 def scopeFieldsExpr (name : Expr) : TermElabM (Array (Name × Expr)) := do
   let fieldsExpr : Expr := .app (.const `Scope.fields []) name
   return collectArgs ((← whnf fieldsExpr).getArg! 1)
@@ -66,9 +88,11 @@ open Lean Elab Command Term Meta in
 def scopeMacro : CommandElab := fun stx ↦ do
   let `(scope $name) := stx | throwUnsupportedSyntax
   let root ← liftTermElabM <| scopeMem name
+  let names ← liftTermElabM <| scopeNames name
   let fields ← liftTermElabM <| scopeFields name
   dbg_trace f!"Scope of : {← liftTermElabM (elabTermAndSynthesize name none)}"
   dbg_trace f!"  root   : {root}"
+  dbg_trace f!"  names  : {names}"
   dbg_trace f!"  fields : {fields}"
 
 scope Vars

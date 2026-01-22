@@ -123,37 +123,34 @@ example :
   simp [BoundedRetransmissionProtocol]
   apply k_induction 4
   intro σ
-  simp only [wp.prob, wp.seq, wp.assign, Pi.add_apply, mk_comp_mk, coe_mk, Function.comp_apply,
-    Ψ, Function.iterate_succ', Function.iterate_zero, CompTriple.comp_eq, Pi.mul_apply, BExpr.iver,
-    Pi.top_apply, ite_mul, one_mul, zero_mul, Pi.inf_apply, BExpr.not, not_and, not_lt]
-  simp only [ProbExp.pick, States.instSubst, String.reduceEq, ↓reduceIte, Nat.cast_add,
-    Nat.cast_one, Pi.add_apply, Pi.mul_apply, mul_ite, mul_zero, Pi.sub_apply, Pi.one_apply,
-    nonpos_iff_eq_zero, zero_add, Nat.reduceAdd]
+  simp only [wp.prob_apply, wp.seq_apply, wp.assign_apply, BExpr.not, BExpr.and_apply,
+    BExpr.lt_apply, Ψ, coe_mk, Function.iterate_succ, Function.comp_apply, Exp.mul_subst,
+    Exp.add_subst, Exp.one_subst, Exp.min_subst, Exp.add_apply, Exp.mul_apply, BExpr.iver, ite_mul,
+    one_mul, zero_mul, BExpr.le_apply, Exp.ofNat_apply', Nat.cast_ofNat, Exp.one_apply,
+    Exp.top_apply]
+  simp only [Exp.const, Function.iterate_zero, id_eq, Exp.min_subst, Exp.add_subst, Exp.mul_subst,
+    Exp.one_subst]
+  -- simp only [ProbExp.pick, States.instSubst, String.reduceEq, ↓reduceIte, Nat.cast_add,
+  --   Nat.cast_one, Pi.add_apply, Pi.mul_apply, mul_ite, mul_zero, Pi.sub_apply, Pi.one_apply,
+  --   nonpos_iff_eq_zero, zero_add, Nat.reduceAdd]
   if σ "toSend" = 0 then
-    simp_all only [Exp.mul_subst, Exp.add_subst, Exp.min_subst, Exp.sub_subst, Exp.add_apply,
-      Exp.mul_apply, ProbExp.exp_coe_apply, Exp.min_apply, Exp.zero_apply,
-      Exp.one_apply, Exp.top_apply, Exp.sub_apply]
+    simp_all only [not_neg, false_and, ↓reduceIte, zero_add, zero_le, add_zero]
     sorry
   else if σ "toSend" = 1 then
-    simp_all only [one_ne_zero, not_false_eq_true, Nat.lt_one_iff, zero_add, lt_self_iff_false,
-      false_and, ↓reduceIte, IsEmpty.forall_iff, Nat.one_le_ofNat, Nat.not_ofNat_lt_one, add_zero,
-      self_le_add_right, inf_of_le_left, zero_lt_one, true_and, forall_const]
+    simp_all only [one_ne_zero, not_false_eq_true, Nat.one_le_ofNat, ↓reduceIte,
+      Nat.not_ofNat_lt_one, add_zero]
     sorry
   else if h : σ "toSend" = 2 then
-    simp only [Exp.mul_subst, Exp.add_subst, Exp.min_subst, Exp.sub_subst, Exp.add_apply,
-      Exp.mul_apply, ProbExp.exp_coe_apply, Exp.min_apply, Exp.zero_apply,
-      Exp.one_apply, Exp.top_apply, Exp.sub_apply]
+    simp_all only [OfNat.ofNat_ne_zero, not_false_eq_true, OfNat.ofNat_ne_one]
     sorry
     -- split
   else if h : σ "toSend" = 3 then
-    simp only [Exp.mul_subst, Exp.add_subst, Exp.min_subst, Exp.sub_subst, Exp.add_apply,
-      Exp.mul_apply, ProbExp.exp_coe_apply, Exp.min_apply, Exp.zero_apply,
-      Exp.one_apply, Exp.top_apply, Exp.sub_apply]
+    simp_all only [OfNat.ofNat_ne_zero, not_false_eq_true, OfNat.ofNat_ne_one, OfNat.ofNat_eq_ofNat,
+      Nat.succ_ne_self, le_refl, ↓reduceIte, lt_self_iff_false, add_zero]
     sorry
   else if h : σ "toSend" = 4 then
-    simp only [Exp.mul_subst, Exp.add_subst, Exp.min_subst, Exp.sub_subst, Exp.add_apply,
-      Exp.mul_apply, ProbExp.exp_coe_apply, Exp.min_apply, Exp.zero_apply,
-      Exp.one_apply, Exp.top_apply, Exp.sub_apply]
+    simp_all only [OfNat.ofNat_ne_zero, not_false_eq_true, OfNat.ofNat_ne_one, OfNat.ofNat_eq_ofNat,
+      Nat.reduceEqDiff, Nat.succ_ne_self]
     sorry
     -- split
   else
@@ -291,6 +288,7 @@ example {X : Exp String} :
   simp
   refine ENNReal.eq_inv_of_mul_eq_one_left ?_
   simp [ENNReal.div_mul, ENNReal.mul_div_cancel_right, ENNReal.div_eq_one_iff]
+  sorry
 
 example :
       cwp[O]⟦
@@ -305,30 +303,31 @@ example :
     = pgcl_aexp { ([gunFound = 0] * 16/19) + ([gunFound = 1] * 32/53) } := by
   simp [cwp, wp, wlp, ite]
   ring_nf
+  sorry
 
-  simp [← mul_assoc]
+  -- simp [← mul_assoc]
 
-  ext σ
-  simp only [cwp, wp, ProbExp.pick, coe_mk, ite, wp.prob, mul_add, ← mul_assoc, Pi.mul_apply,
-    Pi.add_apply, States.subst_apply, ↓reduceIte, zero_ne_one, Bool.false_eq_true,
-    BExpr.false_probOf, ProbExp.inv_apply, OfNat.ofNat_ne_zero, Nat.cast_ofNat, zero_mul,
-    Pi.sub_apply, Pi.one_apply, add_zero, tsub_zero, one_mul, zero_add, BExpr.true_probOf,
-    tsub_self, wlp, ProbExp.pickProb, ProbExp.mk_vcoe, mk_comp_mk, Function.comp_apply,
-    ProbExp.mul_apply, ProbExp.one_apply, mul_one, ProbExp.coe_apply, String.reduceEq,
-    Nat.cast_zero, mul_zero, Nat.cast_one, Pi.div_apply, ENNReal.add_div]
-  ring_nf
-  simp [BExpr.iver, BExpr.probOf]
-  apply (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp
-  · repeat rw [ENNReal.toReal_add]
-    · simp
-      (repeat rw [ENNReal.toReal_add]) <;> simp [ENNReal.ite_ne_top, ENNReal.mul_ne_top]
-      split_ifs <;> grind
-    · simp [ENNReal.div_ne_top]
-    · simp [ENNReal.div_ne_top]
-    · split_ifs <;> simp [ENNReal.div_ne_top, ENNReal.mul_ne_top]
-    · split_ifs <;> simp [ENNReal.div_ne_top]
-  · split_ifs <;> simp [ENNReal.div_ne_top, ENNReal.mul_ne_top]
-  · split_ifs <;> simp [ENNReal.div_ne_top]
+  -- ext σ
+  -- simp only [cwp, wp, ProbExp.pick, coe_mk, ite, wp.prob, mul_add, ← mul_assoc, Pi.mul_apply,
+  --   Pi.add_apply, States.subst_apply, ↓reduceIte, zero_ne_one, Bool.false_eq_true,
+  --   BExpr.false_probOf, ProbExp.inv_apply, OfNat.ofNat_ne_zero, Nat.cast_ofNat, zero_mul,
+  --   Pi.sub_apply, Pi.one_apply, add_zero, tsub_zero, one_mul, zero_add, BExpr.true_probOf,
+  --   tsub_self, wlp, ProbExp.pickProb, ProbExp.mk_vcoe, mk_comp_mk, Function.comp_apply,
+  --   ProbExp.mul_apply, ProbExp.one_apply, mul_one, ProbExp.coe_apply, String.reduceEq,
+  --   Nat.cast_zero, mul_zero, Nat.cast_one, Pi.div_apply, ENNReal.add_div]
+  -- ring_nf
+  -- simp [BExpr.iver, BExpr.probOf]
+  -- apply (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp
+  -- · repeat rw [ENNReal.toReal_add]
+  --   · simp
+  --     (repeat rw [ENNReal.toReal_add]) <;> simp [ENNReal.ite_ne_top, ENNReal.mul_ne_top]
+  --     split_ifs <;> grind
+  --   · simp [ENNReal.div_ne_top]
+  --   · simp [ENNReal.div_ne_top]
+  --   · split_ifs <;> simp [ENNReal.div_ne_top, ENNReal.mul_ne_top]
+  --   · split_ifs <;> simp [ENNReal.div_ne_top]
+  -- · split_ifs <;> simp [ENNReal.div_ne_top, ENNReal.mul_ne_top]
+  -- · split_ifs <;> simp [ENNReal.div_ne_top]
 
 @[gcongr]
 theorem cool {C : pGCL ϖ} (h : X ≤ Y) : wlp[O]⟦~C⟧ X ≤ wlp[O]⟦~C⟧ Y := by
@@ -416,7 +415,7 @@ example {a b : ENNReal} (ha : a ≤ 1) (hb : b ≤ 1) :
       ⟧ pgcl_aexp {[turn = 1]}
     ≤ 2⁻¹ * (1 + a / (a + b - a * b) + (1 - b) * (a / (a + b - a * b))) := by
   -- intro σ
-  simp only [wp.seq, wp.assign, comp_coe, coe_mk, Function.comp_apply]
+  simp only [wp.seq_apply, wp.assign_apply, wp.prob_apply]
   let α : ENNReal := a / (a + b - a * b)
   let β : ENNReal := (1 - b) * α
   let I : Exp String := pgcl_aexp {
@@ -448,68 +447,68 @@ example {a b : ENNReal} (ha : a ≤ 1) (hb : b ≤ 1) :
     ·
       sorry
     · sorry
-    simp [α, β]
-    intro σ
-    simp
-    have : σ "t" ∈ ({1, 2} : Set _) := by sorry
-    have : σ "c" ∈ ({0, 1} : Set _) := by sorry
-    simp [BExpr.iver, Exp.const, ite_and, Exp.ennreal_coe]
-    split_ifs <;> simp_all
-    ·
-      simp only [mul_min, -inf_le_iff]
-      refine (ENNReal.toReal_le_toReal ?_ ?_).mp ?_
-      · simp_all
-        sorry
-      · simp_all
-        sorry
-      ·
-        have : 0 < a + b - a * b := by sorry
-        have : a * b ≤ a + b := by sorry
-        have : a + b - a * b ≠ 0 := by sorry
-        have : a ≠ ⊤ := by sorry
-        have : b ≠ ⊤ := by sorry
-        simp_all [ENNReal.toReal_sub_of_le, ENNReal.toReal_min]
-        rw [ENNReal.toReal_min] <;> simp_all [ENNReal.toReal_add, ENNReal.mul_ne_top, ENNReal.add_ne_top, Exp.ennreal_coe, ENNReal.div_ne_top]
-        · simp
-        · sorry
-        · sorry
+  --   simp [α, β]
+  --   intro σ
+  --   simp
+  --   have : σ "t" ∈ ({1, 2} : Set _) := by sorry
+  --   have : σ "c" ∈ ({0, 1} : Set _) := by sorry
+  --   simp [BExpr.iver, Exp.const, ite_and, Exp.ennreal_coe]
+  --   split_ifs <;> simp_all
+  --   ·
+  --     simp only [mul_min, -inf_le_iff]
+  --     refine (ENNReal.toReal_le_toReal ?_ ?_).mp ?_
+  --     · simp_all
+  --       sorry
+  --     · simp_all
+  --       sorry
+  --     ·
+  --       have : 0 < a + b - a * b := by sorry
+  --       have : a * b ≤ a + b := by sorry
+  --       have : a + b - a * b ≠ 0 := by sorry
+  --       have : a ≠ ⊤ := by sorry
+  --       have : b ≠ ⊤ := by sorry
+  --       simp_all [ENNReal.toReal_sub_of_le, ENNReal.toReal_min]
+  --       rw [ENNReal.toReal_min] <;> simp_all [ENNReal.toReal_add, ENNReal.mul_ne_top, ENNReal.add_ne_top, Exp.ennreal_coe, ENNReal.div_ne_top]
+  --       · simp
+  --       · sorry
+  --       · sorry
 
-    nth_rw 2 [Exp.iver_eq_mul_cases]
-    simp
-    -- simp
-    intro σ
-    simp [BExpr.iver, Exp.const]
-    split_ifs
-    · simp_all
-    · simp_all
-    · simp_all
+  --   nth_rw 2 [Exp.iver_eq_mul_cases]
+  --   simp
+  --   -- simp
+  --   intro σ
+  --   simp [BExpr.iver, Exp.const]
+  --   split_ifs
+  --   · simp_all
+  --   · simp_all
+  --   · simp_all
 
-    have q := (by simp [List.lex_eq_true_iff_lt.mp] : "c" < "t")
+  --   have q := (by simp [List.lex_eq_true_iff_lt.mp] : "c" < "t")
 
-    simp [← Exp.subst_sort_nat q]
-    have := Exp.subst_sort_nat (ϖ:=String) (X:=X["c" ↦ 0]) (x:="c") (y:="t") (A:=1) (B:=1)
-    have := @Exp.subst_sort_nat
-    simp at this
+  --   simp [← Exp.subst_sort_nat q]
+  --   have := Exp.subst_sort_nat (ϖ:=String) (X:=X["c" ↦ 0]) (x:="c") (y:="t") (A:=1) (B:=1)
+  --   have := @Exp.subst_sort_nat
+  --   simp at this
 
-    simp only [String.lt_iff_toList_lt, String.toList, ↓Char.isValue, List.cons_lex_cons,
-      Char.reduceLT, decide_true, Char.reduceBEq, List.lex_nil, Bool.and_self, Bool.or_false,
-      List.lex_eq_true_iff_lt.mp, Exp.subst_nat_eq, Nat.cast_zero, Nat.cast_one,
-      forall_const] at this
-    simp [← this]
-    simp [Exp.subst_sort_nat, List.lex_eq_true_iff_lt.mp]
-    have : ['c'] < ['t'] := by exact List.lex_eq_true_iff_lt.mp rfl
-    simp [Exp.subst_sort]
+  --   simp only [String.lt_iff_toList_lt, String.toList, ↓Char.isValue, List.cons_lex_cons,
+  --     Char.reduceLT, decide_true, Char.reduceBEq, List.lex_nil, Bool.and_self, Bool.or_false,
+  --     List.lex_eq_true_iff_lt.mp, Exp.subst_nat_eq, Nat.cast_zero, Nat.cast_one,
+  --     forall_const] at this
+  --   simp [← this]
+  --   simp [Exp.subst_sort_nat, List.lex_eq_true_iff_lt.mp]
+  --   have : ['c'] < ['t'] := by exact List.lex_eq_true_iff_lt.mp rfl
+  --   simp [Exp.subst_sort]
 
-  simp only [ProbExp.pick]
-  simp only [wp.seq, wp.prob, wp.assign, -coe_mk, -comp_coe, -Function.comp_apply]
-  simp only [coe_mk, comp_coe, -Function.comp_apply]
-  simp
-  -- simp [← mul_add]
-  -- refine (ENNReal.inv_mul_le_iff ?_ ?_).mpr ?_ <;> try simp
-  let I : Exp ϖ := sorry
-  grw [park_induction I]
-  · sorry
-  · sorry
+  -- simp only [ProbExp.pick]
+  -- simp only [wp.seq, wp.prob, wp.assign, -coe_mk, -comp_coe, -Function.comp_apply]
+  -- simp only [coe_mk, comp_coe, -Function.comp_apply]
+  -- simp
+  -- -- simp [← mul_add]
+  -- -- refine (ENNReal.inv_mul_le_iff ?_ ?_).mpr ?_ <;> try simp
+  -- let I : Exp ϖ := sorry
+  -- grw [park_induction I]
+  -- · sorry
+  -- · sorry
 
 noncomputable def RabinsMutualExclusion : pGCL String := pgcl {
   while 1 < i {
@@ -688,69 +687,70 @@ example : wp[O]⟦
     have : 2⁻¹ + 2⁻¹ = (1 : Exp String) := by ext; simp; exact ENNReal.inv_two_add_inv_two
     simp [this]
     intro σ
-    simp [BExpr.lt, BExpr.iver]
-    eq_as_reals
-    split_ifs
-    · rw [ENNReal.mul_sub] <;> try simp only [ne_eq, ENNReal.ofNat_ne_top, not_false_eq_true,
-      implies_true]
-      simp [mul_add]
-      have : Exp.const "n" σ ≠ ⊤ := by sorry
-      refine (ENNReal.toReal_le_toReal ?_ ?_).mp ?_
-      · simp [this]
-      · simp [this, ENNReal.mul_eq_top]
-      · rw [ENNReal.toReal_sub_of_le]
-        · simp
-          rw [ENNReal.toReal_add]
-          · rw [ENNReal.toReal_add] <;> try finiteness
-            simp
-            rw [ENNReal.toReal_add] <;> try finiteness
-            simp
-            rw [ENNReal.toReal_sub_of_le]
-            · rw [ENNReal.toReal_add] <;> try finiteness
-              simp
-              rw [ENNReal.toReal_sub_of_le]
-              · repeat rw [ENNReal.toReal_add] <;> try finiteness
-                simp
-                rw [ENNReal.toReal_sub_of_le] <;> try finiteness
-                · simp
-                  linarith
-                · simp
-              · simp
-                sorry
-              · finiteness
-            · sorry
-            · finiteness
-          · finiteness
-          · finiteness
-        · suffices 2 * Exp.const "x" σ ≤ 2 * Exp.const "n" σ by
-            apply le_trans this; exact le_self_add
-          gcongr
-        · simp [ENNReal.mul_eq_top, this]
+    simp [BExpr.lt, BExpr.iver, Exp.const]
+    sorry
+    -- eq_as_reals
+    -- split_ifs
+    -- · rw [ENNReal.mul_sub] <;> try simp only [ne_eq, ENNReal.ofNat_ne_top, not_false_eq_true,
+    --   implies_true]
+    --   simp [mul_add]
+    --   have : Exp.const "n" σ ≠ ⊤ := by sorry
+    --   refine (ENNReal.toReal_le_toReal ?_ ?_).mp ?_
+    --   · simp [this]
+    --   · simp [this, ENNReal.mul_eq_top]
+    --   · rw [ENNReal.toReal_sub_of_le]
+    --     · simp
+    --       rw [ENNReal.toReal_add]
+    --       · rw [ENNReal.toReal_add] <;> try finiteness
+    --         simp
+    --         rw [ENNReal.toReal_add] <;> try finiteness
+    --         simp
+    --         rw [ENNReal.toReal_sub_of_le]
+    --         · rw [ENNReal.toReal_add] <;> try finiteness
+    --           simp
+    --           rw [ENNReal.toReal_sub_of_le]
+    --           · repeat rw [ENNReal.toReal_add] <;> try finiteness
+    --             simp
+    --             rw [ENNReal.toReal_sub_of_le] <;> try finiteness
+    --             · simp
+    --               linarith
+    --             · simp
+    --           · simp
+    --             sorry
+    --           · finiteness
+    --         · sorry
+    --         · finiteness
+    --       · finiteness
+    --       · finiteness
+    --     · suffices 2 * Exp.const "x" σ ≤ 2 * Exp.const "n" σ by
+    --         apply le_trans this; exact le_self_add
+    --       gcongr
+    --     · simp [ENNReal.mul_eq_top, this]
 
-    · simp
-    ring_nf
-    grind
+    -- · simp
+    -- ring_nf
+    -- grind
 
-    ring_nf
-    intro σ
-    simp [BExpr.lt, BExpr.iver]
-    simp [ENNReal.inv_mul_cancel]
-    simp [I]
-    split_ifs
-    · simp_all
-    · simp_all
-    · simp_all
-    split_ifs
-    · simp_all
-      sorry
-    · simp_all
-      sorry
-    · simp_all
-      sorry
-    · simp_all
-      simp [ENNReal.inv_mul_cancel]
-      have : (2⁻¹ * (2 : ENNReal)) = 1 := by simp [ENNReal.inv_mul_cancel]
-      sorry
-    all_goals sorry
+    -- ring_nf
+    -- intro σ
+    -- simp [BExpr.lt, BExpr.iver]
+    -- simp [ENNReal.inv_mul_cancel]
+    -- simp [I]
+    -- split_ifs
+    -- · simp_all
+    -- · simp_all
+    -- · simp_all
+    -- split_ifs
+    -- · simp_all
+    --   sorry
+    -- · simp_all
+    --   sorry
+    -- · simp_all
+    --   sorry
+    -- · simp_all
+    --   simp [ENNReal.inv_mul_cancel]
+    --   have : (2⁻¹ * (2 : ENNReal)) = 1 := by simp [ENNReal.inv_mul_cancel]
+    --   sorry
+    -- all_goals sorry
 
 end pGCL
