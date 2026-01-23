@@ -16,8 +16,8 @@ abbrev Exp (ϖ : Type*) := States ϖ → ENNReal
 
 -- instance States.instSubst [DecidableEq ϖ] : Subst (States ϖ) ϖ (fun _ ↦ ENNReal) where
 --   subst σ x v := fun α ↦ if x = α then v else σ α
-instance States.instSubst [DecidableEq ϖ] : Substitution (States ϖ) (ϖ × ENNReal) where
-  subst σ := fun (x, v) α ↦ if x = α then v else σ α
+instance States.instSubst [DecidableEq ϖ] : Substitution (States ϖ) (fun (_ : ϖ) ↦ ENNReal) where
+  subst σ := fun v α ↦ if v.1 = α then v.2 else σ α
 
 @[ext] theorem States.ext {σ₁ σ₂ : States ϖ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
 
@@ -51,8 +51,8 @@ instance : Coe ENNReal (Exp ϖ) := ⟨ennreal_coe⟩
 @[grind =, simp] theorem ofNat_apply' [Nat.AtLeastTwo n] :
     @OfNat.ofNat (Exp ϖ) n instOfNatAtLeastTwo x = n := rfl
 
-instance instSubst [DecidableEq ϖ] : Substitution (Exp ϖ) (ϖ × Exp ϖ) where
-  subst X := fun (x, A) σ ↦ X (σ[x ↦ A σ])
+instance instSubst [DecidableEq ϖ] : Substitution (Exp ϖ) (fun (_ : ϖ) ↦ Exp ϖ) where
+  subst X := fun x σ ↦ X (σ[x.1 ↦ x.2 σ])
 -- instance instSubst_ennreal [DecidableEq ϖ] : Subst (Exp ϖ) ϖ (fun _ ↦ ENNReal) where
 --   subst X x A := X[x ↦ (A : Exp ϖ)]
 -- instance instSubst_nat [DecidableEq ϖ] : Subst (Exp ϖ) ϖ (fun _ ↦ ℕ) where
@@ -245,8 +245,8 @@ theorem iver_apply : i[b] σ = if b σ then 1 else 0 := rfl
 @[grind =, simp] theorem true_not_probOf (h : b σ = true) : p[b.not] σ = 0 := by simp [probOf, h]
 @[grind =, simp] theorem false_not_probOf (h : b σ = false) : p[b.not] σ = 1 := by simp [probOf, h]
 
-instance [DecidableEq ϖ] : Substitution (BExpr ϖ) (ϖ × Exp ϖ) where
-  subst b := fun (x, A) ↦ ⟨fun σ ↦ b (σ[x ↦ A σ]), fun σ ↦ by simp only; exact inferInstance⟩
+instance [DecidableEq ϖ] : Substitution (BExpr ϖ) (fun (_ : ϖ) ↦ Exp ϖ) where
+  subst b := fun x ↦ ⟨fun σ ↦ b (σ[x.1 ↦ x.2 σ]), fun σ ↦ by simp only; exact inferInstance⟩
 theorem subst_apply [DecidableEq ϖ] {b : BExpr ϖ} : Substitution.subst b x σ = b σ[x.1 ↦ x.2 σ] :=
   rfl
 
@@ -303,8 +303,8 @@ theorem top_ne_one_sub : ¬⊤ = 1 - p σ :=
 @[grind ., simp] theorem ite_eq_one' : (if p σ < 1 then (1 - p σ) else 0) = 1 - p σ :=
   by split_ifs <;> simp_all
 
-instance [DecidableEq ϖ] : Substitution (ProbExp ϖ) (ϖ × Exp ϖ) where
-  subst b := fun (x, A) ↦ ⟨fun σ ↦ b (σ[x ↦ A σ]), fun σ ↦ by simp⟩
+instance [DecidableEq ϖ] : Substitution (ProbExp ϖ) (fun (_ : ϖ) ↦ Exp ϖ) where
+  subst b := fun x ↦ ⟨fun σ ↦ b (σ[x.1 ↦ x.2 σ]), fun σ ↦ by simp⟩
 
 @[grind =, simp] theorem subst_apply [DecidableEq ϖ] {a : ProbExp ϖ} {x : ϖ} {A : Exp ϖ} :
     a[x ↦ A] σ = a σ[x ↦ A σ] := rfl

@@ -58,21 +58,21 @@ theorem HeyLo.sem_hcoimp_apply : (A ↜ B).sem = A.sem ↜ B.sem := rfl
 
 open Substitution in
 @[grind =, simp]
-theorem HeyLo.sem_subst_apply' : A[..xs].sem = A.sem[..xs.map (fun (a, b) ↦ (a, b.sem))] := by
+theorem HeyLo.sem_subst_apply' : A[..xs].sem = A.sem[..xs.map (fun x ↦ ⟨x.1, x.2.sem⟩)] := by
   induction xs generalizing A with
   | nil => simp
   | cons x xs ih =>
     obtain ⟨x, v⟩ := x
     simp_all
     calc
-      (Substitution.subst (substs A xs) (x, v)).sem =
-          Substitution.subst (substs A xs).sem (x, v.sem) :=
+      (Substitution.subst (substs A xs) ⟨x, v⟩).sem =
+          Substitution.subst (substs A xs).sem ⟨x, v.sem⟩ :=
         by
           clear ih
           ext σ
           simp [Substitution.subst, subst, sem]
       _ =
-          Substitution.subst (substs A.sem (List.map (fun x ↦ (x.1, x.2.sem)) xs)) (x, v.sem) :=
+          Substitution.subst (substs A.sem (List.map (fun x ↦ ⟨x.1, x.2.sem⟩) xs)) ⟨x, v.sem⟩ :=
         by simp_all
 @[grind =, simp]
 theorem HeyLo.sem_subst_apply : P[x ↦ B].sem σ = P.sem σ[x ↦ B.sem σ] := rfl
@@ -458,7 +458,7 @@ theorem pGCL'.fv_HeyVL_subset {C : pGCL'} :
       grind
 
 @[gcongr]
-def Exp.substs_mono [DecidableEq ϖ] {X₁ X₂ : Exp ϖ} {xs : List (ϖ × Exp ϖ)} (h : X₁ ≤ X₂) :
+def Exp.substs_mono [DecidableEq ϖ] {X₁ X₂ : Exp ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} (h : X₁ ≤ X₂) :
     X₁[..xs] ≤ X₂[..xs] := by
   induction xs generalizing X₁ X₂ with
   | nil => simp [h]
@@ -516,10 +516,10 @@ theorem HeyVL.Subs.tail_bij : Function.Bijective (Subs.tail (x:=x) (xs:=xs) (hn:
 theorem HeyVL.Subs.values_length (S : Subs xs hn α) : S.values.length = xs.length := by
   obtain ⟨S, hS⟩ := S
   grind
-def HeyVL.Subs.help (S : Subs xs hn ENNReal) : List (Ident × Exp Ident) :=
-  xs.zip S.values
-def HeyVL.Subs.help' (S : Subs xs hn α) : List (Ident × α) :=
-  xs.zip S.values
+def HeyVL.Subs.help (S : Subs xs hn ENNReal) : List ((_ : Ident) × Exp Ident) :=
+  (xs.zip S.values).map (fun a ↦ ⟨a.1, a.2⟩)
+def HeyVL.Subs.help' (S : Subs xs hn α) : List ((_ : Ident) × α) :=
+  (xs.zip S.values).map (fun a ↦ ⟨a.1, a.2⟩)
 @[grind =, simp]
 theorem HeyVL.Subs.help_length (S : Subs xs hn ENNReal) : S.help.length = xs.length := by
   obtain ⟨S, hS⟩ := S
@@ -527,20 +527,12 @@ theorem HeyVL.Subs.help_length (S : Subs xs hn ENNReal) : S.help.length = xs.len
   grind
 @[grind =, simp]
 theorem HeyVL.Subs.help_cons (S : Subs (x :: xs) hn ENNReal) :
-    S.help = (x, ↑S.tail.1) :: S.tail.2.help := by
-  simp [help, -List.pure_def, -List.bind_eq_flatMap, List.map_tail, Subs.tail]
-  rw [← List.zip_cons_cons]
-  congr
-  ext
-  grind
+    S.help = ⟨x, ↑S.tail.1⟩ :: S.tail.2.help := by
+  ext; grind [help, tail]
 @[grind =, simp]
 theorem HeyVL.Subs.help'_cons (S : Subs (x :: xs) hn α) :
-    S.help' = (x, ↑S.tail.1) :: S.tail.2.help' := by
-  simp only [help', tail]
-  rw [← List.zip_cons_cons]
-  congr
-  ext
-  grind
+    S.help' = ⟨x, ↑S.tail.1⟩ :: S.tail.2.help' := by
+  ext; grind [help', tail]
 
 def HeyVL.Subs.get (S : Subs xs hn α) (x : Ident) (hx : x ∈ xs) : α :=
   S.values[xs.findIdx (· = x)]'(by grind)
@@ -710,7 +702,7 @@ theorem Exp.zero_himp {a : Exp ϖ} :
 
 namespace Exp
 
-variable {ϖ : Type*} [DecidableEq ϖ] {a b : Exp ϖ} {p : BExpr ϖ} (xs : List (ϖ × Exp ϖ))
+variable {ϖ : Type*} [DecidableEq ϖ] {a b : Exp ϖ} {p : BExpr ϖ} (xs : List ((_ : ϖ) × Exp ϖ))
 
 @[simp] theorem top_subst :
     (⊤ : Exp ϖ)[..xs] = (⊤ : Exp ϖ) := by
@@ -798,12 +790,12 @@ noncomputable instance {α : Ty} : CompleteLattice α.lit :=
   | .Bool => inferInstance
   | .ENNReal => inferInstance
 
-def Substitution.applied [DecidableEq ϖ] (σ : States ϖ) (xs : List (ϖ × Exp ϖ)) : States ϖ :=
+def Substitution.applied [DecidableEq ϖ] (σ : States ϖ) (xs : List ((_ : ϖ) × Exp ϖ)) : States ϖ :=
   match xs with
   | [] => σ
   | x::xs => Substitution.applied σ[x.1 ↦ x.2 σ] xs
 
-theorem BExpr.subst_applied [DecidableEq ϖ] {b : BExpr ϖ} {xs : List (ϖ × Exp ϖ)} :
+theorem BExpr.subst_applied [DecidableEq ϖ] {b : BExpr ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} :
     b[..xs] = fun σ ↦ b (Substitution.applied σ xs) := by
   ext σ
   induction xs generalizing σ with
@@ -817,11 +809,11 @@ theorem BExpr.subst_applied [DecidableEq ϖ] {b : BExpr ϖ} {xs : List (ϖ × Ex
 theorem BExpr.subst_single_apply [DecidableEq ϖ] {b : BExpr ϖ} :
     b[x ↦ v] σ = b σ[x ↦ v σ] := by
   rfl
-theorem BExpr.subst_apply [DecidableEq ϖ] {b : BExpr ϖ} {xs : List (ϖ × Exp ϖ)} :
+theorem BExpr.subst_apply [DecidableEq ϖ] {b : BExpr ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} :
     b[..xs] σ = b (Substitution.applied σ xs) := by
   rw [subst_applied]
 
-theorem Exp.subst_applied [DecidableEq ϖ] {b : Exp ϖ} {xs : List (ϖ × Exp ϖ)} :
+theorem Exp.subst_applied [DecidableEq ϖ] {b : Exp ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} :
     b[..xs] = fun σ ↦ b (Substitution.applied σ xs) := by
   ext σ
   induction xs generalizing σ with
@@ -831,7 +823,7 @@ theorem Exp.subst_applied [DecidableEq ϖ] {b : Exp ϖ} {xs : List (ϖ × Exp ϖ
     simp [Substitution.substs_cons, Exp.subst₀_apply]
     simp [ih]
 
-theorem Exp.subst_apply [DecidableEq ϖ] {b : Exp ϖ} {xs : List (ϖ × Exp ϖ)} :
+theorem Exp.subst_apply [DecidableEq ϖ] {b : Exp ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} :
     b[..xs] σ = b (Substitution.applied σ xs) := by
   rw [subst_applied]
 
@@ -872,9 +864,10 @@ theorem HeyLo.sem_substs_apply (m : HeyLo α) :
 theorem HeyLo.sem_substs_apply' (m : HeyLo α) (Ξ : HeyVL.Subs xs hxs ENNReal) :
     m.sem[..Ξ.help] σ = m.sem σ[..Ξ.help'] := by
   cases α <;> simp
-theorem Substitution.applied_subst [DecidableEq ϖ] (σ : States ϖ) (xs : List (ϖ × Exp ϖ)) :
+theorem Substitution.applied_subst [DecidableEq ϖ] (σ : States ϖ) (xs : List ((_ : ϖ) × Exp ϖ))
+    (v : Exp ϖ) :
       (Substitution.applied σ xs)[x ↦ v (Substitution.applied σ xs)]
-    = Substitution.applied σ (xs ++ [(x, v)]) := by
+    = Substitution.applied σ (xs ++ [⟨x, v⟩]) := by
   induction xs generalizing σ x v with
   | nil => simp [applied]
   | cons y xs ih =>

@@ -12,7 +12,7 @@ variable {ϖ : Type*} [DecidableEq ϖ]
 
 noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
   | pgcl {~C₁; ~C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
   | pgcl {{~C₁} [~p] {~C₂}} =>
     ⟨fun X ↦ p.pick (C₁.wp O X) (C₂.wp O X),

@@ -308,7 +308,7 @@ example {φ : Exp ϖ} : ▿ φ = fun σ ↦ if φ σ = 0 then 0 else ⊤ := by
 def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : 𝔼r) : HeyLo α :=
   .Subst x Y X
 
-instance : Substitution (HeyLo α) (Ident × 𝔼r) := ⟨fun X (x, Y) ↦ HeyLo.subst X x Y⟩
+instance : Substitution (HeyLo α) (fun (_ : Ident) ↦ 𝔼r) := ⟨fun X x ↦ HeyLo.subst X x.1 x.2⟩
 
 attribute [grind =, simp] Distribution.prop
 
@@ -449,7 +449,7 @@ noncomputable def HeyLo.QuantOp.sem (op : HeyLo.QuantOp α) (x : Ident) (m : α.
   | .Exists => BExpr.exists_ x m
 
 @[reducible]
-instance {α : Ty} : Substitution α.expr (Ident × Ty.ENNReal.expr) :=
+instance {α : Ty} : Substitution α.expr (fun (_ : Ident) ↦ Ty.ENNReal.expr) :=
   match α with
   | .Bool => inferInstance
   | .ENNReal => inferInstance

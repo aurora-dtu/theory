@@ -39,7 +39,7 @@ def wfpUnexpander : Lean.PrettyPrinter.Unexpander
 
 noncomputable def wfp' (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ by exact a _⟩
   | pgcl {~C₁; ~C₂} => (C₁.wfp' O).comp (C₂.wfp' O)
   | pgcl {{~C₁} [~p] {~C₂}} =>
     ⟨fun X ↦ p.pick (C₁.wfp' O X) (C₂.wfp' O X),
@@ -196,7 +196,7 @@ theorem wlp'_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
 
 noncomputable def wlp'' (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ by exact a _⟩
   | pgcl {~C₁; ~C₂} => (C₁.wlp'' O).comp (C₂.wlp'' O)
   | pgcl {{~C₁} [~p] {~C₂}} =>
     ⟨fun X ↦ p.pick (C₁.wlp'' O X) (C₂.wlp'' O X),
