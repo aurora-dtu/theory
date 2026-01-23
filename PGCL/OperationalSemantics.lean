@@ -1,8 +1,4 @@
-import MDP.Bellman
-import MDP.Relational
-import MDP.SmallStepSemantics
 import PGCL.SmallStep2
-import PGCL.WeakestPre
 import PGCL.WeakestLiberalPre
 
 namespace pGCL
@@ -89,55 +85,6 @@ attribute [simp] iSup_and
 variable {b : BExpr ϖ} [DecidablePred b] {O : Optimization}
 
 open scoped Optimization.Notation
-
-namespace OrderHom
-
-variable {α β : Type*} [Preorder α] [Preorder β] [Add β] [AddLeftMono β] [AddRightMono β]
-
-instance : AddLeftMono (States ϖ → ENNReal) where
-  elim a _ _ hbc := fun σ ↦ add_le_add_right (hbc σ) (a σ)
-instance : AddRightMono (States ϖ → ENNReal) where
-  elim a _ _ hbc := fun σ ↦ add_le_add_left (hbc σ) (a σ)
-
--- instance instAdd : Add (α →o β) where
---   add a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
--- @[simp]
-instance instHAdd : HAdd (α →o β) (α →o β) (α →o β) where
-  hAdd a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
-@[simp] theorem add_apply (f g : α →o β) : (f + g) x = f x + g x := by rfl
-omit [DecidableEq ϖ] in
-@[simp] theorem add_apply' (f g : α →o Exp ϖ) : (f + g) x = f x + g x := by rfl
-omit [DecidableEq ϖ] in
-@[simp] theorem add_apply2 (f g : α →o Exp ϖ) : (f + g) x y = f x y + g x y := by rfl
-omit [DecidableEq ϖ] in
-@[simp] theorem add_apply2' (f g : α →o States ϖ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
-@[simp] theorem zero_add {β : Type*} [Preorder β] [AddZeroClass β] [AddLeftMono β] [AddRightMono β]
-    (g : α →o β) : ((⟨fun _ ↦ 0, monotone_const⟩ : α →o β) + g) = g := by ext; simp
-@[simp] theorem add_zero {β : Type*} [Preorder β] [AddZeroClass β] [AddLeftMono β] [AddRightMono β]
-    (g : α →o β) : (g + (⟨fun _ ↦ 0, monotone_const⟩ : α →o β)) = g := by ext; simp
-
-instance {α β : Type*} [Preorder β] [Add β] [i : AddRightMono β] : AddRightMono (α → β) where
-  elim a b c h i := by simp [Function.swap]; gcongr; apply h
-instance {α β : Type*} [Preorder β] [Add β] [i : AddLeftMono β] : AddLeftMono (α → β) where
-  elim a b c h i := by simp only [Pi.add_apply]; gcongr; apply h
-
-variable {ι : Type*}
-
-omit [Add β] [AddLeftMono β] [AddRightMono β] in
-@[simp, grind =]
-theorem mk_apply {f} {h} {b : ι} :
-    ({toFun := f, monotone' := h} : α →o (ι → β)) a b = f a b := by rfl
-omit [Add β] [AddLeftMono β] [AddRightMono β] in
-@[simp, grind =]
-theorem mk_apply' {f} {h} {b : ι} :
-    DFunLike.coe ({toFun := f, monotone' := h} : α →o (ι → β)) a b = f a b := by rfl
-omit [Add β] [AddLeftMono β] [AddRightMono β] in
-@[simp, grind =]
-theorem comp_apply' {ι : Type*} {γ : Type*} [Preorder γ] {f : β →o (ι → γ)} {g : α →o β} {b : ι} :
-    (OrderHom.comp f g) a b = f (g a) b := rfl
-
-
-end OrderHom
 
 -- instance : Coe (𝔼[States ϖ] →o 𝔼[States ϖ]) (Exp ϖ →o Exp ϖ) where
 --   coe x := x
@@ -237,7 +184,7 @@ open scoped Classical in
 theorem ς.loop :
       (𝕊 cT cP).ς O f (.loop b C (ϖ:=ϖ))
     = (cP' cP (.loop b C))
-      + ⟨fun X σ ↦ b.iver σ * f (pgcl { ~C ; while ~b {~C} }) X σ + b.not.iver σ * cT X (.term, σ),
+      + ⟨fun X σ ↦ i[b σ] * f (pgcl { ~C ; while ~b {~C} }) X σ + i[¬b σ] * cT X (.term, σ),
         fun a b h σ ↦ by
           simp; gcongr
           · apply (f _).mono h
@@ -245,7 +192,6 @@ theorem ς.loop :
 := by
   ext X σ
   simp [ς, psucc, r, Optimization.act]
-  simp only [DFunLike.coe]; simp only [OrderHom.toFun_eq_coe]
   congr
   if hb : b σ then
     rw [tsum_eq_single ⟨(1, conf₁[~C ; while ~b { ~C }, σ]), by simp [hb]⟩] <;> simp [hb]
@@ -368,7 +314,7 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       gcongr <;> apply_assumption
     | loop b C' ih => apply wp_le_op.loop ih
     | tick r => rw [← ς_op_eq_op]; simp; rfl
-    | observe b => rw [← ς_op_eq_op]; simp; rfl
+    | observe b => rw [← ς_op_eq_op]; intro _ _; simp
   et_prefixed_point := by
     apply le_of_eq
     funext C; induction C with try simp_all [ς.seq']; (try rfl) <;> try ext; simp
@@ -377,7 +323,8 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       ext
       simp
       nth_rw 2 [← wp_fp]
-      rfl
+      simp only [Φ, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply,
+        BExpr.not_apply]
 
 example : dwp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Demonic := by rw [← instET.et_eq_op]
 example : awp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Angelic := by rw [← instET.et_eq_op]
@@ -428,7 +375,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       rw [← ς_op_eq_op]; simp [wfp']
       gcongr <;> apply_assumption
     | loop b C' ih => apply wfp'_le_op.loop ih
-    | observe b => rw [← ς_op_eq_op, wfp']; simp [BExpr.probOf, ProbExp.pick]; rfl
+    | observe b => rw [← ς_op_eq_op, wfp']; intro _ _; simp [BExpr.probOf, ProbExp.pick]
   et_prefixed_point := by
     apply le_of_eq
     funext C; induction C with try simp_all [ς.seq'']; (try rfl) <;> try ext; simp [wfp']; done
@@ -454,3 +401,5 @@ example {C : pGCL ϖ} : wfp'[𝒟]⟦~C⟧ = (𝕊 cost_t' cost_p').op .Demonic 
 example {C : pGCL ϖ} : wfp'[𝒜]⟦~C⟧ = (𝕊 cost_t' cost_p').op .Angelic C := by rw [instET'.et_eq_op]
 
 end pGCL
+
+#min_imports

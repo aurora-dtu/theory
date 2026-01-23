@@ -1,7 +1,6 @@
+import Mathlib.Tactic.Monotonicity.Basic
 import MDP.Bellman
 import MDP.Relational
-import MDP.SupSup
-import Mathlib.Tactic.Monotonicity.Basic
 
 open OrderHom OmegaCompletePartialOrder
 

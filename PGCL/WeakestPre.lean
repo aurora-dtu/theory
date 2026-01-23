@@ -10,6 +10,19 @@ open scoped Optimization.Notation
 
 variable {ϖ : Type*} [DecidableEq ϖ]
 
+noncomputable def Φ (g : Exp ϖ →o Exp ϖ) (φ : BExpr ϖ) : Exp ϖ →o Exp ϖ →o Exp ϖ :=
+  ⟨fun f ↦ ⟨fun X ↦ i[φ] * g X + i[φ.not] * f, by intro _ _ _; simp; gcongr⟩,
+    by intro _ _ _ _; simp; gcongr⟩
+
+notation "Φ[" g "]" => Φ g
+
+omit [DecidableEq ϖ] in
+theorem Φ_eq_pick {X : Exp ϖ} : Φ[g] φ f X = p[φ].pick (g X) f := by
+  ext σ
+  simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
+    Iverson.iver_not, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick, BExpr.probOf_apply,
+    Pi.sub_apply, Pi.one_apply]
+
 noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
   | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
@@ -37,17 +50,13 @@ def wpUnexpander : Lean.PrettyPrinter.Unexpander
     `(wp[$o]⟦$c⟧)
 | _ => throw ()
 
-noncomputable def Φ (O : Optimization) (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) (f : Exp ϖ) :
-    Exp ϖ →o Exp ϖ :=
-  ⟨fun X ↦ i[φ] * wp[O]⟦~C'⟧ X + i[φ.not] * f, by intro _ _ _; simp; gcongr⟩
-
 variable {O : Optimization}
 
 theorem wp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) [DecidablePred φ] :
-    wp[O]⟦while ~φ{~C'}⟧ f = lfp (Φ O φ C' f) := rfl
+    wp[O]⟦while ~φ{~C'}⟧ f = lfp (Φ[wp[O]⟦~C'⟧] φ f) := rfl
 
 theorem wp_fp (φ : BExpr ϖ) [DecidablePred φ] (C' : pGCL ϖ) :
-    (Φ O φ C' f) (wp[O]⟦while ~φ{~C'}⟧ f) = wp[O]⟦while ~φ{~C'}⟧ f := by simp [wp_loop]
+    (Φ[wp[O]⟦~C'⟧] φ f) (wp[O]⟦while ~φ{~C'}⟧ f) = wp[O]⟦while ~φ{~C'}⟧ f := by simp [wp_loop]
 
 variable {x : ϖ} {e : Exp ϖ} {b : BExpr ϖ} {C₁ : pGCL ϖ}
 
@@ -119,13 +128,36 @@ def st : pGCL ϖ → pGCL ϖ
   | pgcl {tick(~ _)} => pgcl {skip}
   | pgcl {observe(~ b)} => pgcl {observe(~b)}
 
-def Φ.continuous' [DecidablePred b] {C' : pGCL ϖ} (ih : ωScottContinuous wp[O]⟦~C'⟧) :
-    ωScottContinuous ⇑(Φ O b C' X) := by
+def Φ.continuous [DecidablePred b] {g : Exp ϖ →o Exp ϖ} (ih : ωScottContinuous g) :
+    ωScottContinuous ⇑(Φ[g] b X) := by
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom] at ih ⊢
   intro c
   simp [Φ, ωSup] at ih ⊢
   ext σ
   simp [ih, ENNReal.mul_iSup, ENNReal.iSup_add]
+
+
+omit [DecidableEq ϖ] in
+theorem ωScottContinuous_dual_iff {f : Exp ϖ →o Exp ϖ} :
+      ωScottContinuous f.dual ↔ (∀ (c : Chain (Exp ϖ)ᵒᵈ), f (⨅ i, c i) = ⨅ i, f (c i)) := by
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]; rfl
+
+omit [DecidableEq ϖ] in
+theorem ωScottContinuous_dual_iff' {f : Exp ϖ →o Exp ϖ} :
+      ωScottContinuous f.dual ↔ (∀ (c : ℕ → Exp ϖ), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i)) := by
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
+  constructor
+  · intro h c hc; exact h ⟨c, hc⟩
+  · intro h c; exact h c c.mono
+
+def Φ.cocontinuous [DecidablePred b] {g : Exp ϖ →o Exp ϖ} (ih : ωScottContinuous g.dual) :
+    ωScottContinuous (Φ[g] b X).dual := by
+  simp [ωScottContinuous_dual_iff] at ih ⊢
+  intro c
+  simp [Φ] at ih ⊢
+  ext σ
+  simp only [ih, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, _root_.iInf_apply,
+    ENNReal.natCast_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf, BExpr.not_apply, ENNReal.iInf_add]
 
 @[simp]
 def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
@@ -182,12 +214,12 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
     ext σ
     replace ih : ωScottContinuous ⇑wp[O]⟦~C'⟧ := by
       simpa [ωScottContinuous_iff_map_ωSup_of_orderHom]
-    rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous' ih)]
-    conv => right; arg 1; ext; rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous' ih)]
+    rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous ih)]
+    conv => right; arg 1; ext; rw [fixedPoints.lfp_eq_sSup_iterate _ (Φ.continuous ih)]
     simp
     rw [iSup_comm]
     congr with i
-    suffices (⇑(Φ O b C' fun a ↦ ⨆ i, c i a))^[i] ⊥ = ⨆ i_1, (⇑(Φ O b C' (c i_1)))^[i] ⊥ by
+    suffices (⇑(Φ[wp[O]⟦~C'⟧] b (⨆ j, c j ·)))^[i] ⊥ = ⨆ j, (⇑(Φ[wp[O]⟦~C'⟧] b (c j)))^[i] ⊥ by
       replace := congrFun this σ; simp at this; convert this; -- simp
     clear σ
     induction i with
@@ -238,12 +270,12 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
   | observe r => intro c; ext σ; simp [wp, ENNReal.mul_iSup]
 
 @[simp]
-def Φ.continuous [DecidablePred b] {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ O b C' X) :=
-  continuous' (wp.continuous C')
+def Φ.wp_continuous [DecidablePred b] {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ[wp[O]⟦~C'⟧] b X) :=
+  continuous (wp.continuous C')
 
 theorem wp_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) [DecidablePred φ] :
-    wp[O]⟦while ~φ{~C'}⟧ f = ⨆ n, (⇑(Φ O φ C' f))^[n] 0 := by
-  rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Φ.continuous]
+    wp[O]⟦while ~φ{~C'}⟧ f = ⨆ n, (⇑(Φ[wp[O]⟦~C'⟧] φ f))^[n] 0 := by
+  rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Φ.wp_continuous]
   rfl
 
 omit [DecidableEq ϖ] in
@@ -268,16 +300,19 @@ theorem wp_le_one (C : pGCL ϖ) (X : Exp ϖ) (hX : X ≤ 1) : wp[O]⟦~C.st⟧ X
     · simp [Optimization.opt₂]; exact inf_le_of_right_le (ih₂ X hX)
   | tick => simp [st, hX]
   | observe b =>
-    simp [st]; intro σ; specialize hX σ; simp_all [BExpr.iver]; split_ifs <;> simp [hX]
+    simp [st]; intro σ; specialize hX σ; apply le_trans _ hX; simp
   | loop b C' ih =>
     simp [st]
     apply lfp_le
     intro σ
-    specialize hX σ
-    simp_all [BExpr.iver]
-    split_ifs
-    · simp; apply ih; rfl
-    · simp; apply hX
+    simp_all only [mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
+      Pi.one_apply]
+    if b σ then
+      simp_all
+      apply ih _ (by rfl)
+    else
+      simp_all
+      apply hX
 
 omit [DecidableEq ϖ] in
 @[simp]

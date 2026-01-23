@@ -1,12 +1,13 @@
 import HeyLo.Expr
 import Mathlib.Data.Finset.Sort
-import Mathlib.Data.NNRat.Lemmas
-import PGCL.OperationalSemantics
+import Mathlib.Data.Nat.Lattice
+import PGCL.IdleInvariant
 
 attribute [grind =] Finset.empty_union
 
-open pGCL
 open Optimization.Notation
+
+open pGCL
 
 open HeyLo
 
@@ -457,13 +458,6 @@ theorem pGCL'.fv_HeyVL_subset {C : pGCL'} :
     · simp only [HeyVL.fv, HeyLo.fv, Finset.union_assoc, Finset.empty_union]
       grind
 
-@[gcongr]
-def Exp.substs_mono [DecidableEq ϖ] {X₁ X₂ : Exp ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} (h : X₁ ≤ X₂) :
-    X₁[..xs] ≤ X₂[..xs] := by
-  induction xs generalizing X₁ X₂ with
-  | nil => simp [h]
-  | cons x xs ih => apply fun σ ↦ ih h _
-
 theorem HeyVL.havoc_alt :
     ((HeyVL.Havoc x).vp φ).sem = ⨅ (v : ENNReal), φ.sem[x ↦ ↑v] := by
   ext σ
@@ -617,173 +611,12 @@ theorem HeyVL.vp_cohavocs (h : xs.Nodup) :
     apply Function.Surjective.iSup_congr Subs.tail Subs.tail_bij.surjective
     exact fun _ ↦ rfl
 
-@[gcongr]
-theorem Exp.hcoimp_mono_left {a₁ a₂ b : Exp ϖ} (h : a₂ ≤ a₁) : a₁ ↜ b ≤ a₂ ↜ b := by
-  intro σ
-  specialize h σ
-  simp [Exp.hcoimp_apply, instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
-
-@[gcongr]
-theorem Exp.hcoimp_mono_right {a b₁ b₂ : Exp ϖ} (h : b₁ ≤ b₂) : a ↜ b₁ ≤ a ↜ b₂ := by
-  intro σ
-  specialize h σ
-  simp [Exp.hcoimp_apply, instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
-
-@[gcongr]
-theorem Exp.hcoimp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
-    a₁ ↜ b₁ ≤ a₂ ↜ b₂ := by
-  intro σ
-  specialize ha σ
-  specialize hb σ
-  simp [Exp.hcoimp_apply, instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
-
-@[gcongr]
-theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
-    a₁ ⇨ b₁ ≤ a₂ ⇨ b₂ := by
-  intro σ
-  specialize ha σ
-  specialize hb σ
-  simp [himp]
-  split_ifs <;> try grind
-  · simp_all
-
-@[gcongr]
-theorem Exp.hnot_mono {a₁ a₂ : Exp ϖ} (ha : a₂ ≤ a₁) :
-    ￢ a₁ ≤ ￢ a₂ := by
-  intro σ
-  specialize ha σ
-  simp [hnot]
-  split_ifs <;> simp_all
-@[gcongr]
-theorem Exp.hconot_mono {a₁ a₂ : Exp ϖ} (ha : a₂ ≤ a₁) :
-    ~ a₁ ≤ ~ a₂ := by
-  show a₁ ⇨ 0 ≤ a₂ ⇨ 0
-  gcongr
-@[gcongr]
-theorem Exp.validate_mono {a₁ a₂ : Exp ϖ} (ha : a₁ ≤ a₂) :
-    ▵ a₁ ≤ ▵ a₂ := by
-  show ￢￢ a₁ ≤ ￢￢ a₂
-  gcongr
-@[gcongr]
-theorem Exp.covalidate_mono {a₁ a₂ : Exp ϖ} (ha : a₁ ≤ a₂) :
-    ▿ a₁ ≤ ▿ a₂ := by
-  show ~~ a₁ ≤ ~~ a₂
-  gcongr
-
-@[gcongr]
-theorem ENNReal.hcoimp_mono {a₁ a₂ b₁ b₂ : ENNReal} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
-    a₁ ↜ b₁ ≤ a₂ ↜ b₂ := by
-  simp [instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
-@[gcongr]
-theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
-    ￢ a₁ ≤ ￢ a₂ := by
-  simp [hnot]
-  split_ifs <;> simp_all
-@[gcongr]
-theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
-    ▿ a₁ ≤ ▿ a₂ := by
-  show ~~ a₁ ≤ ~~ a₂
-  simp [hconot, himp]
-  split_ifs <;> try grind
-  · simp
-  · simp_all
-
-@[grind =, simp]
-theorem Exp.zero_himp {a : Exp ϖ} :
-    (0 ⇨ a) = ⊤ := by simp [himp]; rfl
-
-namespace Exp
-
-variable {ϖ : Type*} [DecidableEq ϖ] {a b : Exp ϖ} {p : BExpr ϖ} (xs : List ((_ : ϖ) × Exp ϖ))
-
-@[simp] theorem top_subst :
-    (⊤ : Exp ϖ)[..xs] = (⊤ : Exp ϖ) := by
-  induction xs with try simp
-  | cons x xs ih =>
-    simp [Substitution.substs_cons, Substitution.subst, ih]
-    rfl
-
-@[simp] theorem iver_subst :
-    i[p][..xs] = i[(p)[..xs]] := by
-  induction xs generalizing p with try simp
-  | cons x xs ih =>
-    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil, ih, id_eq]
-    rfl
-@[simp] theorem not_subst :
-    (p.not)[..xs] = (p)[..xs].not := by
-  induction xs generalizing p with try simp
-  | cons x xs ih =>
-    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil, id_eq]
-    rw [ih]
-    rfl
-@[simp] theorem hnot_subst :
-    (￢a)[..xs] = ￢a[..xs] := by
-  induction xs generalizing a with try simp
-  | cons x xs ih =>
-    ext σ
-    simp_all only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil,
-      Pi.hnot_apply]
-@[simp] theorem validate_subst :
-    (▵ a)[..xs] = ▵ a[..xs] := by
-  induction xs generalizing a with try simp
-  | cons x xs ih =>
-    ext σ
-    simp_all only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil,
-      validate_apply]
-@[simp] theorem covalidate_subst :
-    (▿ a)[..xs] = ▿ a[..xs] := by
-  induction xs generalizing a with try simp
-  | cons x xs ih =>
-    ext σ
-    simp_all only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil,
-      covalidate_apply]
-
-@[simp] theorem add_subst :
-    (a + b)[..xs] = a[..xs] + b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem sub_subst :
-    (a - b)[..xs] = a[..xs] - b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem mul_subst :
-    (a * b)[..xs] = a[..xs] * b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem div_subst :
-    (a / b)[..xs] = a[..xs] / b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem himp_subst :
-    (a ⇨ b)[..xs] = a[..xs] ⇨ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem hcoimp_subst :
-    (a ↜ b)[..xs] = a[..xs] ↜ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-
-@[simp] theorem eq_subst :
-    (BExpr.eq a b)[..xs] = BExpr.eq a[..xs] b[..xs] :=
-  Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-
-end Exp
-
-@[simp] theorem BExpr.eq_self {a : Exp ϖ} : BExpr.eq a a = true := by ext; simp; rfl
-@[simp] theorem BExpr.eq_of_ne {a b : Exp ϖ} (h : ∀ σ, a σ ≠ b σ) : BExpr.eq a b = false := by
-  ext; simp_all; exact of_decide_eq_false rfl
-@[simp] theorem BExpr.iver_coe_bool :
-    BExpr.iver (ϖ:=ϖ) (BExpr.coe_bool a) = if a then 1 else 0 := by
-    ext
-    simp [BExpr.iver, BExpr.coe_bool, DFunLike.coe]
-    split_ifs <;> rfl
-@[simp] theorem BExpr.not_coe_bool :
-    BExpr.not (ϖ:=ϖ) (BExpr.coe_bool a) = BExpr.coe_bool ¬a := by
-    ext
-    simp [BExpr.not, BExpr.coe_bool, DFunLike.coe]
-
 @[grind =, simp]
 theorem HeyVL.if_vp_sem :
     ((HeyVL.If b S₁ S₂).vp φ).sem = i[b.sem] * (S₁.vp φ).sem + i[b.not.sem] * (S₂.vp φ).sem := by
   ext σ
   simp [If, vp]
-  by_cases h : b.sem σ <;> simp [BExpr.iver, h]
+  by_cases h : b.sem σ <;> simp [h]
 
 noncomputable instance {α : Ty} : CompleteLattice α.lit :=
   match α with
@@ -805,10 +638,6 @@ theorem BExpr.subst_applied [DecidableEq ϖ] {b : BExpr ϖ} {xs : List ((_ : ϖ)
     simp [Substitution.substs_cons, BExpr.subst_apply]
     simp [ih]
 
-@[grind =, simp]
-theorem BExpr.subst_single_apply [DecidableEq ϖ] {b : BExpr ϖ} :
-    b[x ↦ v] σ = b σ[x ↦ v σ] := by
-  rfl
 theorem BExpr.subst_apply [DecidableEq ϖ] {b : BExpr ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} :
     b[..xs] σ = b (Substitution.applied σ xs) := by
   rw [subst_applied]
@@ -890,11 +719,6 @@ def HeyVL.Subs.of_surj : Function.Surjective (HeyVL.Subs.of xs hn) := by
     refine (List.findIdx_eq h₁).mpr ?_
     grind [List.Nodup.getElem_inj_iff]
 
-@[gcongr]
-theorem pGCL.Exp.ennreal_coe_le (h : a ≤ b) :
-    pGCL.Exp.ennreal_coe (ϖ:=ϖ) a ≤ pGCL.Exp.ennreal_coe b := by
-  intro; grind
-
 @[grind]
 def HeyLo.mods : HeyLo α → Globals
   | .Binary _ S₁ S₂ => S₁.mods ∪ S₂.mods
@@ -907,14 +731,6 @@ def HeyLo.mods : HeyLo α → Globals
 def Distribution.mods (D : Distribution) : Globals :=
   D.values.toList.toFinset.biUnion (·.2.mods)
 
-/-- Park induction -/
-theorem pGCL.wp_le_of_le [DecidableEq ϖ] {C : pGCL ϖ} (I : Exp ϖ) (h : Φ O φ C f I ≤ I) :
-    wp[O]⟦while (~φ) {~C}⟧ f ≤ I := by
-  exact OrderHom.lfp_le _ h
-
-@[grind =]
-theorem States.subst_comm {σ : States Ident} {x₁ x₂ : Ident} {v₁ v₂ : ENNReal} (h : x₁ ≠ x₂) :
-    σ[x₁ ↦ v₁][x₂ ↦ v₂] = σ[x₂ ↦ v₂][x₁ ↦ v₁] := by ext; grind
 @[grind =, simp]
 theorem HeyLo.sem_indep {α : Ty} {φ : HeyLo α} {x : Ident} (h : x ∉ φ.fv) :
     Substitution.IsIndepPair φ.sem x := by
@@ -932,7 +748,7 @@ theorem HeyLo.sem_indep {α : Ty} {φ : HeyLo α} {x : Ident} (h : x ∉ φ.fv) 
       simp [BExpr.ext_iff, *] at ih₂
       simp_all only
     · ext σ
-      simp [sem, BExpr.iver]
+      simp [sem]
       simp [Exp.ext_iff, *] at ih₁
       simp [Exp.ext_iff, *] at ih₂
       simp_all only
@@ -967,137 +783,6 @@ theorem HeyLo.sem_indep {α : Ty} {φ : HeyLo α} {x : Ident} (h : x ∉ φ.fv) 
   | Unary => grind [sem]
   | Binary => grind [sem]
 
-@[grind]
-def pGCL.mods : pGCL ϖ → Set ϖ
-  | pgcl {skip} => ∅
-  | pgcl {~x := ~_} => {x}
-  | pgcl {~C₁ ; ~C₂} => C₁.mods ∪ C₂.mods
-  | pgcl {{~C₁} [~_] {~C₂}} => C₁.mods ∪ C₂.mods
-  | pgcl {{~C₁} [] {~C₂}} => C₁.mods ∪ C₂.mods
-  | pgcl {while ~_ {~C'}} => C'.mods
-  | pgcl {tick(~ _)} => ∅
-  | pgcl {observe(~ _)} => ∅
-
-open scoped Classical in
-noncomputable
-def Exp.fix (X : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Exp ↑Sᶜ :=
-  fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
-
-@[grind =, simp]
-theorem Exp.fix_empty (φ : Exp ϖ) : Exp.fix φ ∅ σ₀ σ = φ (σ ⟨·, id⟩) := by
-  simp [fix]
-@[grind =, simp]
-theorem Exp.fix_compl_empty (φ : Exp ϖ) : Exp.fix φ ∅ᶜ σ₀ σ = φ σ₀ := by
-  simp [fix]
-@[grind ., simp]
-theorem Exp.fix_compl_empty_eq (φ ψ : Exp ϖ) : Exp.fix φ ∅ᶜ = Exp.fix ψ ∅ᶜ ↔ φ = ψ := by
-  constructor
-  · intro h
-    ext σ₀
-    replace h := congrFun₂ h σ₀ (σ₀ ·)
-    grind
-  · grind
-
-open scoped Classical in
-noncomputable
-def States.cofix (σ₀ : States ϖ) (S : Set ϖ) (σ : States ↑Sᶜ) : States ϖ :=
-  fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
-
-open scoped Classical in
-noncomputable
-def BExpr.fix (X : BExpr ϖ) (S : Set ϖ) (σ₀ : States ϖ) : BExpr ↑Sᶜ :=
-  ⟨fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩, instDecidablePredComp⟩
-  -- ⟨X ∘ States.cofix σ₀ S, instDecidablePredComp⟩
-
-open scoped Classical in
-theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set ϖ) (σ₀ : States ϖ) (σ : States ↑Sᶜ) :
-    (BExpr.fix X S σ₀) σ = X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩ := rfl
-
-open scoped Classical in
-noncomputable
-def ProbExp.fix (X : ProbExp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : ProbExp ↑Sᶜ :=
-  ⟨fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩, by intro σ; simp⟩
-
-open scoped Classical in
-noncomputable def pGCL.fix (C : pGCL ϖ) (S : Set ϖ) (σ₀ : States ϖ) : pGCL ↑Sᶜ :=
-  match C with
-  | pgcl {skip} => pgcl {skip}
-  | pgcl {~x := ~A} =>
-    if hx : _ then pgcl {~⟨x, hx⟩ := ~(Exp.fix A S σ₀)} else pgcl {skip}
-  | pgcl {~C₁ ; ~C₂} => pgcl {~(C₁.fix S σ₀) ; ~(C₂.fix S σ₀)}
-  | pgcl {{~C₁} [~p] {~C₂}} =>
-    pgcl {{~(C₁.fix S σ₀)} [~(ProbExp.fix p S σ₀)] {~(C₂.fix S σ₀)}}
-  | pgcl {{~C₁} [] {~C₂}} => pgcl {{~(C₁.fix S σ₀)} [] {~(C₂.fix S σ₀)}}
-  | pgcl {while ~b {~C'}} => pgcl {while ~(BExpr.fix b S σ₀) {~(C'.fix S σ₀)}}
-  | pgcl {tick(~ r)} => pgcl {tick(~(Exp.fix r S σ₀))}
-  | pgcl {observe(~ b)} => pgcl {observe(~(BExpr.fix b S σ₀))}
-
-theorem pGCL.wp_le_of_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) :
-    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ ≤ Exp.fix X S σ₀ → wp[O]⟦~C⟧ φ σ₀ ≤ X σ₀ := by
-  intro h
-  replace h := h fun x ↦ σ₀ x
-  simp_all [Exp.fix]
-
-theorem pGCL.le_wlp''_of_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) :
-    Exp.fix X S σ₀ ≤ Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ → X σ₀ ≤ wlp''[O]⟦~C⟧ φ σ₀ := by
-  intro h
-  replace h := h fun x ↦ σ₀ x
-  simp_all [Exp.fix]
-
-theorem pGCL.wp_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS : C.mods ⊆ Sᶜ) :
-    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ = wp[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
-  symm
-  induction C generalizing φ with simp_all [fix, mods] <;> try rfl
-  | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
-  | assign x e =>
-    ext σ'
-    simp only [Exp.fix, Exp.subst_apply, States.subst_apply, Subtype.mk.injEq]
-    congr! with y
-    grind
-  | loop b C ih =>
-    ext σ
-    simp only [wp_loop_eq_iter, iSup_apply, Exp.fix]
-    congr with i
-    induction i generalizing σ with
-    | zero => simp only [Function.iterate_zero, id_eq, Pi.zero_apply]
-    | succ i ih' =>
-      simp only [Function.iterate_succ', Function.comp_apply]
-      nth_rw 1 [Φ]
-      nth_rw 2 [Φ]
-      simp only [OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply]
-      congr! 2
-      classical
-      rw [← Exp.ext_iff] at ih'
-      rw [ih']
-      exact congrFun (ih ((Φ O b C φ)^[i] 0)) σ
-
-theorem pGCL.wlp''_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS : C.mods ⊆ Sᶜ) :
-    Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ = wlp''[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
-  symm
-  induction C generalizing φ with simp_all [fix, mods] <;> try rfl
-  | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
-  | assign x e =>
-    ext σ'
-    simp only [Exp.fix, Exp.subst_apply, States.subst_apply, Subtype.mk.injEq]
-    congr! with y
-    grind
-  | loop b C ih =>
-    ext σ
-    simp only [wlp''_loop_eq_iter, iInf_apply, Exp.fix]
-    congr with i
-    induction i generalizing σ with
-    | zero => simp only [Function.iterate_zero, id_eq, Pi.top_apply]
-    | succ i ih' =>
-      simp only [Function.iterate_succ', Function.comp_apply]
-      nth_rw 1 [lΦ'']
-      nth_rw 2 [lΦ'']
-      simp [ProbExp.pick]
-      congr! 2
-      classical
-      rw [← Exp.ext_iff] at ih'
-      rw [ih']
-      exact congrFun (ih ((lΦ'' O b C φ)^[i] ⊤)) σ
-
 @[grind =, simp]
 theorem HeyVL.Cohavocs_mods : (HeyVL.Cohavocs xs).mods = ∅ := by
   fun_induction Cohavocs with simp_all [mods, HeyVL.Skip]
@@ -1107,119 +792,81 @@ theorem pGCL'.HeyVL_mods (C : pGCL') : C.mods ⊆ (C.HeyVL O D G).2.mods := by
   induction C generalizing G with simp_all [mods, HeyVL, HeyVL.mods, HeyVL.If] <;> try grind
   | loop => cases D <;> simp_all only [HeyVL.mods] <;> grind
 
-
-/-- An _Idle invariant_ is _Park invariant_ that holds for states with a set of fixed variables. -/
-def pGCL.IdleInvariant [DecidableEq ϖ] (O : Optimization) (b : BExpr ϖ) (C : pGCL ϖ) (φ : Exp ϖ)
-    (I : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Prop :=
-  ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → Φ O b C φ I σ ≤ I σ
-
-/-- _Idle induction_ is _Park induction_, but the engine is running (i.e. an initial state is
-given), and as a consequence only states that vary over the modified variables need to be
-considered for the inductive invariant. -/
-theorem pGCL.IdleInduction [DecidableEq ϖ] (b : BExpr ϖ) (C : pGCL ϖ) (φ : Exp ϖ) (I : Exp ϖ)
-    (σ₀ : States ϖ) (h : C.IdleInvariant O b φ I C.modsᶜ σ₀) :
-    wp[O]⟦while ~b { ~C }⟧ φ σ₀ ≤ I σ₀ := by
-  apply pGCL.wp_le_of_fix (S:=C.modsᶜ)
-  rw [pGCL.wp_fix _ _ _ (by simp; rfl)]
-  apply OrderHom.lfp_le
-  simp [IdleInvariant, Φ] at h
-  intro σ'
-  simp only [OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply]
-  classical
-  let σ₁' : States ϖ := States.cofix σ₀ _ σ'
-  let σ₁ : States ϖ := fun v ↦ if h : v ∈ C.mods then σ' ⟨v, by grind⟩ else σ₀ v
-  have : σ₁ = σ₁' := by ext; simp [σ₁, σ₁', States.cofix]
-  have : (∀ v ∉ C.mods, σ₁ v = σ₀ v) := by simp +contextual [σ₁]
-  convert h σ₁ this
-  · simp [BExpr.fix, BExpr.iver, σ₁]
-    simp [DFunLike.coe]
-  · rw [← pGCL.wp_fix _ _ _ (by simp)]
-    simp [Exp.fix, σ₁]
-  · simp [BExpr.fix, BExpr.iver, σ₁]
-    simp [DFunLike.coe]
-  · simp [Exp.fix, σ₁]
-  · simp [Exp.fix, σ₁]
-
-/-- An _Idle coinvariant_ is _Park coinvariant_ that holds for states with a set of fixed variables.
--/
-def pGCL.IdleCoinvariant [DecidableEq ϖ] (O : Optimization) (b : BExpr ϖ) (C : pGCL ϖ) (φ : Exp ϖ)
-    (I : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Prop :=
-  ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → I σ ≤ lΦ'' O b C φ I σ
-
-/-- _Idle coinduction_ is _Park coinduction_, but the engine is running (i.e. an initial state is
-given), and as a consequence only states that vary over the modified variables need to be
-considered for the coinductive invariant. -/
-theorem pGCL.IdleCoinduction [DecidableEq ϖ] (b : BExpr ϖ) (C : pGCL ϖ) (φ : Exp ϖ) (I : Exp ϖ)
-    (σ₀ : States ϖ) (h : C.IdleCoinvariant O b φ I C.modsᶜ σ₀) :
-    I σ₀ ≤ wlp''[O]⟦while ~b { ~C }⟧ φ σ₀ := by
-  apply pGCL.le_wlp''_of_fix (S:=C.modsᶜ)
-  rw [pGCL.wlp''_fix _ _ _ (by simp; rfl)]
-  apply OrderHom.le_gfp
-  simp [IdleCoinvariant, lΦ''] at h
-  intro σ'
-  simp only [OrderHom.mk_apply]
-  classical
-  let σ₁ : States ϖ := fun v ↦ if h : v ∈ C.mods then σ' ⟨v, by grind⟩ else σ₀ v
-  have : (∀ v ∉ C.mods, σ₁ v = σ₀ v) := by simp +contextual [σ₁]
-  convert h σ₁ this
-  · simp [Exp.fix, σ₁]
-  · simp [ProbExp.pick, BExpr.probOf, BExpr.iver, BExpr.fix_apply, σ₁]
-    congr! 2
-    · rw [← pGCL.wlp''_fix _ _ _ (by simp)]
-      simp [Exp.fix]
-    · simp [Exp.fix]
-
 @[grind =, simp]
 theorem pGCL'.pGCL_mods (C : pGCL') : C.pGCL.mods = ↑C.mods := by
   induction C with simp_all [mods, pGCL, pGCL.mods]
 
-theorem NNRat.toENNReal_sub (a b : ℚ≥0) (h : b ≤ a) :
-    (((a - b) : ℚ≥0) : ENNReal) = (↑a : ENNReal) - ↑b := by
-  have := Rat.cast_sub (α:=Real) a b
-  simp only [Rat.cast_nnratCast] at this
-  refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
-  swap
-  · exact Ne.symm (not_eq_of_beq_eq_false rfl)
-  · exact Ne.symm (not_eq_of_beq_eq_false rfl)
-  have hx : ∀ (x : ℚ≥0), (@NNRat.cast ENNReal ENNReal.instNNRatCast x).toReal = x := by
-    intro x
-    rfl
-  convert this <;> clear this
-  · simp
-    simp only [hx]
-    obtain ⟨a, ha⟩ := a
-    obtain ⟨b, hb⟩ := b
-    simp_all
-    rw [sub_def]
-    simp
-    replace h : b ≤ a := h
-    norm_cast
-    simp_all [Rat.coe_toNNRat]
-  · norm_cast
-    obtain ⟨a, ha⟩ := a
-    obtain ⟨b, hb⟩ := b
-    replace h : b ≤ a := h
-    have : @NNRat.cast ENNReal ENNReal.instNNRatCast ⟨a, ha⟩ = ENNReal.ofReal a := by
-      refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
-      · exact Ne.symm (not_eq_of_beq_eq_false rfl)
-      · exact ENNReal.ofReal_ne_top
-      · refine Eq.symm (ENNReal.toReal_ofReal ?_)
-        exact Rat.cast_nonneg.mpr ha
-    have : @NNRat.cast ENNReal ENNReal.instNNRatCast ⟨b, hb⟩ = ENNReal.ofReal b := by
-      refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
-      · exact Ne.symm (not_eq_of_beq_eq_false rfl)
-      · exact ENNReal.ofReal_ne_top
-      · refine Eq.symm (ENNReal.toReal_ofReal ?_)
-        exact Rat.cast_nonneg.mpr hb
-    simp_all
-
 @[grind =, simp]
-theorem NNRat.ennreal_cast : (1 : NNRat) = (1 : ENNReal) := by
+theorem NNRat.ennreal_cast {n : ℕ} : (n : NNRat) = (n : ENNReal) := by
+  simp [NNRat.cast]
+  simp [NNRatCast.nnratCast]
+@[grind =, simp]
+theorem NNRat.ennreal_cast_zero : (0 : NNRat) = (0 : ENNReal) := by
+  simp [NNRat.cast]
+  simp [NNRatCast.nnratCast]
+@[grind =, simp]
+theorem NNRat.ennreal_cast_one : (1 : NNRat) = (1 : ENNReal) := by
   simp [NNRat.cast]
   simp [NNRatCast.nnratCast]
 
-example (p : ℚ≥0) (hp : p ≤ 1) : 1 - (↑p : ENNReal) = (↑(1 - p) : ENNReal) := by
-  simp only [hp, NNRat.toENNReal_sub, NNRat.ennreal_cast]
+@[simp]
+theorem NNRat.toENNReal_sub (a b : ℚ≥0) : (((a - b) : ℚ≥0) : ENNReal) = (↑a : ENNReal) - ↑b := by
+  if h : b ≤ a then
+    have := Rat.cast_sub (α:=Real) a b
+    simp only [Rat.cast_nnratCast] at this
+    refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
+    swap
+    · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+    · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+    convert this <;> clear this
+    · simp
+      have hx : ∀ (x : ℚ≥0), (@NNRat.cast ENNReal ENNReal.instNNRatCast x).toReal = x := by
+        intro x
+        rfl
+      simp only [hx]
+      obtain ⟨a, ha⟩ := a
+      obtain ⟨b, hb⟩ := b
+      simp_all
+      rw [sub_def]
+      simp
+      replace h : b ≤ a := h
+      norm_cast
+      simp_all [Rat.coe_toNNRat]
+    · norm_cast
+      obtain ⟨a, ha⟩ := a
+      obtain ⟨b, hb⟩ := b
+      replace h : b ≤ a := h
+      have : @NNRat.cast ENNReal ENNReal.instNNRatCast ⟨a, ha⟩ = ENNReal.ofReal a := by
+        refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
+        · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+        · exact ENNReal.ofReal_ne_top
+        · refine Eq.symm (ENNReal.toReal_ofReal ?_)
+          exact Rat.cast_nonneg.mpr ha
+      have : @NNRat.cast ENNReal ENNReal.instNNRatCast ⟨b, hb⟩ = ENNReal.ofReal b := by
+        refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
+        · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+        · exact ENNReal.ofReal_ne_top
+        · refine Eq.symm (ENNReal.toReal_ofReal ?_)
+          exact Rat.cast_nonneg.mpr hb
+      simp_all
+  else
+    simp_all
+    replace h := h.le
+    have : a - b = 0 := by
+      simp only [sub_def, Rat.toNNRat_eq_zero, tsub_le_iff_right, zero_add, cast_le, h]
+    simp [this]
+    symm
+    refine tsub_eq_zero_of_le ?_
+    suffices ∃ c, a + c = b by
+      obtain ⟨c, ⟨_⟩⟩ := this
+      apply le_trans _ _ (b:=(↑a : ENNReal) + (↑c : ENNReal))
+      · exact le_self_add
+      · apply le_of_eq
+        refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp (Rat.cast_add _ _).symm
+        · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+        · exact Ne.symm (not_eq_of_beq_eq_false rfl)
+    use (b - a)
+    exact add_tsub_cancel_of_le h
 
 theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
     wp[O]⟦~C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower G).2.vp φ).sem := by
@@ -1263,7 +910,7 @@ theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
       grind
 
     grw [← ih₁, ← ih₂]
-    · intro σ; simp [NNRat.toENNReal_sub, hp]
+    · intro σ; rfl
     · grind
     · calc
         C₁.fv ∪ φ.fv ⊆ C₁.fv ∪ (C₂.fv ∪ φ.fv) := by grind
@@ -1273,7 +920,7 @@ theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
     simp only [pGCL'.pGCL, pGCL'.HeyVL, HeyVL.vp, sem_sup_apply, Globals.toList_Nodup,
       HeyVL.vp_cohavocs]
     intro σ
-    if inv : IdleInvariant O b.sem C.pGCL φ.sem I.sem C.modsᶜ σ then
+    if inv : IdleInvariant wp[O]⟦~C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
       left
       apply IdleInduction
@@ -1283,7 +930,7 @@ theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
       obtain ⟨σ', h₁, h₂⟩ := inv
       simp [Φ] at h₂
       let Ξ := HeyVL.Subs.of (C.HeyVL O .Lower G).2.mods.toList (by simp) σ'
-      have : σ[..Ξ.help'] = σ' := by
+      have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
         ext x
         simp +contextual [Ξ]
         intro h
@@ -1298,19 +945,20 @@ theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
         simp [covalidate, himp, hconot, hcoimp]
         grind [ne_zero_of_lt]
       simp [this]
-      specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ[..Ξ.help']
+      specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
+      simp [σ_eq_σ']
       have :
-            wp[O]⟦~C.pGCL⟧ I.sem σ[..Ξ.help']
-          ≤ ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ[..Ξ.help'] := by
+            wp[O]⟦~C.pGCL⟧ I.sem σ'
+          ≤ ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' := by
         grw [← ih]
         have : (I.sem ⊔ ((⊤ : 𝔼r).sem ↜ φ.sem)) = I.sem := by ext; simp [sem, hcoimp]
         simp [this]
       simp only at this
       simp only [ge_iff_le]
       suffices
-            ¬i[b.sem[..Ξ.help]] σ * ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ[..Ξ.help'] +
-              i[b.sem[..Ξ.help].not] σ * φ.sem σ[..Ξ.help']
-          ≤ I.sem (σ[..Ξ.help']) by simp [this]
+            ¬i[b.sem σ'] * ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' +
+              i[¬b.sem σ'] * φ.sem σ'
+          ≤ I.sem (σ') by simp [this]
       grw [← this]; clear this; clear this; clear ih
       simp
       grind
@@ -1318,8 +966,8 @@ theorem pGCL'.wp_le_vp {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
     grind [pGCL'.HeyVL, HeyVL.vp, add_comm, pGCL'.pGCL, wp.tick_apply, le_refl]
   | observe r =>
     intro σ
-    simp only [pGCL'.pGCL, wp.observe_apply, Pi.mul_apply, pGCL'.HeyVL, HeyVL.vp, sem_inf_apply,
-      Ty.expr, sem_embed, Pi.inf_apply, Pi.top_apply, le_inf_iff, BExpr.iver_mul_le_apply, and_true]
+    simp only [pGCL, wp.observe_apply, Pi.mul_apply, HeyVL, HeyVL.vp, sem_inf_apply, Ty.expr,
+      sem_embed, Pi.inf_apply, Pi.top_apply, le_inf_iff]
     if r.sem σ then simp_all else simp_all
 
 /-- info: 'pGCL'.wp_le_vp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
@@ -1334,11 +982,11 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) 
     simp only [HeyVL, HeyVL.Skip, HeyVL.vp, sem_add_apply, Ty.expr, sem_zero, Pi.add_apply,
       Pi.zero_apply, add_zero, pGCL, wlp''.skip_apply, le_refl]
   | assign x e =>
-    simp only [Ty.expr, HeyVL, HeyVL.vp, Distribution.pure_map, Distribution.pure_toExpr,
-      sem_add_apply, sem_mul_apply, sem_lit_apply, Literal.sem, NNRat.ennreal_cast, sem_subst,
-      sem_zero, add_zero, pGCL, wlp''.assign_apply]
     intro σ
-    simp
+    simp only [HeyVL, HeyVL.vp, Distribution.pure_map, Distribution.pure_toExpr, sem_add_apply,
+      Ty.expr, sem_mul_apply, sem_lit_apply, Literal.sem, NNRat.ennreal_cast_one, sem_subst,
+      sem_zero, Pi.add_apply, Pi.mul_apply, Exp.ennreal_coe_apply, pGCL.Exp.subst_apply, one_mul,
+      Pi.zero_apply, add_zero, pGCL, wlp''.assign_apply, le_refl]
   | seq C₁ C₂ ih₁ ih₂ =>
     simp only [Ty.expr, HeyVL, HeyVL.vp, pGCL, wlp''.seq_apply]
     simp_all
@@ -1375,7 +1023,7 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) 
       grind
 
     grw [ih₁, ih₂]
-    · intro σ; simp [NNRat.toENNReal_sub, hp]
+    · rfl
     · grind
     · calc
         C₁.fv ∪ φ.fv ⊆ C₁.fv ∪ (C₂.fv ∪ φ.fv) := by grind
@@ -1386,7 +1034,7 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) 
       sem_validate, sem_himp_apply, HeyVL.if_vp_sem, sem_not_apply, Exp.validate_subst,
       Exp.himp_subst, Exp.add_subst, Exp.mul_subst, Exp.iver_subst, Exp.not_subst, pGCL]
     intro σ
-    if inv : IdleCoinvariant O b.sem C.pGCL φ.sem I.sem C.modsᶜ σ then
+    if inv : IdleCoinvariant wlp''[O]⟦~C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
       left
       apply IdleCoinduction
@@ -1394,9 +1042,9 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) 
     else
       simp [IdleCoinvariant] at inv
       obtain ⟨σ', h₁, h₂⟩ := inv
-      simp [lΦ''] at h₂
+      simp [Φ] at h₂
       let Ξ := HeyVL.Subs.of (C.HeyVL O .Upper G).2.mods.toList (by simp) σ'
-      have : σ[..Ξ.help'] = σ' := by
+      have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
         ext x
         simp +contextual [Ξ]
         intro h
@@ -1410,24 +1058,20 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) 
         intro a b
         simp [validate, himp, hnot, himp]
         grind [LT.lt.ne_top]
-      simp [this]
-      specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ[..Ξ.help']
+      simp [this, σ_eq_σ']
+      specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
       have :
-            ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem σ[..Ξ.help']
-          ≤ wlp''[O]⟦~C.pGCL⟧ I.sem σ[..Ξ.help'] := by
+            ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
+          ≤ wlp''[O]⟦~C.pGCL⟧ I.sem σ' := by
         grw [ih]
         simp
       simp only at this
       simp only [ge_iff_le]
-      suffices ¬I.sem (σ[..Ξ.help'])
-          ≤ i[b.sem[..Ξ.help]] σ * ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem (σ[..Ξ.help'])
-            + i[b.sem[..Ξ.help].not] σ * φ.sem (σ[..Ξ.help'])
+      suffices ¬I.sem (σ')
+          ≤ i[b.sem σ'] * ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem (σ')
+            + i[¬b.sem σ'] * φ.sem (σ')
         by simp [this]
       grw [this]; clear this; clear this; clear ih
-      have : i[b.sem[..Ξ.help].not] σ = 1 - i[b.sem] σ' := by
-        simp_all [BExpr.iver_apply]
-        split_ifs <;> simp
-      simp only [ProbExp.pick, Pi.add_apply, Pi.mul_apply, Pi.sub_apply, Pi.one_apply] at h₂
       grind
   | tick r =>
     simp only [HeyVL, HeyVL.vp, sem_add_apply, sem_binop, BinOp.sem, pGCL, wlp''.tick_apply]

@@ -95,6 +95,7 @@ def after (C' : pGCL ϖ) : Conf₁ ϖ → Conf₁ ϖ
   | conf₁[⇓, σ] => conf₁[~C', σ]
   | conf₁[↯, σ] => conf₁[↯, σ]
 
+@[grind inj]
 def after_inj (C' : pGCL ϖ) : Function.Injective C'.after := by
   intro c₁ c₂ h
   simp_all [after]

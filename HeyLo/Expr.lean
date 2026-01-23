@@ -221,37 +221,6 @@ inductive HeyVL where
   | Covalidate
 deriving Lean.ToExpr
 
-/-- Syntax typeclass for Heyting co-implication `↜`. -/
-@[notation_class]
-class HCoImp (α : Type*) where
-  /-- Heyting co-implication `↜` -/
-  hcoimp : α → α → α
-
-@[notation_class]
-class HCoNot (α : Type*) where
-  /-- Co-necation `~` -/
-  hconot : α → α
-
-@[notation_class]
-class Validate (α : Type*) where
-  /-- Validate `▵` -/
-  validate : α → α
-
-@[notation_class]
-class Covalidate (α : Type*) where
-  /-- Co-validate `▿` -/
-  covalidate : α → α
-
-export HCoImp (hcoimp)
-export HCoNot (hconot)
-export Validate (validate)
-export Covalidate (covalidate)
-
-@[inherit_doc] infixr:60 " ↜ " => hcoimp
-@[inherit_doc] prefix:72 "~ " => hconot
-@[inherit_doc] prefix:72 "▵ " => validate
-@[inherit_doc] prefix:72 "▿ " => covalidate
-
 instance : Top 𝔼r := ⟨.Lit .Infinity⟩
 instance : OfNat 𝔼r n := ⟨.Lit (.UInt n)⟩
 instance : Add 𝔼r := ⟨.Binary .Add⟩
@@ -267,43 +236,6 @@ noncomputable instance {α : Ty} : HNot α.expr :=
   | .Bool => inferInstance
   | .ENNReal => inferInstance
 instance : HCoNot 𝔼r := ⟨.Unary .Non⟩
-
-instance {α : Type*} [HNot α] : Validate α := ⟨fun x ↦ ￢￢x⟩
-instance {α : Type*} [HCoNot α] : Covalidate α := ⟨fun x ↦ ~~x⟩
-
-noncomputable instance {α β : Type*} [HCoImp β] : HCoImp (α → β) := ⟨fun φ ψ σ ↦ φ σ ↜ ψ σ⟩
-noncomputable instance {α β : Type*} [HCoNot β] : HCoNot (α → β) := ⟨fun φ σ ↦ ~φ σ⟩
-
-noncomputable instance : HCoImp ENNReal := ⟨fun φ ψ ↦ if φ ≥ ψ then 0 else ψ⟩
-noncomputable instance : HCoNot ENNReal := ⟨fun φ ↦ φ ⇨ 0⟩
-theorem Exp.himp_apply {φ ψ : Exp ϖ} :
-    (φ ⇨ ψ) σ = φ σ ⇨ ψ σ := rfl
-@[grind =, simp] theorem Exp.hcoimp_apply {φ ψ : Exp ϖ} :
-    (φ ↜ ψ) σ = φ σ ↜ ψ σ := rfl
-@[grind =, simp] theorem Exp.hconot_apply {φ : Exp ϖ} :
-    (~φ) σ = ~φ σ := rfl
-
-example {φ : ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
-example {φ : ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot, hcoimp]
-
-example {φ ψ : Exp ϖ} : φ ⇨ ψ = fun σ ↦ if φ σ ≤ ψ σ then ⊤ else ψ σ := by ext σ; simp [himp]
-example {φ ψ : Exp ϖ} : φ ↜ ψ = fun σ ↦ if ψ σ ≤ φ σ then 0 else ψ σ := by ext σ; simp [hcoimp]
-example {φ : Exp ϖ} : ￢ φ = φ ↜ ⊤ := by ext σ; simp [hnot, hcoimp]
-example {φ : Exp ϖ} : ~ φ = φ ⇨ 0 := by ext σ; simp [hconot, himp]
-example {φ : Exp ϖ} : ￢ φ = fun σ ↦ if φ σ = ⊤ then 0 else ⊤ := by ext σ; simp [hnot]
-example {φ : Exp ϖ} : ~ φ = fun σ ↦ if φ σ = 0 then ⊤ else 0 := by ext σ; simp [hconot, himp]
-
-example {φ : Exp ϖ} : ▵ φ = ￢￢φ := by ext σ; simp [validate]
-example {φ : Exp ϖ} : ▿ φ = ~~φ := by ext σ; simp [covalidate]
-example {φ : Exp ϖ} : ▵ φ = fun σ ↦ if φ σ = ⊤ then ⊤ else 0 := by
-  ext σ; simp [validate, hnot]
-example {φ : Exp ϖ} : ▿ φ = fun σ ↦ if φ σ = 0 then 0 else ⊤ := by
-  ext σ; simp [covalidate, hconot, himp]
-
-@[grind =, simp] theorem Exp.validate_apply {φ : Exp ϖ} :
-    (▵ φ) σ = ▵ φ σ := rfl
-@[grind =, simp] theorem Exp.covalidate_apply {φ : Exp ϖ} :
-    (▿ φ) σ = ▿ φ σ := rfl
 
 def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : 𝔼r) : HeyLo α :=
   .Subst x Y X
