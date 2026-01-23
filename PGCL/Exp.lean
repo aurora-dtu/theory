@@ -223,6 +223,7 @@ variable {b : BExpr ϖ}
 instance : Coe Bool (BExpr ϖ) := ⟨coe_bool⟩
 
 
+theorem iver_apply : i[b] σ = if b σ then 1 else 0 := rfl
 @[grind ., simp] theorem iver_apply_le_one : i[b] σ ≤ 1 := by simp [iver]; split_ifs <;> simp
 @[grind ., simp] theorem iver_le_one : i[b] ≤ 1 := by intro σ; simp
 @[simp] theorem iver_mul_le_apply {X : Exp ϖ} : i[b] σ * X σ ≤ X σ := by calc

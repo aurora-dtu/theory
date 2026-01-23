@@ -120,6 +120,12 @@ instance : Lean.ToExpr Rat where
     if r.den == 1 then toExpr r.num else  mkApp2 (.const ``Div.div []) (toExpr r.num) (toExpr r.den)
   toTypeExpr := .const ``Rat []
 
+open Lean in
+instance : Lean.ToExpr NNRat where
+  toExpr r :=
+    if r.den == 1 then toExpr r.num else  mkApp2 (.const ``Div.div []) (toExpr r.num) (toExpr r.den)
+  toTypeExpr := .const ``NNRat []
+
 inductive Literal : Ty → Type where
   -- /- A string literal (`"something"`). -/
   -- | Str : String → Literal String
@@ -131,7 +137,7 @@ inductive Literal : Ty → Type where
   | Infinity : Literal ENNReal
   /- A boolean literal. -/
   | Bool : Bool → Literal Bool
-deriving DecidableEq
+deriving DecidableEq, Lean.ToExpr
 
 end HeyLo
 
@@ -174,7 +180,7 @@ inductive HeyLo : Ty → Type where
   | Lit : Literal α → HeyLo α
   -- /- A de Bruijn index. -/
   -- | DeBruijn : DeBruijnIndex → HeyLo  ENNReal
-deriving DecidableEq
+deriving DecidableEq, Lean.ToExpr
 
 open HeyLo
 
@@ -188,6 +194,13 @@ end HeyLo
 structure Distribution where
   values : Array (NNRat × 𝔼r)
   prop : (values.map (·.fst)).sum = 1
+deriving DecidableEq
+
+open Lean in
+instance : Lean.ToExpr Distribution where
+  toExpr μ :=
+    toExpr μ.values
+  toTypeExpr := .const ``Distribution []
 
 inductive HeyVL where
   --
@@ -206,38 +219,38 @@ inductive HeyVL where
   | Coassume (φ : 𝔼r)
   | Cohavoc (x : Ident)
   | Covalidate
+deriving Lean.ToExpr
 
 /-- Syntax typeclass for Heyting co-implication `↜`. -/
 @[notation_class]
 class HCoImp (α : Type*) where
-  /-- Heyting implication `↜` -/
+  /-- Heyting co-implication `↜` -/
   hcoimp : α → α → α
 
 @[notation_class]
 class HCoNot (α : Type*) where
-  /-- Conecation `~` -/
+  /-- Co-necation `~` -/
   hconot : α → α
 
 @[notation_class]
-class TriangleUp (α : Type*) where
-  /-- Triangle up `▵` -/
-  triangleup : α → α
+class Validate (α : Type*) where
+  /-- Validate `▵` -/
+  validate : α → α
 
 @[notation_class]
-class TriangleDown (α : Type*) where
-  /-- Heyting implication `▿` -/
-  triangledown : α → α
+class Covalidate (α : Type*) where
+  /-- Co-validate `▿` -/
+  covalidate : α → α
 
 export HCoImp (hcoimp)
 export HCoNot (hconot)
-export TriangleUp (triangleup)
-export TriangleDown (triangledown)
+export Validate (validate)
+export Covalidate (covalidate)
 
-/-- Heyting co-implication -/
-infixr:60 " ↜ " => hcoimp
-prefix:72 "~ " => hconot
-prefix:72 "▵ " => triangleup
-prefix:72 "▿ " => triangledown
+@[inherit_doc] infixr:60 " ↜ " => hcoimp
+@[inherit_doc] prefix:72 "~ " => hconot
+@[inherit_doc] prefix:72 "▵ " => validate
+@[inherit_doc] prefix:72 "▿ " => covalidate
 
 instance : Top 𝔼r := ⟨.Lit .Infinity⟩
 instance : OfNat 𝔼r n := ⟨.Lit (.UInt n)⟩
@@ -255,13 +268,14 @@ noncomputable instance {α : Ty} : HNot α.expr :=
   | .ENNReal => inferInstance
 instance : HCoNot 𝔼r := ⟨.Unary .Non⟩
 
-instance : TriangleUp 𝔼r := ⟨fun x ↦ ￢￢x⟩
-instance : TriangleDown 𝔼r := ⟨fun x ↦ ~~x⟩
+instance {α : Type*} [HNot α] : Validate α := ⟨fun x ↦ ￢￢x⟩
+instance {α : Type*} [HCoNot α] : Covalidate α := ⟨fun x ↦ ~~x⟩
+
+noncomputable instance {α β : Type*} [HCoImp β] : HCoImp (α → β) := ⟨fun φ ψ σ ↦ φ σ ↜ ψ σ⟩
+noncomputable instance {α β : Type*} [HCoNot β] : HCoNot (α → β) := ⟨fun φ σ ↦ ~φ σ⟩
 
 noncomputable instance : HCoImp ENNReal := ⟨fun φ ψ ↦ if φ ≥ ψ then 0 else ψ⟩
-noncomputable instance : HCoImp (Exp ϖ) := ⟨fun φ ψ σ ↦ φ σ ↜ ψ σ⟩
 noncomputable instance : HCoNot ENNReal := ⟨fun φ ↦ φ ⇨ 0⟩
-noncomputable instance : HCoNot (Exp ϖ) := ⟨fun φ σ ↦ ~φ σ⟩
 theorem Exp.himp_apply {φ ψ : Exp ϖ} :
     (φ ⇨ ψ) σ = φ σ ⇨ ψ σ := rfl
 @[grind =, simp] theorem Exp.hcoimp_apply {φ ψ : Exp ϖ} :
@@ -279,21 +293,16 @@ example {φ : Exp ϖ} : ~ φ = φ ⇨ 0 := by ext σ; simp [hconot, himp]
 example {φ : Exp ϖ} : ￢ φ = fun σ ↦ if φ σ = ⊤ then 0 else ⊤ := by ext σ; simp [hnot]
 example {φ : Exp ϖ} : ~ φ = fun σ ↦ if φ σ = 0 then ⊤ else 0 := by ext σ; simp [hconot, himp]
 
-noncomputable instance : TriangleUp ENNReal := ⟨fun x ↦ ￢￢x⟩
-noncomputable instance : TriangleDown ENNReal := ⟨fun x ↦ ~~x⟩
-noncomputable instance : TriangleUp (Exp ϖ) := ⟨fun x σ ↦ ▵ x σ⟩
-noncomputable instance : TriangleDown (Exp ϖ) := ⟨fun x σ ↦ ▿ x σ⟩
-
-example {φ : Exp ϖ} : ▵ φ = ￢￢φ := by ext σ; simp [triangleup]
-example {φ : Exp ϖ} : ▿ φ = ~~φ := by ext σ; simp [triangledown]
+example {φ : Exp ϖ} : ▵ φ = ￢￢φ := by ext σ; simp [validate]
+example {φ : Exp ϖ} : ▿ φ = ~~φ := by ext σ; simp [covalidate]
 example {φ : Exp ϖ} : ▵ φ = fun σ ↦ if φ σ = ⊤ then ⊤ else 0 := by
-  ext σ; simp [triangleup, hnot]
+  ext σ; simp [validate, hnot]
 example {φ : Exp ϖ} : ▿ φ = fun σ ↦ if φ σ = 0 then 0 else ⊤ := by
-  ext σ; simp [triangledown, hconot, himp]
+  ext σ; simp [covalidate, hconot, himp]
 
-@[grind =, simp] theorem Exp.triangleup_apply {φ : Exp ϖ} :
+@[grind =, simp] theorem Exp.validate_apply {φ : Exp ϖ} :
     (▵ φ) σ = ▵ φ σ := rfl
-@[grind =, simp] theorem Exp.triangledown_apply {φ : Exp ϖ} :
+@[grind =, simp] theorem Exp.covalidate_apply {φ : Exp ϖ} :
     (▿ φ) σ = ▿ φ σ := rfl
 
 def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : 𝔼r) : HeyLo α :=
@@ -303,18 +312,27 @@ instance : Substitution (HeyLo α) (Ident × 𝔼r) := ⟨fun X (x, Y) ↦ HeyLo
 
 attribute [grind =, simp] Distribution.prop
 
+theorem Array.flatMap_sum {α β : Type*} {A : Array α} {f : α → Array β} [AddMonoid β] :
+    (A.flatMap f).sum = (A.map (fun a ↦ (f a).sum)).sum := by
+  obtain ⟨A⟩ := A
+  simp
+  induction A with
+  | nil => simp
+  | cons a A ih => simp_all only [List.flatMap_cons, List.sum_append, sum_eq_sum_toList,
+    List.map_cons, List.sum_cons]
+theorem Array.map_mul_sum {α β : Type*} [MonoidWithZero β] [AddMonoid β] [LeftDistribClass β]
+    {A : Array α} {s : β} {f : α → β} : (A.map (fun x ↦ s * f x)).sum = s * (A.map f).sum := by
+  obtain ⟨A⟩ := A
+  induction A with grind [mul_zero, left_distrib]
+
 def Distribution.pure (v : 𝔼r) : Distribution := ⟨#[(1, v)], by simp⟩
--- TODO: if we need this, here it is but the proof was non-trivial
--- def Distribution.bind (μ : Distribution) (f : 𝔼r → Distribution) : Distribution :=
---   let values := μ.values.flatMap (fun (p, v) ↦ (f v).values.map (fun (p', v') ↦ (p * p', v')))
---   {values, prop := by
---     simp [values]
---     rw [Array.map_flatMap]
---     simp
---     unfold Function.comp
---     simp
---     sorry
---   }
+def Distribution.bind (μ : Distribution) (f : 𝔼r → Distribution) : Distribution :=
+  let values := μ.values.flatMap (fun (p, v) ↦ (f v).values.map (fun (p', v') ↦ (p * p', v')))
+  {values, prop := by
+    simp only [Array.map_flatMap, Array.map_map, values]
+    unfold Function.comp
+    simp only [Array.flatMap_sum, Array.map_mul_sum, prop, mul_one]
+  }
 def Distribution.map (μ : Distribution) (f : 𝔼r → 𝔼r) : Distribution :=
   ⟨μ.values.map (fun (p, v) ↦ (p, f v)), by simp; unfold Function.comp; simp⟩
 
@@ -505,21 +523,3 @@ theorem HeyLo.sem_Forall_apply :
 theorem HeyLo.sem_Exists_apply :
     (HeyLo.Quant QuantOp.Exists x c).sem σ ↔ ∃ (v : ENNReal), c.sem σ[x ↦ ↑v] := by
   rfl
-
--- @[grind =, simp]
--- theorem QuantOp.sem_subst {op : QuantOp α} : (op.sem a b)[x ↦ v] = if a = x then op.sem a b else op.sem a b[x ↦ v] := by
---   show HeyLo.Quant op a b
---   cases op <;> try rfl
---   · ext σ
---     simp
---     rw [HeyLo.sem_Inf]
---     simp [QuantOp.sem]
---     split_ifs
---     · subst_eqs
---       simp_all
---     · simp_all
-
-
---   · sorry
---   · sorry
---   · sorry
