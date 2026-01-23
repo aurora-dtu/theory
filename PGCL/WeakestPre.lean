@@ -32,9 +32,7 @@ noncomputable def wp (O : Optimization) : pGCL ϖ → Exp ϖ →o Exp ϖ
      fun a b hab ↦ by apply ProbExp.pick_le <;> apply (wp O _).mono hab⟩
   | pgcl {{~C₁}[]{~C₂}} =>
     ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
-  | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp ⟨
-      (i[b] * C'.wp O · + i[b.not] * X),
-      fun _ _ _ ↦ by simp; gcongr⟩, fun _ _ _ ↦ by simp; gcongr; intro; simp; gcongr⟩
+  | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (Φ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(~b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
 
@@ -305,8 +303,8 @@ theorem wp_le_one (C : pGCL ϖ) (X : Exp ϖ) (hX : X ≤ 1) : wp[O]⟦~C.st⟧ X
     simp [st]
     apply lfp_le
     intro σ
-    simp_all only [mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
-      Pi.one_apply]
+    simp_all only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply,
+      BExpr.not_apply, Pi.ofNat_apply]
     if b σ then
       simp_all
       apply ih _ (by rfl)

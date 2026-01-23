@@ -184,6 +184,7 @@ open scoped Classical in
 theorem ς.loop :
       (𝕊 cT cP).ς O f (.loop b C (ϖ:=ϖ))
     = (cP' cP (.loop b C))
+      -- TODO: make this Φ
       + ⟨fun X σ ↦ i[b σ] * f (pgcl { ~C ; while ~b {~C} }) X σ + i[¬b σ] * cT X (.term, σ),
         fun a b h σ ↦ by
           simp; gcongr
@@ -278,8 +279,7 @@ theorem wp_le_op.loop (ih : C.wp O ≤ (𝕊 cost_t cost_p).op O C) :
   nth_rw 2 [← (𝕊 cost_t cost_p).ς_op_eq_op]
   intro σ
   simp [ς.loop]
-  simp only [DFunLike.coe]
-  simp
+  simp [Φ]
   gcongr
   apply le_trans (ih _) <| op_le_seq cost_t cost_p 0 _ _ _ _ <;> simp
 
@@ -323,8 +323,8 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       ext
       simp
       nth_rw 2 [← wp_fp]
-      simp only [Φ, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply,
-        BExpr.not_apply]
+      simp only [Φ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply,
+        BExpr.iver_apply, BExpr.not_apply]
 
 example : dwp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Demonic := by rw [← instET.et_eq_op]
 example : awp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Angelic := by rw [← instET.et_eq_op]
