@@ -1,4 +1,4 @@
-import HeyLo.Expr
+import HeyLo.pGCL'
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Nat.Lattice
 import PGCL.IdleInvariant
@@ -100,31 +100,6 @@ theorem HeyLo.substs_inf {A B : 𝔼r[ϖ]} : (A ⊓ B).sem[..xs] = A.sem[..xs] �
 
 end
 
-inductive pGCL' (ϖ : Type) where
-  | skip : pGCL' ϖ
-  | assign : ϖ → 𝔼r[ϖ] → pGCL' ϖ
-  | seq : pGCL' ϖ → pGCL' ϖ → pGCL' ϖ
-  | prob : pGCL' ϖ → {p : NNRat // p ≤ 1} → pGCL' ϖ → pGCL' ϖ
-  | nonDet : pGCL' ϖ → pGCL' ϖ → pGCL' ϖ
-  | loop : 𝔼b[ϖ] → 𝔼r[ϖ] → pGCL' ϖ → pGCL' ϖ
-  | tick : 𝔼r[ϖ] → pGCL' ϖ
-  | observe : 𝔼b[ϖ] → pGCL' ϖ
-deriving Inhabited
-
-noncomputable def pGCL'.pGCL (C : pGCL' ϖ) : pGCL ϖ :=
-  match C with
-  | skip => .skip
-  | assign x e => .assign x e.sem
-  | seq C₁ C₂ => .seq C₁.pGCL C₂.pGCL
-  | prob C₁ p C₂ =>
-    .prob C₁.pGCL ⟨fun _ ↦ p, by
-      intro; obtain ⟨p, hp⟩ := p
-      simp_all [ENNReal.instNNRatCast, NNRat.cast]⟩ C₂.pGCL
-  | nonDet C₁ C₂ => .nonDet C₁.pGCL C₂.pGCL
-  | loop b I C => .loop b.sem C.pGCL
-  | tick r => .tick r.sem
-  | observe r => .observe r.sem
-
 infixr:50 " ;; " => HeyVL.Seq
 
 def HeyVL.Skip : HeyVL ϖ := .Reward 0
@@ -159,13 +134,14 @@ def HeyLo.fv (C : HeyLo ϖ α) : Globals ϖ :=
   | .Binary _ S₁ S₂ => S₁.fv ∪ S₂.fv
   | .Lit _ => ∅
   | .Subst v e m => {v} ∪ e.fv ∪ m.fv
+  | .Call _ m => m.fv
   -- NOTE: we need to include `x` for complete-substitution purposes
   | .Quant _ x m => {x} ∪ m.fv
   | .Ite b l r => b.fv ∪ l.fv ∪ r.fv
   | .Var x => {x}
   | .Unary _ m => m.fv
 def Distribution.fv (D : Distribution ϖ) : Globals ϖ :=
-  D.values.toList.toFinset.biUnion (·.2.fv)
+  D.values.toList.toFinset.biUnion (fun (x, y) ↦ x.fv ∪ y.fv)
 @[grind]
 def pGCL'.fv (C : pGCL' ϖ) : Globals ϖ :=
   match C with
@@ -173,9 +149,10 @@ def pGCL'.fv (C : pGCL' ϖ) : Globals ϖ :=
   | .skip => ∅
   | .observe o => o.fv
   | .tick r => r.fv
+  | .ite b S₁ S₂ => b.fv ∪ S₁.fv ∪ S₂.fv
   | .loop b c I => b.fv ∪ c.fv ∪ I.fv
   | .nonDet S₁ S₂ => S₁.fv ∪ S₂.fv
-  | .prob S₁ _ S₂ => S₁.fv ∪ S₂.fv
+  | .prob S₁ p S₂ => S₁.fv ∪ p.fv ∪ S₂.fv
   | .assign x e => {x} ∪ e.fv
 @[grind, simp]
 def HeyVL.fv (C : HeyVL ϖ) : Globals ϖ :=
@@ -202,6 +179,7 @@ def pGCL'.mods (C : pGCL' ϖ) : Globals ϖ :=
   | .observe _ => ∅
   | .tick _ => ∅
   | .loop _ _ c => c.mods
+  | .ite _ S₁ S₂ => S₁.mods ∪ S₂.mods
   | .nonDet S₁ S₂ => S₁.mods ∪ S₂.mods
   | .prob S₁ _ S₂ => S₁.mods ∪ S₂.mods
   | .assign x _ => {x}
@@ -253,7 +231,7 @@ theorem Distribution.toExpr_fv {μ : Distribution ϖ} : μ.toExpr.fv = μ.fv := 
 @[grind =, simp]
 theorem pGCL'.fv_seq {C₁ C₂ : pGCL' ϖ} : (C₁.seq C₂).fv = C₁.fv ∪ C₂.fv := rfl
 @[grind =, simp]
-theorem pGCL'.fv_prob {C₁ C₂ : pGCL' ϖ} : (C₁.prob p C₂).fv = C₁.fv ∪ C₂.fv := by grind [fv]
+theorem pGCL'.fv_prob {C₁ C₂ : pGCL' ϖ} : (C₁.prob p C₂).fv = C₁.fv ∪ p.fv ∪ C₂.fv := by grind [fv]
 
 @[grind =, simp]
 theorem HeyVL.fv_vp {P : HeyVL ϖ} : (P.vp φ).fv = P.fv ∪ φ.fv := by
@@ -265,7 +243,7 @@ theorem HeyVL.fv_vp {P : HeyVL ϖ} : (P.vp φ).fv = P.fv ∪ φ.fv := by
     constructor
     · grind
     · rintro (⟨⟨_⟩⟩ | ⟨q, p, h₁, h₂⟩)
-      · simp_all only [true_or, and_true, Distribution.exists_in_values]
+      · simp_all only [true_or, or_true, and_true, Distribution.exists_in_values]
       · grind
       · simp_all only [true_or, or_true, and_true, Distribution.exists_in_values]
 @[grind =, simp]
@@ -334,10 +312,12 @@ theorem HeyVL.Subs.help_length (S : Subs ϖ xs hn ENNReal) : S.help.length = xs.
   obtain ⟨S, hS⟩ := S
   simp [help]
   grind
+omit [DecidableEq ϖ] in
 @[grind =, simp]
 theorem HeyVL.Subs.help_cons (S : Subs ϖ (x :: xs) hn ENNReal) :
     S.help = ⟨x, ↑S.tail.1⟩ :: S.tail.2.help := by
   ext; grind [help, tail]
+omit [DecidableEq ϖ] in
 @[grind =, simp]
 theorem HeyVL.Subs.help'_cons (S : Subs ϖ (x :: xs) hn α) :
     S.help' = ⟨x, ↑S.tail.1⟩ :: S.tail.2.help' := by
@@ -534,18 +514,6 @@ def HeyVL.Subs.of_surj {xs : List ϖ} {hn} : Function.Surjective (HeyVL.Subs.of 
     refine (List.findIdx_eq h₁).mpr ?_
     grind [List.Nodup.getElem_inj_iff]
 
-@[grind]
-def HeyLo.mods : HeyLo ϖ α → Globals ϖ
-  | .Binary _ S₁ S₂ => S₁.mods ∪ S₂.mods
-  | .Lit _ => ∅
-  | .Subst _ e m => e.mods ∪ m.mods
-  | .Quant _ _ m => m.mods
-  | .Ite b l r => b.mods ∪ l.mods ∪ r.mods
-  | .Var _ => ∅
-  | .Unary _ m => m.mods
-def Distribution.mods (D : Distribution ϖ) : Globals ϖ :=
-  D.values.toList.toFinset.biUnion (·.2.mods)
-
 @[grind =, simp]
 theorem HeyLo.sem_indep {α : Ty} {φ : HeyLo ϖ α} {x : ϖ} (h : x ∉ φ.fv) :
     Substitution.IsIndepPair φ.sem x := by
@@ -579,14 +547,27 @@ theorem HeyLo.sem_indep {α : Ty} {φ : HeyLo ϖ α} {x : ϖ} (h : x ∉ φ.fv) 
     · ext σ
       simp [Exp.ext_iff, *] at ih₂
       grind
+  | Call op m ih =>
+    cases op
+    · ext σ
+      replace ih := (congrFun (ih (v σ)) σ)
+      simp_all [sem, Fun.sem]
+    · ext σ
+      replace ih := (congrFun (ih (v σ)) σ)
+      simp_all [sem, Fun.sem]
+    · ext σ
+      replace ih := (congrFun (ih (v σ)) σ)
+      simp_all [sem, Fun.sem, DFunLike.coe, Substitution.subst_singleton, Substitution.subst]
   | Quant op y m ih =>
     cases op
     · ext σ
-      simp only [sem_Inf, pGCL.Exp.subst_apply, iInf_apply]
+      simp only [Sup_sem_eq_iInf_ennreal, Ty.expr, pGCL.Exp.subst_apply, iInf_apply,
+        Exp.ennreal_coe_apply]
       replace ih := (congrFun (ih (v σ)) σ[y ↦ ·])
       grind
     · ext σ
-      simp only [sem_Sup, pGCL.Exp.subst_apply, iSup_apply]
+      simp only [Sup_sem_eq_iSup_ennreal, Ty.expr, pGCL.Exp.subst_apply, iSup_apply,
+        Exp.ennreal_coe_apply]
       replace ih := (congrFun (ih (v σ)) σ[y ↦ ·])
       grind
     · ext σ
@@ -604,7 +585,7 @@ theorem HeyVL.Cohavocs_mods : (HeyVL.Cohavocs xs).mods (ϖ:=ϖ) = ∅ := by
 
 @[grind =, simp]
 theorem pGCL'.pGCL_mods (C : pGCL' ϖ) : C.pGCL.mods = ↑C.mods := by
-  induction C with simp_all [mods, pGCL, pGCL.mods]
+  induction C with simp_all [mods, pGCL, pGCL.mods, pGCL.ite]
 
 inductive Direction where
   /-- Corresponds to `gfp` -/
@@ -629,13 +610,17 @@ def pGCL'.HeyVL (C : pGCL' ϖ) (O : Optimization) (D : Direction) (G : Globals �
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     let (G, tmp) := fresh G
-    (G, .Assign tmp (.bin 0 p 1 p.prop) ;; .If (.Binary .Eq (.Var tmp) 0) C₁ C₂)
+    (G, .Assign tmp (.bin 0 p 1) ;; .If (.Binary .Eq (.Var tmp) 0) C₁ C₂)
   | nonDet C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     match O with
     | 𝒜 => (G, .IfSup C₁ C₂)
     | 𝒟 => (G, .IfInf C₁ C₂)
+  | ite b C₁ C₂ =>
+    let (G, C₂) := C₂.HeyVL O D G
+    let (G, C₁) := C₁.HeyVL O D G
+    (G, _root_.HeyVL.If b C₁ C₂)
   | loop b I C =>
     let (G, C) := C.HeyVL O D G ;
     match D with
@@ -687,29 +672,29 @@ theorem pGCL'.HeyVL_G_mono {C : pGCL' ϖ} : G ⊆ (C.HeyVL O D G).1 := by
     grind
   next => trans <;> assumption
   next => trans <;> assumption
+  next => trans <;> assumption
 @[grind =, simp]
 theorem pGCL'.fv_HeyVL_subset {C : pGCL' ϖ} :
     (C.HeyVL O D G).2.fv = C.fv ∪ ((C.HeyVL O D G).1 \ G) := by
-  induction C generalizing G with simp_all [pGCL'.HeyVL, fv, embed, HeyVL.fv, HeyVL.Skip, HeyLo.fv]
+  induction C generalizing G with
+    simp_all [pGCL'.HeyVL, fv, embed, HeyLo.not, HeyVL.fv, HeyVL.Skip, HeyVL.If, HeyLo.fv]
   | assign => simp [Distribution.pure, Distribution.fv]
   | seq C₁ C₂ ih₁ ih₂ => grind
   | tick r => cases D <;> simp [HeyVL.fv]
   | nonDet C₁ C₂ ih₁ ih₂ => grind
+  | ite b C₁ C₂ ih₁ ih₂ => grind
   | prob C₁ p C₂ ih₁ ih₂ =>
     simp only [Distribution.fv, Distribution.bin, List.toFinset_cons, List.toFinset_nil,
-      insert_empty_eq, Finset.biUnion_insert, HeyLo.fv, Finset.singleton_biUnion,
-      Finset.union_idempotent, HeyVL.If, embed, HeyLo.not, HeyVL.fv, Finset.union_empty,
-      Finset.singleton_union, Finset.union_insert, Finset.insert_union, Finset.mem_insert,
-      Finset.mem_union, true_or, Finset.insert_eq_of_mem, Finset.empty_union]
-    simp_all
+      insert_empty_eq, Finset.biUnion_insert, HeyLo.fv, Finset.union_empty,
+      Finset.singleton_biUnion, Finset.empty_union, Finset.union_idempotent]
     ext a
     simp_all
     constructor
     · rintro (h | h | h | h | h) <;> try grind
+
     · grind
   | loop b I C ih =>
     have := (C.HeyVL O D G).2.mods_subset_fv
-    simp only [HeyVL.If, embed, HeyLo.not]
     cases D
     · simp only [HeyVL.fv, HeyVL.Havocs_fv, Finset.sort_toFinset, HeyLo.fv, Finset.union_empty,
       Finset.union_assoc, Finset.empty_union]
@@ -795,24 +780,31 @@ theorem NNRat.toENNReal_sub (a b : ℚ≥0) : (((a - b) : ℚ≥0) : ENNReal) = 
     use (b - a)
     exact add_tsub_cancel_of_le h
 
-theorem pGCL'.wp_le_vp {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ G) :
+set_option maxHeartbeats 500000 in
+theorem pGCL'.wp_le_vp_aux {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ G) :
     wp[O]⟦~C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower G).2.vp φ).sem := by
   induction C generalizing G φ with
   | skip =>
     intro σ
     simp only [pGCL'.HeyVL, HeyVL.Skip, HeyVL.vp, sem_add_apply, sem_zero, Pi.add_apply,
       Pi.zero_apply, add_zero, pGCL'.pGCL, wp.skip_apply, le_refl]
-  | assign x e =>
-    simp [pGCL'.HeyVL, HeyVL.vp, pGCL'.pGCL, Literal.sem]
-    intro σ
-    simp
+  | assign x e => simp [pGCL'.HeyVL, HeyVL.vp, pGCL'.pGCL]
   | seq C₁ C₂ ih₁ ih₂ =>
     simp only [pGCL'.HeyVL, HeyVL.vp, pGCL'.pGCL, wp.seq_apply]
-    simp_all
+    simp_all only [fv_seq, Finset.union_assoc]
     grw [← ih₁, ← ih₂]
     · grind
     · simp
       grind
+  | ite b C₁ C₂ ih₁ ih₂ =>
+    simp only [pGCL, pGCL.ite, wp.prob_apply, HeyVL, HeyVL.if_vp_sem, Ty.expr, sem_not_apply]
+    simp only [fv, Finset.union_assoc] at hG
+    grw [← ih₁, ← ih₂]
+    · intro; simp only [ProbExp.pick, Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, Pi.sub_apply,
+      Pi.one_apply, BExpr.iver_apply, BExpr.not_apply, Iverson.iver_not, ENNReal.natCast_sub,
+      Nat.cast_one, le_refl]
+    · grind
+    · grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [pGCL'.fv] at hG
     simp only [pGCL, wp.nonDet_apply, Optimization.opt₂, HeyVL]
@@ -822,8 +814,11 @@ theorem pGCL'.wp_le_vp {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ 
     · simp only [HeyVL.vp, sem_inf_apply]
       grw [← ih₁, ← ih₂] <;> grind
   | prob C₁ p C₂ ih₁ ih₂ =>
-    obtain ⟨p, hp⟩ := p
-    simp_all [pGCL'.HeyVL, pGCL'.pGCL, HeyVL.If, HeyVL.vp, wp.prob_apply, ProbExp.pick]
+    simp_all only [fv_prob, Finset.union_assoc, pGCL, wp.prob_apply, ProbExp.pick, HeyVL,
+      fresh_update, HeyVL.If, HeyVL.vp, Distribution.bin_map, Distribution.bin_toExpr,
+      sem_add_apply, Ty.expr, sem_mul_apply, sem_inf_apply, sem_one, sem_subst, sem_himp_apply,
+      sem_embed, sem_binop, sem_zero, sem_not_apply, Exp.min_subst, Exp.himp_subst, Exp.mul_subst,
+      Exp.iver_subst, Exp.top_subst, Exp.not_subst, sem_sub_apply, add_zero]
     simp [BinOp.sem]
     rw [HeyLo.sem_subt_var]
     simp
@@ -862,8 +857,10 @@ theorem pGCL'.wp_le_vp {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ 
         simp +contextual [Ξ]
         intro h
         specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
-        simp_all
-      simp_all
+        simp_all only
+      simp_all only [Pi.sup_apply, iSup_apply, Exp.covalidate_apply, Exp.hcoimp_apply,
+        Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply,
+        BExpr.substs_help_apply, BExpr.not_apply, le_sup_iff]
       right
       apply le_iSup_of_le Ξ
       simp [HeyVL.vp, HeyVL.Skip]
@@ -897,11 +894,17 @@ theorem pGCL'.wp_le_vp {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ 
       sem_embed, Pi.inf_apply, Pi.top_apply, le_inf_iff]
     if r.sem σ then simp_all else simp_all
 
+theorem pGCL'.wp_le_vp {C : pGCL' ϖ} :
+    wp[O]⟦~C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower (C.fv ∪ φ.fv)).2.vp φ).sem := by
+  apply wp_le_vp_aux
+  rfl
+
 /-- info: 'pGCL'.wp_le_vp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms pGCL'.wp_le_vp
 
-theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ G) :
+set_option maxHeartbeats 500000 in
+theorem pGCL'.vp_le_wlp''_aux {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv ⊆ G) :
     ((C.HeyVL O .Upper G).2.vp φ).sem ≤ wlp'' O C.pGCL φ.sem := by
   induction C generalizing G φ with
   | skip =>
@@ -911,9 +914,8 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv �
   | assign x e =>
     intro σ
     simp only [HeyVL, HeyVL.vp, Distribution.pure_map, Distribution.pure_toExpr, sem_add_apply,
-      Ty.expr, sem_mul_apply, sem_lit_apply, Literal.sem, NNRat.ennreal_cast_one, sem_subst,
-      sem_zero, Pi.add_apply, Pi.mul_apply, Exp.ennreal_coe_apply, pGCL.Exp.subst_apply, one_mul,
-      Pi.zero_apply, add_zero, pGCL, wlp''.assign_apply, le_refl]
+      Ty.expr, sem_mul_apply, sem_one, sem_subst, one_mul, sem_zero, Pi.add_apply,
+      pGCL.Exp.subst_apply, Pi.ofNat_apply, add_zero, pGCL, wlp''.assign_apply, le_refl]
   | seq C₁ C₂ ih₁ ih₂ =>
     simp only [Ty.expr, HeyVL, HeyVL.vp, pGCL, wlp''.seq_apply]
     simp_all
@@ -921,6 +923,15 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv �
     · grind
     · simp
       grind
+  | ite b C₁ C₂ ih₁ ih₂ =>
+    simp only [Ty.expr, HeyVL, HeyVL.if_vp_sem, sem_not_apply, pGCL, pGCL.ite, wlp''.prob_apply]
+    simp only [fv, Finset.union_assoc] at hG
+    grw [ih₁, ih₂]
+    · intro; simp only [ProbExp.pick, Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, Pi.sub_apply,
+      Pi.one_apply, BExpr.iver_apply, BExpr.not_apply, Iverson.iver_not, ENNReal.natCast_sub,
+      Nat.cast_one, le_refl]
+    · grind
+    · grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp only [Ty.expr, HeyVL, pGCL, wlp''.nonDet_apply, Optimization.opt₂]
     simp [pGCL'.fv] at hG
@@ -931,12 +942,11 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv �
     · simp only [HeyVL.vp, sem_inf_apply, Ty.expr]
       grw [ih₁, ih₂] <;> grind
   | prob C₁ p C₂ ih₁ ih₂ =>
-    obtain ⟨p, hp⟩ := p
-    simp_all only [Ty.expr, fv_prob, Finset.union_assoc, HeyVL, HeyVL.If, HeyVL.vp,
-      Distribution.bin_map, Distribution.bin_toExpr, sem_add_apply, sem_mul_apply, sem_lit_apply,
-      Literal.sem, sem_subst, sem_inf_apply, sem_himp_apply, sem_embed, sem_binop, sem_zero,
-      sem_not_apply, Exp.min_subst, Exp.himp_subst, Exp.mul_subst, Exp.iver_subst, Exp.top_subst,
-      Exp.not_subst, sem_one, add_zero, pGCL, wlp''.prob_apply, ProbExp.pick, ProbExp.mk_vcoe]
+    simp_all only [Ty.expr, fv_prob, Finset.union_assoc, HeyVL, fresh_update, HeyVL.If, HeyVL.vp,
+      Distribution.bin_map, Distribution.bin_toExpr, sem_add_apply, sem_mul_apply, sem_inf_apply,
+      sem_one, sem_subst, sem_himp_apply, sem_embed, sem_binop, sem_zero, sem_not_apply,
+      Exp.min_subst, Exp.himp_subst, Exp.mul_subst, Exp.iver_subst, Exp.top_subst, Exp.not_subst,
+      sem_sub_apply, add_zero, pGCL, wlp''.prob_apply, ProbExp.pick]
     simp [BinOp.sem]
     rw [HeyLo.sem_subt_var]
     simp
@@ -1009,6 +1019,11 @@ theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} {G : Globals ϖ} (hG : C.fv ∪ φ.fv �
       Pi.top_apply, pGCL]
     if r.sem σ then simp_all else simp_all
 
+theorem pGCL'.vp_le_wlp'' {C : pGCL' ϖ} :
+    ((C.HeyVL O .Upper (C.fv ∪ φ.fv)).2.vp φ).sem ≤ wlp''[O]⟦~C.pGCL⟧ φ.sem := by
+  apply vp_le_wlp''_aux
+  rfl
+
 /-- info: 'pGCL'.vp_le_wlp''' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms pGCL'.vp_le_wlp''
@@ -1042,4 +1057,33 @@ instance : Global Ident where
       apply ne_of_gt (Nat.lt_one_add_iff.mpr (Finset.le_max' _ _ _))
       grind
 
-#eval ((pGCL'.loop (ϖ:=Ident) (.Lit (.Bool true)) (.Lit (.UInt 1)) pGCL'.skip).HeyVL 𝒜 .Upper ∅).2
+instance : IsAntisymm String LE.le := by
+  constructor
+  exact fun a b ↦ String.le_antisymm
+instance : IsTotal String LE.le := by
+  constructor
+  exact String.le_total
+instance : Global String where
+  fresh G :=
+    let seen : Finset String := G
+    if h : seen = ∅ then
+      let new : String := "f₀"
+      (({new} : Finset String), new)
+    else
+      let longest := seen.image (·.length) |>.max' (by simp [Finset.nonempty_iff_ne_empty, h])
+      let new : String := "f" ++ String.replicate longest '₀'
+      (seen ∪ {new}, new)
+  fresh_update := by grind
+  fresh_not_in G := by
+    simp
+    split_ifs
+    · grind
+    · simp
+      have : ∀ (F : Finset String) (x : String), x ∉ F ↔ ∀ y ∈ F, x ≠ y :=
+        fun F x ↦ Iff.symm Finset.forall_mem_not_eq
+      apply (this _ _).mpr; clear this
+      intro y hy
+      apply (by grind : ∀ {x y : String}, x.length ≠ y.length → x ≠ y)
+      simp_all [String.replicate]
+      apply ne_of_gt (Nat.lt_one_add_iff.mpr (Finset.le_max' _ _ _))
+      grind

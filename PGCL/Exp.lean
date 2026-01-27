@@ -301,6 +301,8 @@ instance instFunLike : FunLike (ProbExp ϖ) (States ϖ) ENNReal where
 @[grind =, simp] theorem mk_vcoe {f : Exp ϖ} {h : f ≤ 1} :
     @DFunLike.coe _ _ _ instFunLike (Subtype.mk f h : ProbExp ϖ) = f := by rfl
 
+def ofExp (x : Exp ϖ) : ProbExp ϖ := ⟨x ⊓ 1, by simp⟩
+
 end ProbExp
 
 namespace BExpr

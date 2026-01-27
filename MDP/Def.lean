@@ -8,6 +8,7 @@ import Mathlib.Probability.ProbabilityMassFunction.Monad
 import Mathlib.Probability.ProductMeasure
 import Mathlib.Tactic.Monotonicity.Basic
 import MDP.Optimization
+import MDP.MarkovChain
 
 structure MDP (S A : Type*) where
   acts : S → Type*
@@ -96,9 +97,70 @@ instance Path.instSingleton : Singleton S M.Path := ⟨(⟨[·], by grind, by gr
   simp only [instGetElem]
   grind
 
+def Path.prepend (π : M.Path) (s : S) (h : π[0] ∈ M.succ s) : M.Path where
+  states := s :: π.states
+  nonempty := by simp
+  property := by rintro (_ | i) <;> grind
+@[simp, grind =]
+theorem Path.prepend_length {π : M.Path} {s} {h} : ‖π.prepend s h‖ = ‖π‖ + 1 := by
+  grind [length, prepend]
+@[simp, grind =]
+theorem Path.prepend_getElem {π : M.Path} {s} {h} {i : ℕ} (hi : i < ‖π‖ + 1) :
+    (π.prepend s h)[i]'(by grind) = if h' : i = 0 then s else π[i - 1] := by
+  simp only [length, instGetElem, prepend]
+  grind
+theorem Path.prepend_inj {π : M.Path} {s₁ s₂ h₁ h₂} (h : π.prepend s₁ h₁ = π.prepend s₂ h₂) :
+    s₁ = s₂ := by
+  grind [prepend]
+theorem Path.prepend_inj' {π₁ π₂ : M.Path} {s h₁ h₂} (h : π₁.prepend s h₁ = π₂.prepend s h₂) :
+    π₁ = π₂ := by
+  ext i hi₁ hi₂
+  · grind [prepend]
+  · have : (π₁.prepend s h₁)[i + 1]'(by grind) = (π₂.prepend s h₂)[i + 1]'(by grind) := by grind
+    grind
+
+def Path.append (π : M.Path) (s : S) (h : s ∈ M.succ π.last) : M.Path where
+  states := π.states ++ [s]
+  nonempty := by simp
+  property := by rintro (_ | i) <;> grind
+@[simp, grind =]
+theorem Path.append_length {π : M.Path} {s} {h} : ‖π.append s h‖ = ‖π‖ + 1 := by
+  grind [length, append]
+@[simp, grind =]
+theorem Path.append_getElem {π : M.Path} {s} {h} {i : ℕ} (hi : i < ‖π‖ + 1) :
+    (π.append s h)[i]'(by grind) = if h' : i = ‖π‖ then s else π[i] := by
+  simp only [length, instGetElem, append]
+  grind
+theorem Path.append_inj {π : M.Path} {s₁ s₂ h₁ h₂} (h : π.append s₁ h₁ = π.append s₂ h₂) :
+    s₁ = s₂ := by
+  simpa [append] using h
+theorem Path.append_inj' {π₁ π₂ : M.Path} {s h₁ h₂} (h : π₁.append s h₁ = π₂.append s h₂) :
+    π₁ = π₂ := by
+  ext i hi₁ hi₂
+  · grind [append]
+  · have : (π₁.append s h₁)[i]'(by grind) = (π₂.append s h₂)[i]'(by grind) := by grind
+    grind
+
+def Path.tail (π : M.Path) (h : 1 < ‖π‖) : M.Path where
+  states := π.states.tail
+  nonempty := by simp [List.ne_nil_of_length_pos, h]
+  property := by rintro (_ | i) <;> grind
+@[simp, grind =]
+theorem Path.tail_length {π : M.Path} {h} : ‖π.tail h‖ = ‖π‖ - 1 := by
+  grind [length, tail]
+@[simp, grind =]
+theorem Path.tail_getElem {π : M.Path} {h} {i : ℕ} {hi : i < ‖π‖ - 1} :
+    (π.tail h)[i]'(by grind) = π[i + 1] := by
+  simp only [length, instGetElem, tail]
+  grind
+
+@[simp, grind =]
+theorem Path.prepend_tail {π : M.Path} {s h} : (π.prepend s h).tail (by grind) = π := by
+  ext <;> grind
+
 structure Scheduler (M : MDP S A) where
-  toFun : (π : M.Path) → M.acts π.last
-deriving Nonempty, Inhabited
+  toFun : (π : M.Path) → PMF (M.acts π.last)
+deriving Nonempty
 
 theorem Scheduler.ext_toFun {𝒮 𝒮' : M.Scheduler} (h : ∀ π, 𝒮.toFun π = 𝒮'.toFun π) : 𝒮 = 𝒮' := by
   rcases 𝒮 with ⟨f⟩; rcases 𝒮' with ⟨g⟩
@@ -107,12 +169,13 @@ theorem Scheduler.ext_toFun {𝒮 𝒮' : M.Scheduler} (h : ∀ π, 𝒮.toFun �
   grind
 
 def Scheduler.toFun' (𝒮 : M.Scheduler) (π : M.Path) {s : S} (h : π.last = s := by grind) :
-    M.acts s :=
-  have h : M.acts π.last = M.acts s := by grind
+    PMF (M.acts s) :=
+  have h : PMF (M.acts π.last) = PMF (M.acts s) := by grind
   cast h (𝒮.toFun π)
 
 instance Scheduler.instDFunLike :
-    DFunLike M.Scheduler M.Path (fun π ↦ {s : S} → (h : π.last = s := by grind) → M.acts s) where
+    DFunLike M.Scheduler M.Path (fun π ↦ {s : S} → (h : π.last = s := by grind) → PMF (M.acts s))
+where
   coe 𝒮 π s h := 𝒮.toFun' π h
   coe_injective' := by
     intro 𝒮 𝒮' h
@@ -123,20 +186,70 @@ instance Scheduler.instDFunLike :
 @[ext]
 theorem Scheduler.ext {𝒮₁ 𝒮₂ : M.Scheduler} (h : ∀ (π : M.Path), 𝒮₁ π rfl = 𝒮₂ π rfl) :
     𝒮₁ = 𝒮₂ := by
-  cases 𝒮₁; cases 𝒮₂; simp; ext π; exact h π
+  cases 𝒮₁; cases 𝒮₂; simp; funext π; exact h π
 
 @[grind =, simp]
-theorem Scheduler.mk_apply (f : (π : M.Path) → M.acts π.last) : (⟨f⟩ : M.Scheduler) π = f π := rfl
+theorem Scheduler.mk_apply (f : (π : M.Path) → PMF (M.acts π.last)) : (⟨f⟩ : M.Scheduler) π = f π :=
+  rfl
+
+noncomputable def induce (M : MDP S A) (ι : S) (𝒮 : M.Scheduler) : MarkovChain M.Path where
+  ι := {ι}
+  P π := (𝒮 π : PMF (M.acts π.last)).bind fun α ↦ (M.P π.last α).bindOnSupport
+            fun s' hs' ↦ PMF.pure (π.append s' (by use α; exact (PMF.apply_pos_iff _ _).mpr hs'))
+
+-- theorem induce_p : (M.induce ι 𝒮).P π = sorry := by
+--   simp [induce]
+
+
 
 noncomputable def Path.prob (π : M.Path) (𝒮 : M.Scheduler) : ENNReal :=
-  ∏ i : Fin (‖π‖ - 1), M.P π[i] (𝒮 (π.take ⟨i, by grind⟩)) π[i.val + 1]
+  -- ∏ i : Fin (‖π‖ - 1), M.P π[i] (𝒮 (π.take ⟨i, by grind⟩)) π[i.val + 1]
+  ∏ i : Fin (‖π‖ - 1), (𝒮 (π.take ⟨i, by grind⟩)).bind (M.P π[i]) π[i.val + 1]
 noncomputable def Path.rew (π : M.Path) (r : S → ENNReal) : ENNReal :=
   ∑ i : Fin ‖π‖, r π[i]
+
+noncomputable def Path.induce (π : M.Path) (𝒮 : M.Scheduler) (h : π.prob 𝒮 ≠ 0) : (M.induce π[0] 𝒮).Path where
+  states := List.ofFn π.take
+  -- length_pos := sorry
+  initial := by
+    simp [MDP.induce]; ext
+    · simp
+    simp only [instGetElem]
+    grind
+  property := by
+    simp [MDP.induce]
+    intro i hi
+    simp [prob, Finset.prod_ne_zero_iff] at h
+    specialize h ⟨i, by omega⟩
+    obtain ⟨a, ha, ha'⟩ := h
+    have : π[i] = (π.take ⟨i, by omega⟩).last := by grind
+    have : M.acts π[i] = M.acts (π.take ⟨i, by omega⟩).last := by congr
+    use cast this a
+    simp_all
+    constructor
+    · convert ha
+      sorry
+    · use π[i]
+      apply Exists.intro
+      · ext
+        · simp
+        · simp [take, append]
+          simp only [instGetElem]
+          simp [List.getElem_append]
+          grind
+        sorry
+      ·
+
+        sorry
+
+noncomputable def Path.prob' (π : M.Path) (𝒮 : M.Scheduler) : ENNReal :=
+  M.induce π[0] 𝒮
+
 
 theorem Path.prob_eq {π : M.Path} :
       π.prob 𝒮
     = ∏ i ∈ Finset.range (‖π‖ - 1),
-        if h : _ then M.P π[i] (𝒮 (π.take ⟨i, by grind⟩)) (π[i + 1]'h) else 1 := by
+        if h : _ then (𝒮 (π.take ⟨i, by grind⟩)).bind (M.P π[i]) (π[i + 1]'h) else 1 := by
   simp only [prob, Fin.getElem_fin]
   apply Finset.prod_nbij (·.val) <;> intro <;> simp <;> grind
 theorem Path.rew_eq {π : M.Path} :
@@ -261,51 +374,12 @@ def Φ_ωScottContinuous [i : M.ΦContinuous O] :
 theorem lfp_Φ_eq [M.ΦContinuous O] : lfp (M.Φ O r) = ⨆ i, (M.Φ O r)^[i] ⊥ :=
   fixedPoints.lfp_eq_sSup_iterate _ Φ_ωScottContinuous
 
-def Path.prepend (π : M.Path) (s : S) (h : π[0] ∈ M.succ s) : M.Path where
-  states := s :: π.states
-  nonempty := by simp
-  property := by rintro (_ | i) <;> grind
-@[simp, grind =]
-theorem Path.prepend_length {π : M.Path} {s} {h} : ‖π.prepend s h‖ = ‖π‖ + 1 := by
-  grind [length, prepend]
-@[simp, grind =]
-theorem Path.prepend_getElem {π : M.Path} {s} {h} {i : ℕ} (hi : i < ‖π‖ + 1) :
-    (π.prepend s h)[i]'(by grind) = if h' : i = 0 then s else π[i - 1] := by
-  simp only [length, instGetElem, prepend]
-  grind
-theorem Path.prepend_inj {π : M.Path} {s₁ s₂ h₁ h₂} (h : π.prepend s₁ h₁ = π.prepend s₂ h₂) :
-    s₁ = s₂ := by
-  grind [prepend]
-theorem Path.prepend_inj' {π₁ π₂ : M.Path} {s h₁ h₂} (h : π₁.prepend s h₁ = π₂.prepend s h₂) :
-    π₁ = π₂ := by
-  ext i hi₁ hi₂
-  · grind [prepend]
-  · have : (π₁.prepend s h₁)[i + 1]'(by grind) = (π₂.prepend s h₂)[i + 1]'(by grind) := by grind
-    grind
-
-def Path.tail (π : M.Path) (h : 1 < ‖π‖) : M.Path where
-  states := π.states.tail
-  nonempty := by simp [List.ne_nil_of_length_pos, h]
-  property := by rintro (_ | i) <;> grind
-@[simp, grind =]
-theorem Path.tail_length {π : M.Path} {h} : ‖π.tail h‖ = ‖π‖ - 1 := by
-  grind [length, tail]
-@[simp, grind =]
-theorem Path.tail_getElem {π : M.Path} {h} {i : ℕ} {hi : i < ‖π‖ - 1} :
-    (π.tail h)[i]'(by grind) = π[i + 1] := by
-  simp only [length, instGetElem, tail]
-  grind
-
-@[simp, grind =]
-theorem Path.prepend_tail {π : M.Path} {s h} : (π.prepend s h).tail (by grind) = π := by
-  ext <;> grind
-
 open scoped Classical in
 noncomputable def Scheduler.prefix (𝒮 : M.Scheduler) (s : S) : M.Scheduler :=
   ⟨fun π ↦ if h : _ then 𝒮 (π.prepend s h) else default⟩
 theorem Path.prepend_prob {π : M.Path} {s h} {𝒮 : M.Scheduler} :
       (π.prepend s h).prob 𝒮
-    = M.P s (𝒮 {s}) π[0] * π.prob (𝒮.prefix s) := by
+    = (𝒮 {s}).bind (M.P s) π[0] * π.prob (𝒮.prefix s) := by
   simp [prob_eq]
   set n := ‖π‖ - 1
   have : ‖π‖ = n + 1 := by grind
@@ -315,15 +389,17 @@ theorem Path.prepend_prob {π : M.Path} {s h} {𝒮 : M.Scheduler} :
   congr! 2 with i hi
   simp_all [Scheduler.prefix]
   congr
+  ext a
   simp [DFunLike.coe, Scheduler.toFun']
-  congr! 1 with h
-  · grind
-  · split_ifs with h'
-    · simp_all
-      simp at h h'
-      congr
-    · simp at h h'
-      grind
+  simp_all only [zero_le, take_getElem, ↓reduceDIte, cast_cast]
+  congr! 1
+  -- · grind
+  -- · split_ifs with h'
+  --   · simp_all
+  --     simp at h h'
+  --     congr
+  --   · simp at h h'
+  --     grind
 
 theorem Path.prepend_rew {π : M.Path} {s h}  :
     (π.prepend s h).rew r = r s + π.rew r := by
@@ -388,15 +464,19 @@ theorem PathEq_one : M.PathEq s 1 = {{s}} := by ext; simp [Path.ext_iff]; grind
 instance : IsEmpty (Fin (‖({s} : M.Path)‖ - 1)) := Finset.univ_eq_empty_iff.mp rfl
 
 @[simp]
-theorem tsum_succ_P {𝒮 : M.Scheduler} : ∑' (s' : ↑(M.succ s)), (M.P s (𝒮 {s} rfl)) ↑s' = 1 := by
-  rw [← (M.P s (𝒮 {s})).tsum_coe]
+theorem tsum_succ_P {𝒮 : M.Scheduler} :
+    ∑' (s' : ↑(M.succ s)), (𝒮 {s} rfl).bind (M.P s) ↑s' = 1 := by
+  rw [← ((𝒮 {s}).bind (M.P s)).tsum_coe]
   symm
   apply tsum_eq_tsum_of_ne_zero_bij fun ⟨x, p⟩ ↦ x
   · intro; grind
   · intro s'; simp +contextual [succ]
-    intro h₁
-    use 𝒮 {s}
-    exact (PMF.apply_pos_iff _ s').mpr h₁
+    intro a h₁ h₂
+    constructor
+    · use a
+      exact ⟨h₁, h₂⟩
+    · use a
+      exact (PMF.apply_pos_iff _ _).mpr h₂
   · grind
 
 @[simp]
@@ -411,6 +491,7 @@ theorem tsum_PathEq_prob :
   | succ i ih =>
     rw [tsum_PathEq_succ (f:=fun π ↦ π.prob 𝒮)]
     simp [Path.prepend_prob, ENNReal.tsum_mul_left, ih]
+    sorry
 
 noncomputable def EC (M : MDP S A) (r : S → ENNReal) (𝒮 : M.Scheduler) (n : ℕ) : S → ENNReal :=
   fun s ↦ ∑' π : M.PathEq s n, π.val.prob 𝒮 * π.val.rew r

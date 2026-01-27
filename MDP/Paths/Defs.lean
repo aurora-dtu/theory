@@ -20,7 +20,6 @@ instance [DecidableEq State] : DecidableEq M.Path := fun a b ↦
     Decidable.isFalse (by cases a; cases b; simp_all)
 
 def length := π.states.length
--- notation "‖" a "‖" => Path.length a
 notation "‖" a "‖" => Path.length a
 
 instance instSingleton : Singleton State M.Path where
