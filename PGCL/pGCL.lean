@@ -3,22 +3,22 @@ import PGCL.Exp
 
 open pGCL
 
-variable {ϖ : Type*}
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]}
 
-inductive pGCL (ϖ : Type*) where
+inductive pGCL (ϖ : Γ[𝒱]) where
   | skip : pGCL ϖ
-  | assign : ϖ → Exp ϖ → pGCL ϖ
+  | assign : (v : 𝒱) → 𝔼[ϖ, ϖ v] → pGCL ϖ
   | seq : pGCL ϖ → pGCL ϖ → pGCL ϖ
   | prob : pGCL ϖ → ProbExp ϖ → pGCL ϖ → pGCL ϖ
   | nonDet : pGCL ϖ → pGCL ϖ → pGCL ϖ
-  | loop : BExpr ϖ → pGCL ϖ → pGCL ϖ
-  | tick : Exp ϖ → pGCL ϖ
-  | observe : BExpr ϖ → pGCL ϖ
+  | loop : 𝔼[ϖ, Prop] → pGCL ϖ → pGCL ϖ
+  | tick : 𝔼[ϖ, ENNReal] → pGCL ϖ
+  | observe : 𝔼[ϖ, Prop] → pGCL ϖ
 deriving Inhabited
 
-def pGCL.ite (b : BExpr ϖ) (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .prob C₁ p[b] C₂
+noncomputable def pGCL.ite (b : BExpr ϖ) (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .prob C₁ p[b] C₂
 
-noncomputable instance pGCL.decidableEq [DecidableEq ϖ] : DecidableEq (pGCL ϖ)
+noncomputable instance pGCL.decidableEq [DecidableEq 𝒱] : DecidableEq (pGCL ϖ)
   | a, b => by exact Classical.propDecidable (a = b)
 
 namespace pGCL
@@ -83,15 +83,15 @@ syntax "tick(" cpgcl_aexp ")"  : cpgcl_prog
 syntax "observe(" cpgcl_bexp ")" : cpgcl_prog
 syntax "if " cpgcl_bexp " then " cpgcl_prog " else " cpgcl_prog " end" : cpgcl_prog
 
-def Exp.const (c : ϖ) : Exp ϖ := (· c)
+def Exp.const (c : 𝒱) : 𝔼[ϖ, ϖ c] := (· c)
 
 macro_rules
 -- vars
 | `(pgcl_var { $v:ident }) => `(term|$(quote v.getId.toString))
 -- pexp
-| `(pgcl_pexp { $n:cpgcl_aexp ⁻¹ }) => `(ProbExp.inv pgcl_aexp {$n})
+| `(pgcl_pexp { $n:cpgcl_aexp ⁻¹ }) => `(ProbExp.inv (pgcl_aexp {$n} : 𝔼[_, ENNReal]))
 -- aexp
-| `(pgcl_aexp { $n:num }) => `(($n : Exp _))
+| `(pgcl_aexp { $n:num }) => `(($n))
 | `(pgcl_aexp { $v:ident }) => `(term|Exp.const $(quote v.getId.toString))
 | `(pgcl_aexp { $l:cpgcl_aexp + $r }) => `(pgcl_aexp {$l} + pgcl_aexp {$r})
 | `(pgcl_aexp { $l:cpgcl_aexp - $r }) => `(pgcl_aexp {$l} - pgcl_aexp {$r})
@@ -100,8 +100,8 @@ macro_rules
 | `(pgcl_aexp { [$b:cpgcl_bexp] }) => `(BExpr.iver pgcl_bexp {$b})
 | `(pgcl_aexp { ($a:cpgcl_aexp) }) => `(pgcl_aexp {$a})
 -- bexp
-| `(pgcl_bexp { true }) => `(true)
-| `(pgcl_bexp { false }) => `(false)
+| `(pgcl_bexp { true }) => `(True)
+| `(pgcl_bexp { false }) => `(False)
 | `(pgcl_bexp { $l:cpgcl_aexp < $r }) => `(BExpr.lt (pgcl_aexp {$l}) (pgcl_aexp {$r}))
 | `(pgcl_bexp { $l:cpgcl_aexp ≤ $r }) => `(BExpr.le (pgcl_aexp {$l}) (pgcl_aexp {$r}))
 | `(pgcl_bexp { $l:cpgcl_aexp = $r }) => `(BExpr.eq (pgcl_aexp {$l}) (pgcl_aexp {$r}))
@@ -116,11 +116,11 @@ macro_rules
 | `(pgcl { { $C₁:cpgcl_prog } [ $p ] { $C₂ } }) => `(pGCL.prob pgcl {$C₁} pgcl_pexp {$p} pgcl {$C₂})
 | `(pgcl { { $C₁:cpgcl_prog } [] { $C₂ } }) => `(pGCL.nonDet pgcl {$C₁} pgcl {$C₂})
 | `(pgcl { while $b { $C:cpgcl_prog } }) => `(pGCL.loop pgcl_bexp {$b} pgcl {$C})
-| `(pgcl { tick($r) }) => `(pGCL.tick (pgcl_aexp {$r} : Exp _))
+| `(pgcl { tick($r) }) => `(pGCL.tick (pgcl_aexp {$r} : 𝔼[_, ENNReal]))
 | `(pgcl { observe($b) }) => `(pGCL.observe pgcl_bexp {$b})
 | `(pgcl { if $b then $C₁ else $C₂ end }) => `(pGCL.ite pgcl_bexp {$b} pgcl {$C₁} pgcl {$C₂})
 
-#check (pgcl_bexp { x ≤ y } : BExpr String)
+#check (pgcl_bexp { x ≤ y } : BExpr (fun (_ : String) ↦ ENNReal))
 
 set_option linter.style.setOption false
 set_option pp.mvars false
@@ -161,10 +161,10 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cpgcl_aexp)
 
 def unexpandBExp : TSyntax `term → UnexpandM (TSyntax `cpgcl_bexp)
 | `(pgcl_bexp { $c }) => pure c
-| `(↑true) =>
+| `(↑True) =>
   let name := mkIdent <| Name.mkSimple "true"
   `(cpgcl_bexp| $name:ident)
-| `(↑false) =>
+| `(↑False) =>
   let name := mkIdent <| Name.mkSimple "false"
   `(cpgcl_bexp| $name:ident)
 | `(fun $σ ↦ $σ' $x:str) =>
@@ -236,17 +236,17 @@ def assignUnexpander : Unexpander
   `(pgcl { ~$name := $e })
 | _ => throw ()
 
-/-- info: pgcl {x := x} : pGCL String -/
+/-- info: pgcl {x := x} : pGCL ?_ -/
 #guard_msgs in
 #check pgcl { x := x }
 
-/-- info: pgcl {x := x - 1} : pGCL String -/
+/-- info: pgcl {x := x - 1} : pGCL fun x ↦ ℕ -/
 #guard_msgs in
-#check pgcl { x := x - 1 }
+#check (pgcl { x := x - 1 } : pGCL (fun _ ↦ ℕ))
 
-/-- info: pgcl {x := 1} : pGCL String -/
+/-- info: pgcl {x := 1} : pGCL fun x ↦ ℕ -/
 #guard_msgs in
-#check pgcl { x := 1 }
+#check (pgcl { x := 1 } : pGCL (fun _ ↦ ℕ))
 
 @[app_unexpander pGCL.seq]
 def seqUnexpander : Unexpander
@@ -256,9 +256,9 @@ def seqUnexpander : Unexpander
   `(pgcl { $l ; $r })
 | _ => throw ()
 
-/-- info: pgcl {x := 1 ; skip} : pGCL String -/
+/-- info: pgcl {x := 1 ; skip} : pGCL fun x ↦ ℕ -/
 #guard_msgs in
-#check pgcl { x := 1 ; skip }
+#check (pgcl { x := 1 ; skip } : pGCL (fun _ ↦ ℕ))
 
 @[app_unexpander pGCL.prob]
 def probUnexpander : Unexpander
@@ -269,7 +269,7 @@ def probUnexpander : Unexpander
   `(pgcl { { $l } [$p] {$r} })
 | _ => throw ()
 
-/-- info: pgcl {{ x := 1 } [1⁻¹] { skip }} : pGCL String -/
+/-- info: pgcl {{ x := 1 } [1⁻¹] { skip }} : pGCL ?_ -/
 #guard_msgs in
 #check pgcl { { x := 1 } [1⁻¹] { skip } }
 
@@ -281,7 +281,7 @@ def nonDetUnexpander : Unexpander
   `(pgcl { { $l } [] {$r} })
 | _ => throw ()
 
-/-- info: pgcl {{ x := 1 } [] { skip }} : pGCL String -/
+/-- info: pgcl {{ x := 1 } [] { skip }} : pGCL ?_ -/
 #guard_msgs in
 #check pgcl { { x := 1 } [] { skip } }
 
@@ -294,7 +294,7 @@ def loopUnexpander : Unexpander
   `(pgcl { while $b {$C} })
 | _ => throw ()
 
-/-- info: pgcl {while x = 1 { skip }} : pGCL String -/
+/-- info: pgcl {while x = 1 { skip }} : pGCL ?_ -/
 #guard_msgs in
 #check pgcl { while x = 1 { skip } }
 
@@ -309,7 +309,7 @@ def tickUnexpander : Unexpander
 #guard_msgs in
 #check pgcl { tick(1) }
 
-/-- info: fun r ↦ pgcl {tick(~r)} : Exp ?_ → pGCL ?_ -/
+/-- info: fun r ↦ pgcl {tick(~r)} : (States ?_ → ENNReal) → pGCL ?_ -/
 #guard_msgs in
 #check fun r ↦ pgcl { tick(~r) }
 

@@ -4,15 +4,17 @@ open Optimization.Notation
 
 namespace pGCL
 
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]}
+
 @[gcongr]
-def Exp.substs_mono [DecidableEq ϖ] {X₁ X₂ : Exp ϖ} {xs : List ((_ : ϖ) × Exp ϖ)} (h : X₁ ≤ X₂) :
-    X₁[..xs] ≤ X₂[..xs] := by
+def Exp.substs_mono [DecidableEq 𝒱] {X₁ X₂ : 𝔼[ϖ, ENNReal]} {xs : List ((v : 𝒱) × 𝔼[ϖ, ϖ v])}
+    (h : X₁ ≤ X₂) : X₁[..xs] ≤ X₂[..xs] := by
   induction xs generalizing X₁ X₂ with
   | nil => simp [h]
   | cons x xs ih => apply fun σ ↦ ih h _
 
 @[gcongr]
-theorem Exp.hcoimp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
+theorem Exp.hcoimp_mono {a₁ a₂ b₁ b₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
     a₁ ↜ b₁ ≤ a₂ ↜ b₂ := by
   intro σ
   specialize ha σ
@@ -22,7 +24,7 @@ theorem Exp.hcoimp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb 
   simp_all
 
 @[gcongr]
-theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
+theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
     a₁ ⇨ b₁ ≤ a₂ ⇨ b₂ := by
   intro σ
   specialize ha σ
@@ -32,24 +34,24 @@ theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : Exp ϖ} (ha : a₂ ≤ a₁) (hb : 
   · simp_all
 
 @[gcongr]
-theorem Exp.hnot_mono {a₁ a₂ : Exp ϖ} (ha : a₂ ≤ a₁) :
+theorem Exp.hnot_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) :
     ￢ a₁ ≤ ￢ a₂ := by
   intro σ
   specialize ha σ
   simp [hnot]
   split_ifs <;> simp_all
 @[gcongr]
-theorem Exp.hconot_mono {a₁ a₂ : Exp ϖ} (ha : a₂ ≤ a₁) :
+theorem Exp.hconot_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) :
     ~ a₁ ≤ ~ a₂ := by
   show a₁ ⇨ 0 ≤ a₂ ⇨ 0
   gcongr
 @[gcongr]
-theorem Exp.validate_mono {a₁ a₂ : Exp ϖ} (ha : a₁ ≤ a₂) :
+theorem Exp.validate_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₁ ≤ a₂) :
     ▵ a₁ ≤ ▵ a₂ := by
   show ￢￢ a₁ ≤ ￢￢ a₂
   gcongr
 @[gcongr]
-theorem Exp.covalidate_mono {a₁ a₂ : Exp ϖ} (ha : a₁ ≤ a₂) :
+theorem Exp.covalidate_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₁ ≤ a₂) :
     ▿ a₁ ≤ ▿ a₂ := by
   show ~~ a₁ ≤ ~~ a₂
   gcongr
@@ -75,23 +77,24 @@ theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
   · simp_all
 
 @[grind =, simp]
-theorem Exp.zero_himp {a : Exp ϖ} :
+theorem Exp.zero_himp {a : 𝔼[ϖ, ENNReal]} :
     (0 ⇨ a) = ⊤ := by simp [himp]; rfl
 
 @[grind =, simp]
-theorem BExpr.subst_single_apply [DecidableEq ϖ] {b : BExpr ϖ} :
+theorem BExpr.subst_single_apply [DecidableEq 𝒱] {b : BExpr ϖ} :
     b[x ↦ v] σ = b σ[x ↦ v σ] := by
   rfl
 @[grind =]
-theorem States.subst_comm [DecidableEq ϖ] {σ : States ϖ} {x₁ x₂ : ϖ} {v₁ v₂} (h : x₁ ≠ x₂) :
+theorem States.subst_comm [DecidableEq 𝒱] {σ : States ϖ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :
     σ[x₁ ↦ v₁][x₂ ↦ v₂] = σ[x₂ ↦ v₂][x₁ ↦ v₁] := by ext; grind
 
 namespace Exp
 
-variable {ϖ : Type*} [DecidableEq ϖ] {a b : Exp ϖ} {p : BExpr ϖ} (xs : List ((_ : ϖ) × Exp ϖ))
+variable {ϖ : Γ[𝒱]} [DecidableEq 𝒱] {a b : 𝔼[ϖ, ENNReal]} {p : BExpr ϖ}
+variable (xs : List ((v : 𝒱) × 𝔼[ϖ, ϖ v]))
 
 @[simp] theorem top_subst :
-    (⊤ : Exp ϖ)[..xs] = (⊤ : Exp ϖ) := by
+    (⊤ : 𝔼[ϖ, ENNReal])[..xs] = (⊤ : 𝔼[ϖ, ENNReal]) := by
   induction xs with try simp
   | cons x xs ih =>
     simp [Substitution.substs_cons, Substitution.subst, ih]
@@ -134,40 +137,40 @@ variable {ϖ : Type*} [DecidableEq ϖ] {a b : Exp ϖ} {p : BExpr ϖ} (xs : List 
 
 end Exp
 
-@[simp] theorem BExpr.eq_self {a : Exp ϖ} : BExpr.eq a a = true := by ext; simp; rfl
-@[simp] theorem BExpr.eq_of_ne {a b : Exp ϖ} (h : ∀ σ, a σ ≠ b σ) : BExpr.eq a b = false := by
-  ext; simp_all; exact of_decide_eq_false rfl
+@[simp] theorem BExpr.eq_self {a : 𝔼[ϖ, ENNReal]} : BExpr.eq a a = true := by ext; simp
+@[simp] theorem BExpr.eq_of_ne {a b : 𝔼[ϖ, ENNReal]} (h : ∀ σ, a σ ≠ b σ) : BExpr.eq a b = false := by
+  ext; simp_all [coe_prop]
 @[simp] theorem BExpr.iver_coe_bool :
-    i[BExpr.coe_bool (ϖ:=ϖ) a] = i[a] := by
+    i[BExpr.coe_prop (ϖ:=ϖ) a] = i[a] := by
   ext
-  simp [BExpr.coe_bool, DFunLike.coe, Iverson.iver]
+  simp [BExpr.coe_prop, DFunLike.coe, Iverson.iver]
 @[simp] theorem BExpr.not_coe_bool :
-    BExpr.not (ϖ:=ϖ) (BExpr.coe_bool a) = BExpr.coe_bool ¬a := by
+    BExpr.not (ϖ:=ϖ) (BExpr.coe_prop a) = BExpr.coe_prop ¬a := by
   ext
-  simp [BExpr.not, BExpr.coe_bool, DFunLike.coe]
+  simp [BExpr.not, BExpr.coe_prop, DFunLike.coe]
 
 open scoped Classical in
 noncomputable
-def States.cofix (σ₀ : States ϖ) {S : Set ϖ} (σ : States ↑Sᶜ) : States ϖ :=
+def States.cofix (σ₀ : States ϖ) {S : Set 𝒱} (σ : States (𝒱:=↑Sᶜ) (ϖ ·)) : States ϖ :=
   fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
 
 @[grind =, simp]
-theorem States.cofix_apply_mem {S : Set ϖ} (h : v ∈ S) (σ₀ : States ϖ) (σ' : States ↑Sᶜ) :
+theorem States.cofix_apply_mem {S : Set 𝒱} (h : v ∈ S) (σ₀ : States ϖ) (σ' : States (ϖ · : ↑Sᶜ → Type)) :
     σ₀.cofix σ' v = σ₀ v := by simp [h, cofix]
 
 open scoped Classical in
 noncomputable
-def Exp.fix (X : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Exp ↑Sᶜ :=
+def Exp.fix (X : 𝔼[ϖ, α]) (S : Set 𝒱) (σ₀ : States ϖ) : 𝔼[(ϖ · : ↑Sᶜ → Type), α] :=
   fun σ ↦ X (σ₀.cofix σ)
 
 @[grind =, simp]
-theorem Exp.fix_empty (φ : Exp ϖ) : φ.fix ∅ σ₀ σ = φ (σ ⟨·, id⟩) := by
+theorem Exp.fix_empty (φ : 𝔼[ϖ, α]) : Exp.fix φ ∅ σ₀ σ = φ (σ ⟨·, id⟩) := by
   simp only [fix]; congr; ext; grind [States.cofix]
 @[grind =, simp]
-theorem Exp.fix_compl_empty (φ : Exp ϖ) : φ.fix ∅ᶜ σ₀ σ = φ σ₀ := by
+theorem Exp.fix_compl_empty (φ : 𝔼[ϖ, α]) : Exp.fix φ ∅ᶜ σ₀ σ = φ σ₀ := by
   simp only [fix]; congr; ext; grind [States.cofix]
 @[grind ., simp]
-theorem Exp.fix_compl_empty_eq (φ ψ : Exp ϖ) : φ.fix ∅ᶜ = ψ.fix ∅ᶜ ↔ φ = ψ := by
+theorem Exp.fix_compl_empty_eq (φ ψ : 𝔼[ϖ, α]) : Exp.fix φ ∅ᶜ = Exp.fix ψ ∅ᶜ ↔ φ = ψ := by
   constructor
   · intro h
     ext σ₀
@@ -177,26 +180,26 @@ theorem Exp.fix_compl_empty_eq (φ ψ : Exp ϖ) : φ.fix ∅ᶜ = ψ.fix ∅ᶜ 
 
 open scoped Classical in
 noncomputable
-def BExpr.fix (X : BExpr ϖ) (S : Set ϖ) (σ₀ : States ϖ) : BExpr ↑Sᶜ :=
-  ⟨fun σ ↦ X (σ₀.cofix σ), instDecidablePredComp⟩
+def BExpr.fix (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : BExpr (ϖ · : ↑Sᶜ → Type) :=
+  fun σ ↦ X (σ₀.cofix σ)
 
 open scoped Classical in
 @[grind =, simp]
-theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set ϖ) (σ₀ : States ϖ) (σ : States ↑Sᶜ) :
+theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) (σ : States (ϖ · : ↑Sᶜ → Type)) :
     (X.fix S σ₀) σ = X (σ₀.cofix σ) := rfl
 
 open scoped Classical in
 noncomputable
-def ProbExp.fix (X : ProbExp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : ProbExp ↑Sᶜ :=
+def ProbExp.fix (X : ProbExp ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : ProbExp (ϖ · : ↑Sᶜ → Type) :=
   ⟨fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩, by intro σ; simp⟩
 
-@[gcongr]
-theorem Exp.ennreal_coe_le (h : a ≤ b) :
-    pGCL.Exp.ennreal_coe (ϖ:=ϖ) a ≤ pGCL.Exp.ennreal_coe b := by
-  intro; grind
+-- @[gcongr]
+-- theorem Exp.ennreal_coe_le (h : a ≤ b) :
+--     pGCL.Exp.ennreal_coe (ϖ:=ϖ) a ≤ pGCL.Exp.ennreal_coe b := by
+--   intro; grind
 
 @[grind]
-def mods : pGCL ϖ → Set ϖ
+def mods : pGCL ϖ → Set 𝒱
   | pgcl {skip} => ∅
   | pgcl {~x := ~_} => {x}
   | pgcl {~C₁ ; ~C₂} => C₁.mods ∪ C₂.mods
@@ -207,75 +210,78 @@ def mods : pGCL ϖ → Set ϖ
   | pgcl {observe(~ _)} => ∅
 
 open scoped Classical in
-noncomputable def fix (C : pGCL ϖ) (S : Set ϖ) (σ₀ : States ϖ) : pGCL ↑Sᶜ :=
+noncomputable def fix (C : pGCL ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : pGCL (ϖ · : ↑Sᶜ → Type) :=
   match C with
   | pgcl {skip} => pgcl {skip}
   | pgcl {~x := ~A} =>
-    if hx : _ then pgcl {~⟨x, hx⟩ := ~(A.fix S σ₀)} else pgcl {skip}
+    let q : (States fun (x : ↑Sᶜ) ↦ ϖ x) → ϖ x := Exp.fix A S σ₀
+    if hx : _ then pgcl {~⟨x, hx⟩ := ~q} else pgcl {skip}
   | pgcl {~C₁ ; ~C₂} => pgcl {~(C₁.fix S σ₀) ; ~(C₂.fix S σ₀)}
   | pgcl {{~C₁} [~p] {~C₂}} =>
     pgcl {{~(C₁.fix S σ₀)} [~(p.fix S σ₀)] {~(C₂.fix S σ₀)}}
   | pgcl {{~C₁} [] {~C₂}} => pgcl {{~(C₁.fix S σ₀)} [] {~(C₂.fix S σ₀)}}
   | pgcl {while ~b {~C'}} => pgcl {while ~(BExpr.fix b S σ₀) {~(C'.fix S σ₀)}}
-  | pgcl {tick(~ r)} => pgcl {tick(~(r.fix S σ₀))}
+  | pgcl {tick(~ r)} => pgcl {tick(~(Exp.fix r S σ₀))}
   | pgcl {observe(~ b)} => pgcl {observe(~(BExpr.fix b S σ₀))}
 
-@[simp] theorem Exp.fix_apply {φ : Exp ϖ} : φ.fix S σ₀ σ = φ (σ₀.cofix σ) := rfl
+@[simp] theorem Exp.fix_apply {φ : 𝔼[ϖ, α]} : Exp.fix φ S σ₀ σ = φ (σ₀.cofix σ) := rfl
 
 open scoped Classical in
 @[grind =, simp]
-theorem Exp.subst_fix [DecidableEq ϖ] {φ : Exp ϖ} {x : ϖ} {e : Exp ϖ} {S : Set ϖ} (hx : x ∉ S) :
-    φ[x ↦ e].fix S σ = (φ.fix S σ)[⟨x, hx⟩ ↦ e.fix S σ] := by
+theorem Exp.subst_fix [DecidableEq 𝒱] {φ : 𝔼[ϖ, α]} {x : 𝒱} {e : 𝔼[ϖ, ϖ x]} {S : Set 𝒱}
+    (hx : x ∉ S) :
+    Exp.fix φ[x ↦ e] S σ = (Exp.fix φ S σ)[⟨x, hx⟩ ↦ Exp.fix e S σ] := by
   ext σ'
   simp only [fix_apply, subst_apply]
   congr! with v
   ext
   grind [States.cofix]
 
-example [DecidableEq ϖ] {φ : Exp ϖ} {x : ϖ} {σ₀ : States ϖ} {σ : States ↑({x} : Set ϖ)ᶜᶜ} :
-    φ.fix ({x}ᶜ : Set ϖ) σ₀ σ = φ σ₀[x ↦ σ ⟨x, by simp⟩] := by
+example [DecidableEq 𝒱] {φ : 𝔼[ϖ, ENNReal]} {x : 𝒱} {σ₀ : States ϖ}
+    {σ : States (𝒱:=↑({x} : Set 𝒱)ᶜᶜ) (ϖ ·)} :
+    Exp.fix φ ({x}ᶜ : Set 𝒱) σ₀ σ = φ σ₀[x ↦ σ ⟨x, by simp⟩] := by
   simp only [Exp.fix_apply]
   congr
   ext y
   grind [States.cofix]
 
 @[grind =, simp]
-theorem Exp.zero_fix [DecidableEq ϖ] : (0 : Exp ϖ).fix = 0 := rfl
+theorem Exp.zero_fix [DecidableEq 𝒱] : Exp.fix (0 : 𝔼[ϖ, ENNReal]) = 0 := rfl
 @[grind =, simp]
-theorem Exp.top_fix [DecidableEq ϖ] : (⊤ : Exp ϖ).fix = ⊤ := rfl
+theorem Exp.top_fix [DecidableEq 𝒱] : Exp.fix (⊤ : 𝔼[ϖ, ENNReal]) = ⊤ := rfl
 
 @[simp]
-theorem Exp.iSup_fix [DecidableEq ϖ] {X : α → Exp ϖ} :
-    (⨆ n, X n).fix S σ₀ σ = ⨆ n, (X n).fix S σ₀ σ := by simp [Exp.fix]
+theorem Exp.iSup_fix [DecidableEq 𝒱] {X : α → 𝔼[ϖ, ENNReal]} :
+    Exp.fix (⨆ n, X n) S σ₀ σ = ⨆ n, Exp.fix (X n) S σ₀ σ := by simp [Exp.fix]
 @[simp]
-theorem Exp.iInf_fix [DecidableEq ϖ] {X : α → Exp ϖ} :
-    (⨅ n, X n).fix S σ₀ σ = ⨅ n, (X n).fix S σ₀ σ := by simp [Exp.fix]
+theorem Exp.iInf_fix [DecidableEq 𝒱] {X : α → 𝔼[ϖ, ENNReal]} :
+    Exp.fix (⨅ n, X n) S σ₀ σ = ⨅ n, Exp.fix (X n) S σ₀ σ := by simp [Exp.fix]
 
-theorem wp_le_of_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (X : Exp ϖ) :
-    (wp[O]⟦~C⟧ φ).fix S σ₀ ≤ X.fix S σ₀ → wp[O]⟦~C⟧ φ σ₀ ≤ X σ₀ := by
+theorem wp_le_of_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (X : 𝔼[ϖ, ENNReal]) :
+    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ ≤ Exp.fix X S σ₀ → wp[O]⟦~C⟧ φ σ₀ ≤ X σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
-theorem le_wlp''_of_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (X : Exp ϖ) :
-    X.fix S σ₀ ≤ (wlp''[O]⟦~C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp''[O]⟦~C⟧ φ σ₀ := by
+theorem le_wlp''_of_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (X : 𝔼[ϖ, ENNReal]) :
+    Exp.fix X S σ₀ ≤ Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ → X σ₀ ≤ wlp''[O]⟦~C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
-theorem wp_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS : C.mods ⊆ Sᶜ) :
-    (wp[O]⟦~C⟧ φ).fix S σ₀ = wp[O]⟦~(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
+theorem wp_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
+    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ = wp[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with simp_all [fix, mods] <;> try rfl
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
   | loop b C ih =>
     ext σ
-    simp only [wp_loop_eq_iter, iSup_apply, Exp.iSup_fix]
+    simp only [wp_loop_eq_iter, iSup_apply, Exp.fix_apply]
     congr with i
     induction i generalizing σ with
-    | zero => simp only [Function.iterate_zero, id_eq, Pi.ofNat_apply, Exp.zero_fix]
+    | zero => simp only [Function.iterate_zero, id_eq, Pi.ofNat_apply]
     | succ i ih' =>
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Φ]
@@ -289,8 +295,8 @@ theorem wp_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS : C
       rw [ih']
       exact congrFun (ih ((Φ[_] b φ)^[i] 0)) σ
 
-theorem wlp''_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS : C.mods ⊆ Sᶜ) :
-    (wlp''[O]⟦~C⟧ φ).fix S σ₀ = wlp''[O]⟦~(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
+theorem wlp''_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
+    Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ = wlp''[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with simp_all [fix, mods] <;> try rfl
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
@@ -314,14 +320,14 @@ theorem wlp''_fix [DecidableEq ϖ] (C : pGCL ϖ) (φ : Exp ϖ) (S : Set ϖ) (hS 
       exact congrFun (ih ((Φ[_] b φ)^[i] ⊤)) σ
 
 /-- An _Idle invariant_ is _Park invariant_ that holds for states with a set of fixed variables. -/
-def IdleInvariant [DecidableEq ϖ] (g : Exp ϖ →o Exp ϖ) (b : BExpr ϖ) (φ : Exp ϖ)
-    (I : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Prop :=
+def IdleInvariant [DecidableEq 𝒱] (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
+    (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
   ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → Φ[g] b φ I σ ≤ I σ
 
 /-- _Idle induction_ is _Park induction_, but the engine is running (i.e. an initial state is
 given), and as a consequence only states that vary over the modified variables need to be
 considered for the inductive invariant. -/
-theorem IdleInduction [DecidableEq ϖ] {b : BExpr ϖ} {C : pGCL ϖ} {φ : Exp ϖ} {I : Exp ϖ}
+theorem IdleInduction [DecidableEq 𝒱] {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
     {σ₀ : States ϖ} (h : IdleInvariant wp[O]⟦~C⟧ b φ I C.modsᶜ σ₀) :
     wp[O]⟦while ~b { ~C }⟧ φ σ₀ ≤ I σ₀ := by
   apply wp_le_of_fix (S:=C.modsᶜ)
@@ -337,14 +343,14 @@ theorem IdleInduction [DecidableEq ϖ] {b : BExpr ϖ} {C : pGCL ϖ} {φ : Exp ϖ
 
 /-- An _Idle coinvariant_ is _Park coinvariant_ that holds for states with a set of fixed variables.
 -/
-def IdleCoinvariant [DecidableEq ϖ] (g : Exp ϖ →o Exp ϖ) (b : BExpr ϖ) (φ : Exp ϖ)
-    (I : Exp ϖ) (S : Set ϖ) (σ₀ : States ϖ) : Prop :=
+def IdleCoinvariant [DecidableEq 𝒱] (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
+    (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
   ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → I σ ≤ Φ[g] b φ I σ
 
 /-- _Idle coinduction_ is _Park coinduction_, but the engine is running (i.e. an initial state is
 given), and as a consequence only states that vary over the modified variables need to be
 considered for the coinductive invariant. -/
-theorem IdleCoinduction [DecidableEq ϖ] {b : BExpr ϖ} {C : pGCL ϖ} {φ : Exp ϖ} {I : Exp ϖ}
+theorem IdleCoinduction [DecidableEq 𝒱] {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
     {σ₀ : States ϖ} (h : IdleCoinvariant wlp''[O]⟦~C⟧  b φ I C.modsᶜ σ₀) :
     I σ₀ ≤ wlp''[O]⟦while ~b { ~C }⟧ φ σ₀ := by
   apply le_wlp''_of_fix (S:=C.modsᶜ)

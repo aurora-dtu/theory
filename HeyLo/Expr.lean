@@ -2,7 +2,9 @@ import Mathlib.Algebra.Order.Floor.Extended
 import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLog
 import Mathlib.Control.LawfulFix
 import Mathlib.Control.Traversable.Instances
+import Mathlib.Data.Fintype.Order
 import Mathlib.Data.NNRat.Order
+import Mathlib.Data.String.Basic
 import Mathlib.Tactic.DeriveTraversable
 import Mathlib.Tactic.Eval
 import PGCL.Exp
@@ -15,50 +17,105 @@ noncomputable abbrev ENNReal.log₂ (x : ENNReal) : EReal := x.logb 2
 
 namespace HeyLo
 
+@[grind]
 inductive Ty where
   | Bool
+  | Nat
   | ENNReal
-deriving Lean.ToExpr, DecidableEq, Inhabited
+deriving Lean.ToExpr, DecidableEq, Hashable, Inhabited
+
+def Ty.toNat : Ty → ℕ
+| .Bool => 0
+| .Nat => 1
+| .ENNReal => 2
+
+instance Ty.instLinearOrder : LinearOrder Ty := LinearOrder.lift' Ty.toNat (by intro; grind [toNat])
+instance Ty.instTotalOrder : IsTotal Ty LE.le := inferInstance
+instance {α β : Type} [LinearOrder α] [LinearOrder β] : IsTotal (Lex (α × β)) LE.le := inferInstance
+
+
+abbrev Ty.lit : Ty → Type
+  | .Bool => Prop
+  | .ENNReal => _root_.ENNReal
+  | .Nat => _root_.Nat
 
 open Ty
 
+inductive Yes where | yes
+deriving Lean.ToExpr, DecidableEq, Hashable, Inhabited
+inductive No
+deriving Lean.ToExpr, DecidableEq, Hashable
+
+abbrev Ty.Compare : Ty → Type
+  | .Bool => No
+  | .ENNReal => Yes
+  | .Nat => Yes
+abbrev Ty.Arith : Ty → Type
+  | .Bool => No
+  | .ENNReal => Yes
+  | .Nat => Yes
+
+open Lean in
+instance {α : Ty} : Lean.ToExpr α.Compare where
+  toExpr h :=
+    match α with
+    | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
+    | .Bool => False.elim (by cases h)
+  toTypeExpr := sorry
+open Lean in
+instance {α : Ty} : Lean.ToExpr α.Arith where
+  toExpr h :=
+    match α with
+    | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
+    | .Bool => False.elim (by cases h)
+  toTypeExpr := sorry
+
+instance {α : Ty} : DecidableEq α.Compare := fun a b ↦ by
+  cases α <;> cases a
+  all_goals cases b; simp only; exact instDecidableTrue
+instance {α : Ty} : DecidableEq α.Arith := fun a b ↦ by
+  cases α <;> cases a
+  all_goals cases b; simp only; exact instDecidableTrue
+
 inductive BinOp : Ty → Ty → Type where
-  /- The `+` operator (addition). -/
-  | Add : BinOp ENNReal ENNReal
-  /- The `-` operator (subtraction). -/
-  | Sub : BinOp ENNReal ENNReal
-  /- The `*` operator (multiplication). -/
-  | Mul : BinOp ENNReal ENNReal
-  /- The `/` operator (divison). -/
-  | Div : BinOp ENNReal ENNReal
+  /-- The `+` operator (addition). -/
+  | Add : {α : Ty} → α.Arith → BinOp α α
+  /-- The `-` operator (subtraction). -/
+  | Sub : {α : Ty} → α.Arith → BinOp α α
+  /-- The `*` operator (multiplication). -/
+  | Mul : {α : Ty} → α.Arith → BinOp α α
+  /-- The `/` operator (divison). -/
+  | Div : {α : Ty} → α.Arith → BinOp α α
   -- NOTE: This does not really make sense when we only have ENNReals and no integers
-  -- /- The `%` operator (modulo). -/
+  -- /-- The `%` operator (modulo). -/
   -- | Mod : BinOp ENNReal ENNReal
-  /- The `&&` operator (logical and). -/
+  /-- The `&&` operator (logical and). -/
   | And : BinOp Bool Bool
-  /- The `||` operator (logical or). -/
+  /-- The `||` operator (logical or). -/
   | Or : BinOp Bool Bool
-  /- The `==` operator (equality). -/
-  | Eq : BinOp ENNReal Bool
-  /- The `<` operator (less than). -/
-  | Lt : BinOp ENNReal Bool
-  /- The `<=` operator (less than or equal to). -/
-  | Le : BinOp ENNReal Bool
-  /- The `!=` operator (not equal to). -/
-  | Ne : BinOp ENNReal Bool
-  /- The `>=` operator (greater than or equal to). -/
-  | Ge : BinOp ENNReal Bool
-  /- The `>` operator (greater than). -/
-  | Gt : BinOp ENNReal Bool
-  /- The `⊓` operator (infimum). -/
+  /-- The `==` operator (equality). -/
+  | Eq : BinOp α Bool
+  /-- The `<` operator (less than). -/
+  | Lt : {α : Ty} → α.Compare → BinOp α Bool
+  /-- The `<=` operator (less than or equal to). -/
+  | Le : {α : Ty} → α.Compare → BinOp α Bool
+  /-- The `!=` operator (not equal to). -/
+  | Ne : {α : Ty} → α.Compare → BinOp α Bool
+  /-- The `>=` operator (greater than or equal to). -/
+  | Ge : {α : Ty} → α.Compare → BinOp α Bool
+  /-- The `>` operator (greater than). -/
+  | Gt : {α : Ty} → α.Compare → BinOp α Bool
+  /-- The `⊓` operator (infimum). -/
   | Inf : BinOp ENNReal ENNReal
-  /- The `⊔` operator (supremum). -/
+  /-- The `⊔` operator (supremum). -/
   | Sup : BinOp ENNReal ENNReal
-  /- The `→` operator (implication). -/
+  /-- The `→` operator (implication). -/
   | Impl : BinOp ENNReal ENNReal
-  /- The `←` operator (co-implication). -/
+  /-- The `←` operator (co-implication). -/
   | CoImpl : BinOp ENNReal ENNReal
 deriving Lean.ToExpr, DecidableEq
+
+#check eval% @BinOp.Lt .ENNReal .yes
 
 inductive UnOp : Ty → Ty → Type where
   /- The `!` operator (negation). -/
@@ -69,6 +126,8 @@ inductive UnOp : Ty → Ty → Type where
   | Embed : UnOp Bool ENNReal
   /- Iverson bracket (maps true to 1). -/
   | Iverson : UnOp Bool ENNReal
+  /- Cast Nat to ENNReal -/
+  | NatToENNReal : UnOp Nat ENNReal
 deriving Lean.ToExpr, DecidableEq
 
 inductive QuantOp : Ty → Type where
@@ -82,47 +141,29 @@ inductive QuantOp : Ty → Type where
   | Exists : QuantOp Bool
 deriving Lean.ToExpr, DecidableEq
 
-instance : Inhabited (QuantOp α) where
-  default :=
-    match α with
-    | .Bool => .Forall
-    | .ENNReal => .Inf
-
 structure Ident where
   name : String
+  type : Ty
 deriving Lean.ToExpr, DecidableEq, Hashable, Inhabited
 
 namespace Ident
 
-@[ext] theorem ext {i j : Ident} (h : i.name = j.name) : i = j := by grind [Ident]
-@[grind inj] theorem name_inj : Function.Injective name := by intro i j; grind [Ident]
+@[ext] theorem ext {i j : Ident} (h : i.name = j.name) (h' : i.type = j.type) : i = j := by
+  grind [Ident]
 
-instance instLE : LE Ident := ⟨(·.name ≤ ·.name)⟩
+def toLex (i : Ident) : Lex (String × Ty) := (i.name, i.type)
 
-attribute [local simp] instLE
-
-instance : IsTrans Ident (· ≤ ·) := ⟨fun _ _ _ ↦ String.le_trans⟩
-instance : IsTotal Ident (· ≤ ·) := ⟨(String.le_total ·.name ·.name)⟩
-instance : DecidableRel (· ≤ · : Ident → Ident → Prop) := fun a b ↦ a.name.decLE b.name
-instance : Std.Antisymm (· ≤ · : Ident → Ident → Prop) :=
-    ⟨by rintro ⟨a⟩ ⟨b⟩; simp; exact String.le_antisymm⟩
-instance : IsAntisymm Ident (· ≤ ·) :=
-  ⟨by rintro ⟨a⟩ ⟨b⟩; simp; exact String.le_antisymm⟩
+instance instLinearOrder : LinearOrder Ident :=
+  LinearOrder.lift' toLex (by grind [Function.Injective, toLex, Ident])
 
 end Ident
 
-abbrev Ty.lit : Ty → Type
-  | .Bool => Prop
-  | .ENNReal => _root_.ENNReal
-abbrev Ty.expr (ϖ : Type) : Ty → Type
-  | .Bool => BExpr ϖ
-  | .ENNReal => Exp ϖ
+abbrev Ty.ϖ : Ident → Type := fun (x : Ident) ↦ Ty.lit (Ident.type x)
 
--- inductive QuantVar where
---   | Shadow : ϖ → QuantVar
---   | Fresh : ϖ → QuantVar
---   | DeBrujin : QuantVar
--- deriving Lean.ToExpr, DecidableEq, Inhabited
+notation "𝔼'[" t "]" => 𝔼[Ty.ϖ, t]
+
+abbrev Ty.expr (t : Ty) : Type :=
+  𝔼'[t.lit]
 
 open Lean in
 instance : Lean.ToExpr Rat where
@@ -138,9 +179,9 @@ instance : Lean.ToExpr NNRat where
 
 inductive Literal : Ty → Type where
   -- /- A string literal (`"something"`). -/
-  -- | Str : String → Literal String
+  -- | Str : Ident → Literal Ident
   /- An unsigned integer literal (`123`). -/
-  | UInt : Nat → Literal ENNReal
+  | UInt : {α : Ty} → (h : α.Arith) → Nat → Literal α
   /- A number literal represented by a fraction. -/
   | Frac : NNRat → Literal ENNReal
   /- Infinity, -/
@@ -150,8 +191,8 @@ inductive Literal : Ty → Type where
 deriving DecidableEq, Lean.ToExpr
 
 inductive Fun : Ty → Ty → Type where
-  | NFloor : Fun ENNReal ENNReal
-  | NLog₂ : Fun ENNReal ENNReal
+  | NFloor : Fun ENNReal Nat
+  | NLog₂ : Fun Nat Nat
   | IsNat : Fun ENNReal Bool
 deriving DecidableEq, Lean.ToExpr
 
@@ -160,176 +201,206 @@ end HeyLo
 -- a ↙ b = (a ≤ )
 
 open HeyLo HeyLo.Ty in
-inductive HeyLo (ϖ : Type) : Ty → Type where
+inductive HeyLo : Ty → Type where
   -- /- A variable. -/
-  -- | Var : Ident → HeyLo ϖ ENNReal
+  -- | Var : Ident → HeyLo ENNReal
   /- A call to a procedure or function. -/
-  | Call : {α β : Ty} → Fun α β → HeyLo ϖ α → HeyLo ϖ β
+  | Call : {α β : Ty} → Fun α β → HeyLo α → HeyLo β
   -- /- Boolean if-then-else -/
-  -- | Ite : HeyLo ϖ Bool → HeyLo ϖ ENNReal → HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
-  | Unary : UnOp α β → HeyLo ϖ α → HeyLo ϖ β
-  | Binary : BinOp α β → HeyLo ϖ α → HeyLo ϖ  α → HeyLo ϖ β
+  -- | Ite : HeyLo Bool → HeyLo ENNReal → HeyLo ENNReal → HeyLo ENNReal
+  | Unary : UnOp α β → HeyLo α → HeyLo β
+  | Binary : BinOp α β → HeyLo α → HeyLo α → HeyLo β
   -- /- Type casting. -/
-  -- | Cast : HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
+  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
   -- /- A quantifier over some variables. -/
-  -- | Quant : QuantOp → Ident → HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
+  -- | Quant : QuantOp → Ident → HeyLo ENNReal → HeyLo ENNReal
   -- /- A substitution. -/
-  -- | Subst : Ident → HeyLo ϖ ENNReal → HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
+  -- | Subst : Ident → HeyLo ENNReal → HeyLo ENNReal → HeyLo ENNReal
   /- A value literal. -/
   -- /- A de Bruijn index. -/
-  -- | DeBruijn : DeBruijnIndex → HeyLo ϖ ENNReal
+  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
 -- deriving Lean.ToExpr, Inhabited
 
   /- A variable. -/
-  | Var : ϖ → HeyLo ϖ ENNReal
+  | Var : String → (α : Ty) → HeyLo α
   -- /- A call to a procedure or function. -/
-  -- | Call : Ident → List HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
+  -- | Call : Ident → List HeyLo ENNReal → HeyLo ENNReal
   /- Boolean if-then-else -/
-  | Ite : HeyLo ϖ Bool → HeyLo ϖ α → HeyLo ϖ  α → HeyLo ϖ α
+  | Ite : HeyLo Bool → HeyLo α → HeyLo α → HeyLo α
   -- /- Type casting. -/
-  -- | Cast : HeyLo ϖ ENNReal → HeyLo ϖ ENNReal
+  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
   /- A quantifier over some variables. -/
-  | Quant : QuantOp α → ϖ → HeyLo ϖ  α → HeyLo ϖ α
+  | Quant : QuantOp α → Ident → HeyLo α → HeyLo α
   /- A substitution. -/
-  | Subst : ϖ → HeyLo ϖ ENNReal → HeyLo ϖ α → HeyLo ϖ  α
+  | Subst : (v : Ident) → HeyLo v.type → HeyLo α → HeyLo α
   /- A value literal. -/
-  | Lit : Literal α → HeyLo ϖ  α
+  | Lit : Literal α → HeyLo α
   -- /- A de Bruijn index. -/
-  -- | DeBruijn : DeBruijnIndex → HeyLo ϖ ENNReal
-deriving DecidableEq, Lean.ToExpr
+  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
+deriving Lean.ToExpr, DecidableEq
 
 open HeyLo
 
 namespace HeyLo
 
-scoped notation "𝔼r[" ϖ "]" => HeyLo ϖ Ty.ENNReal
-scoped notation "𝔼b[" ϖ "]" => HeyLo ϖ Ty.Bool
+scoped notation "𝔼r" => HeyLo Ty.ENNReal
+scoped notation "𝔼b" => HeyLo Ty.Bool
 
 end HeyLo
 
-instance : Top 𝔼r[ϖ] := ⟨.Lit .Infinity⟩
-instance : OfNat 𝔼r[ϖ] n := ⟨.Lit (.UInt n)⟩
-instance : Add 𝔼r[ϖ] := ⟨.Binary .Add⟩
-instance : Sub 𝔼r[ϖ] := ⟨.Binary .Sub⟩
-instance : Mul 𝔼r[ϖ] := ⟨.Binary .Mul⟩
-instance : Div 𝔼r[ϖ] := ⟨.Binary .Div⟩
-instance : Min 𝔼r[ϖ] := ⟨.Binary .Inf⟩
-instance : Max 𝔼r[ϖ] := ⟨.Binary .Sup⟩
-instance : HImp 𝔼r[ϖ] := ⟨.Binary .Impl⟩
-instance : HCoImp 𝔼r[ϖ] := ⟨.Binary .CoImpl⟩
-instance : HNot (HeyLo ϖ α) := ⟨.Unary .Not⟩
-noncomputable instance {α : Ty} : HNot (α.expr ϖ) :=
-  match α with
-  | .Bool => inferInstance
-  | .ENNReal => inferInstance
-instance : HCoNot 𝔼r[ϖ] := ⟨.Unary .Non⟩
-instance : Iverson 𝔼b[String] 𝔼r[String] := ⟨.Unary .Iverson⟩
 
-def HeyLo.subst (X : HeyLo ϖ α) (x : ϖ) (Y : 𝔼r[ϖ]) : HeyLo ϖ  α :=
+instance : Top 𝔼r := ⟨.Lit .Infinity⟩
+instance HeyLo.instOfNat (h : α.Arith := by exact default) : OfNat (HeyLo α) n := ⟨.Lit (.UInt h n)⟩
+instance HeyLo.instAdd (h : α.Arith := by exact default) : Add (HeyLo α) := ⟨.Binary (.Add h)⟩
+instance HeyLo.instSub (h : α.Arith := by exact default) : Sub (HeyLo α) := ⟨.Binary (.Sub h)⟩
+instance HeyLo.instMul (h : α.Arith := by exact default) : Mul (HeyLo α) := ⟨.Binary (.Mul h)⟩
+instance HeyLo.instDiv (h : α.Arith := by exact default) : Div (HeyLo α) := ⟨.Binary (.Div h)⟩
+instance : Min 𝔼r := ⟨.Binary .Inf⟩
+instance : Max 𝔼r := ⟨.Binary .Sup⟩
+instance : HImp 𝔼r := ⟨.Binary .Impl⟩
+instance : HCoImp 𝔼r := ⟨.Binary .CoImpl⟩
+instance : HNot (HeyLo α) := ⟨.Unary .Not⟩
+-- noncomputable instance {α : Ty} : HNot (α.expr) :=
+--   match α with
+--   | .Bool => inferInstance
+--   | .ENNReal => inferInstance
+instance : HCoNot 𝔼r := ⟨.Unary .Non⟩
+instance : Iverson 𝔼b 𝔼r := ⟨.Unary .Iverson⟩
+
+@[reducible] instance : OfNat (HeyLo .ENNReal) n := HeyLo.instOfNat
+@[reducible] instance : OfNat (HeyLo .Nat) n := HeyLo.instOfNat
+
+@[reducible] instance : Add (HeyLo .ENNReal) := HeyLo.instAdd
+@[reducible] instance : Add (HeyLo .Nat) := HeyLo.instAdd
+@[reducible] instance : Sub (HeyLo .ENNReal) := HeyLo.instSub
+@[reducible] instance : Sub (HeyLo .Nat) := HeyLo.instSub
+@[reducible] instance : Mul (HeyLo .ENNReal) := HeyLo.instMul
+@[reducible] instance : Mul (HeyLo .Nat) := HeyLo.instMul
+@[reducible] instance : Div (HeyLo .ENNReal) := HeyLo.instDiv
+@[reducible] instance : Div (HeyLo .Nat) := HeyLo.instDiv
+
+def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : HeyLo x.type) : HeyLo α :=
   .Subst x Y X
 
-instance : Substitution (HeyLo ϖ α) (fun (_ : ϖ) ↦ 𝔼r[ϖ]) := ⟨fun X x ↦ HeyLo.subst X x.1 x.2⟩
+instance : Substitution (HeyLo α) (fun (v : Ident) ↦ HeyLo v.type) :=
+  ⟨fun X x ↦ HeyLo.subst X x.1 x.2⟩
 
-instance : Inhabited (BExpr ϖ) where
-  default := ⟨fun _ ↦ false, inferInstance⟩
+-- instance : Inhabited (BExpr ϖ) where
+--   default := ⟨fun _ ↦ false, inferInstance⟩
 
 @[grind =, simp]
 def HeyLo.Literal.lit (l : Literal α) : α.lit :=
   match l with
-  | .UInt n => n
+  | .UInt _ n => match α with | .ENNReal | .Nat => n
   | .Frac n => n
   | .Bool b => b
   | .Infinity => ⊤
 @[grind =, simp]
-def HeyLo.Literal.sem (l : Literal α) : α.expr ϖ :=
+def HeyLo.Literal.sem (l : Literal α) : α.expr :=
   match l with
-  | .UInt n => n
-  | .Frac n => (n : ENNReal)
-  | .Bool b => b
+  | .UInt _ n => match α with | .ENNReal | .Nat => n
+  | .Frac n => fun _ ↦ n
+  | .Bool b => fun _ ↦ b
   | .Infinity => ⊤
 
+open scoped Classical in
 noncomputable def HeyLo.BinOp.sem
-    (op : BinOp α β) (l r : α.expr ϖ) : β.expr ϖ :=
+    (op : BinOp α β) (l r : α.expr) : β.expr :=
   match op with
   | .CoImpl => l ↜ r
   | .Impl => l ⇨ r
   | .Sup => l ⊔ r
   | .Inf => l ⊓ r
-  | .Gt => BExpr.lt r l
-  | .Ge => BExpr.le r l
-  | .Ne => (BExpr.eq l r).not
-  | .Le => BExpr.le l r
-  | .Lt => BExpr.lt l r
-  | .Eq => BExpr.eq l r
-  | .Or => BExpr.or l r
-  | .And => BExpr.and l r
-  | .Div => l / r
-  | .Mul => l * r
-  | .Sub => l - r
-  | .Add => l + r
+  | .Gt h => match α with | .ENNReal | .Nat => fun σ ↦ r σ > l σ
+  | .Ge h => match α with | .ENNReal | .Nat => fun σ ↦ l σ ≥ r σ
+  | .Ne h => match α with | .ENNReal | .Nat => fun σ ↦ l σ ≠ r σ
+  | .Le h => match α with | .ENNReal | .Nat => fun σ ↦ l σ ≤ r σ
+  | .Lt h => match α with | .ENNReal | .Nat => fun σ ↦ l σ < r σ
+  | .Eq => fun σ ↦ l σ = r σ
+  | .Or => fun σ ↦ l σ ∨ r σ
+  | .And => fun σ ↦ l σ ∧ r σ
+  | .Div h => match β with | .ENNReal | .Nat => l / r
+  | .Mul h => match β with | .ENNReal | .Nat => l * r
+  | .Sub h => match β with | .ENNReal | .Nat => l - r
+  | .Add h => match β with | .ENNReal | .Nat => l + r
 
-noncomputable def HeyLo.UnOp.sem (op : UnOp α β) (x : α.expr ϖ) : β.expr ϖ :=
+noncomputable def HeyLo.UnOp.sem (op : UnOp α β) (x : α.expr) : β.expr :=
   match op with
-  | .Not => ￢ x
+  | .Not =>
+    match α with
+    | .ENNReal => ￢ x
+    | .Bool => ￢ x
+    -- NOTE: this should be unreacable
+    | .Nat => x
   | .Non => ~ x
   | .Iverson => i[x]
   | .Embed => i[x] * ⊤
+  | .NatToENNReal => (x ·)
 
-noncomputable def HeyLo.QuantOp.sem [DecidableEq ϖ] (op : HeyLo.QuantOp α) (x : ϖ) (m : α.expr ϖ) :
-    α.expr ϖ :=
+@[simp]
+theorem Bool.iInf_eq {α : Type*} (f : α → Bool) : ⨅ x, f x ↔ ∀ x, f x := by
+  rw [← antisymm_iff (r:=LE.le)]
+  simp_all
+  exact { mp := fun a x ↦ a x rfl, mpr := fun a i a_1 ↦ a i }
+@[simp]
+theorem Bool.iSup_eq {α : Type*} (f : α → Bool) : ⨆ x, f x ↔ ∃ x, f x := by
+  contrapose
+  simp
+  rw [← antisymm_iff (r:=LE.le)]
+  simp_all
+  grind [Bool.le_iff_imp]
+
+noncomputable def HeyLo.QuantOp.sem (op : HeyLo.QuantOp α) (x : Ident) (m : α.expr) :
+    α.expr :=
   match op with
-  | .Inf => ⨅ (v : ENNReal), m[x ↦ v]
-  | .Sup => ⨆ (v : ENNReal), m[x ↦ v]
-  | .Forall => BExpr.forall_ x m
-  | .Exists => BExpr.exists_ x m
+  | .Inf => ⨅ (v : x.type.lit), m[x ↦ fun _ ↦ v]
+  | .Sup => ⨆ (v : x.type.lit), m[x ↦ fun _ ↦ v]
+  | .Forall => ⨅ (v : x.type.lit), m[x ↦ fun _ ↦ v]
+  | .Exists => ⨆ (v : x.type.lit), m[x ↦ fun _ ↦ v]
 
-theorem HeyLo.iSup_sem_eq_iSup_exp [DecidableEq ϖ] {x : ϖ} :
-    HeyLo.QuantOp.Sup.sem x e = ⨆ (v : Exp ϖ), e[x ↦ ↑v] := by
-  ext σ
-  simp [QuantOp.sem]
-  apply le_antisymm
-  · refine iSup_mono' ?_
-    intro v
-    use v
-    rfl
-  · refine iSup_mono' ?_
-    intro v
-    use v σ
-@[grind =, simp]
-theorem HeyLo.QuantOp.Sup_sem_eq_iSup_ennreal [DecidableEq ϖ] {x : ϖ} :
-    HeyLo.QuantOp.Sup.sem x e = ⨆ (v : ENNReal), e[x ↦ ↑v] := by
+-- theorem HeyLo.iSup_sem_eq_iSup_exp [DecidableEq 𝒱] {x : Ident} :
+--     HeyLo.QuantOp.Sup.sem x e = ⨆ (v : Exp ϖ), e[x ↦ ↑v] := by
+--   ext σ
+--   simp [QuantOp.sem]
+--   apply le_antisymm
+--   · refine iSup_mono' ?_
+--     intro v
+--     use v
+--     rfl
+--   · refine iSup_mono' ?_
+--     intro v
+--     use v σ
+@[simp]
+theorem HeyLo.QuantOp.Sup_sem_eq_iSup_ennreal [DecidableEq 𝒱] {x : Ident} :
+    HeyLo.QuantOp.Sup.sem x e = ⨆ (v : x.type.lit), e[x ↦ fun _ ↦ v] := by
   rfl
-theorem HeyLo.iInf_sem_eq_iInf_exp [DecidableEq ϖ] {x : ϖ} :
-    HeyLo.QuantOp.Inf.sem x e = ⨅ (v : Exp ϖ), e[x ↦ ↑v] := by
-  ext σ
-  simp [QuantOp.sem]
-  apply le_antisymm
-  · refine iInf_mono' ?_
-    intro v
-    use v σ
-  · refine iInf_mono' ?_
-    intro v
-    use v
-    rfl
-@[grind =, simp]
-theorem HeyLo.QuantOp.Sup_sem_eq_iInf_ennreal [DecidableEq ϖ] {x : ϖ} :
-    HeyLo.QuantOp.Inf.sem x e = ⨅ (v : ENNReal), e[x ↦ ↑v] := by
+-- theorem HeyLo.iInf_sem_eq_iInf_exp [DecidableEq 𝒱] {x : Ident} :
+--     HeyLo.QuantOp.Inf.sem x e = ⨅ (v : Exp ϖ), e[x ↦ ↑v] := by
+--   ext σ
+--   simp [QuantOp.sem]
+--   apply le_antisymm
+--   · refine iInf_mono' ?_
+--     intro v
+--     use v σ
+--   · refine iInf_mono' ?_
+--     intro v
+--     use v
+--     rfl
+@[simp]
+theorem HeyLo.QuantOp.Sup_sem_eq_iInf_ennreal {x : Ident} :
+    HeyLo.QuantOp.Inf.sem x e = ⨅ (v : x.type.lit), e[x ↦ fun _ ↦ v] := by
   rfl
 
-noncomputable def HeyLo.Fun.sem [DecidableEq ϖ] (f : HeyLo.Fun α β) (m : α.expr ϖ) :
-    β.expr ϖ :=
+noncomputable def HeyLo.Fun.sem (f : HeyLo.Fun α β) (m : α.expr) :
+    β.expr :=
   match f with
   | .NFloor => fun σ ↦ ⌊(m σ).toReal⌋.toNat
-  | .NLog₂ => fun σ ↦ Nat.log2 ⌊(m σ).toReal⌋.toNat
-  | .IsNat => ⟨fun σ ↦ ∃ (n : ℕ), m σ = n, Classical.decPred _⟩
-
-@[reducible]
-instance [DecidableEq ϖ] {α : Ty} : Substitution (α.expr ϖ) (fun (_ : ϖ) ↦ Ty.ENNReal.expr ϖ) :=
-  match α with
-  | .Bool => inferInstance
-  | .ENNReal => inferInstance
-
-noncomputable def HeyLo.sem [DecidableEq ϖ] (X : HeyLo ϖ α) : α.expr ϖ :=
+  | .NLog₂ => fun σ ↦ Nat.log2 (m σ)
+  | .IsNat => fun σ ↦
+    have : Decidable (∃ (n : ℕ), m σ = ↑n) := Classical.propDecidable _
+    decide (∃ (n : ℕ), m σ = n)
+open scoped Classical in
+noncomputable def HeyLo.sem (X : HeyLo α) : α.expr :=
   match X with
   | .Binary op l r => op.sem l.sem r.sem
   | .Lit l => l.sem
@@ -338,49 +409,78 @@ noncomputable def HeyLo.sem [DecidableEq ϖ] (X : HeyLo ϖ α) : α.expr ϖ :=
   | .Call f x => f.sem x.sem
   | .Ite b l r =>
     match α with
-    | .Bool => BExpr.ite b.sem l.sem r.sem
-    | .ENNReal => i[b.sem] * l.sem + i[b.sem.not] * r.sem
-  | .Var x => fun σ ↦ σ x
+    | .Bool => fun σ ↦ if b.sem σ then l.sem σ else r.sem σ
+    | .ENNReal => i[b.sem] * l.sem + i[￢b.sem] * r.sem
+    | .Nat => fun σ ↦ if b.sem σ then l.sem σ else r.sem σ
+  | .Var x α => fun σ ↦ σ ⟨x, α⟩
   | .Unary op m => op.sem m.sem
 
-@[reducible]
-instance {α : Ty} : FunLike (α.expr ϖ) (States ϖ) α.lit :=
-  match α with
-  | .Bool => inferInstanceAs (FunLike (BExpr ϖ) (States ϖ) Prop)
-  | .ENNReal => {coe := id, coe_injective' := fun _ _ a ↦ a}
+-- @[grind =, simp]
+theorem QuantOp.Forall_sem_aux : (QuantOp.sem .Forall x m) σ = ∀ v, m[x ↦ v] σ := by
+  simp [QuantOp.sem]
+  exact { mp := fun a v ↦ a (v σ), mpr := fun a x ↦ a fun {σ} ↦ x }
+@[grind =, simp]
+theorem QuantOp.Forall_sem :
+    (QuantOp.sem .Forall x m) σ = ∀ (v : x.type.lit), m[x ↦ fun _ ↦ v] σ := by
+  simp [Forall_sem_aux]
+  exact { mp := fun a v ↦ a fun {σ} ↦ v, mpr := fun a v ↦ a (v σ) }
+theorem QuantOp.Exists_sem_aux : (QuantOp.sem .Exists x m) σ = ∃ v, m[x ↦ v] σ := by
+  simp [QuantOp.sem]
+  apply Function.Surjective.exists
+  intro y
+  simp
+  use fun _ ↦ y
+@[grind =, simp]
+theorem QuantOp.Exists_sem :
+    (QuantOp.sem .Exists x m) σ = ∃ (v : x.type.lit), m[x ↦ fun _ ↦ v] σ := by
+  simp [Exists_sem_aux]
+  refine Iff.symm (Function.Surjective.exists ?_)
+  intro y
+  simp
+  use fun _ ↦ y
+
+-- @[reducible]
+-- instance {α : Ty} : FunLike (α.expr) (States Ty.ϖ) α.lit :=
+--   match α with
+--   | .Bool => {coe := id, coe_injective' := fun _ _ a ↦ a}
+--   | .ENNReal => {coe := id, coe_injective' := fun _ _ a ↦ a}
+--   | .Nat => {coe := id, coe_injective' := fun _ _ a ↦ a}
 
 attribute [simp] Ty.expr
 attribute [simp] Ty.lit
-attribute [simp] instFunLikeExprStatesLit
+-- attribute [simp] instFunLikeExprStatesIdentLitType
 
 @[grind =, simp]
-theorem HeyLo.Sup_sem_eq_iSup_ennreal [DecidableEq ϖ] {x : ϖ} :
-    (HeyLo.Quant HeyLo.QuantOp.Sup x e).sem = ⨆ (v : ENNReal), e.sem[x ↦ ↑v] := by
+theorem HeyLo.Sup_sem_eq_iSup_ennreal {x : Ident} :
+    (HeyLo.Quant HeyLo.QuantOp.Sup x e).sem = ⨆ (v : x.type.lit), e.sem[x ↦ fun _ ↦ v] := by
   rfl
 @[grind =, simp]
-theorem HeyLo.Sup_sem_eq_iInf_ennreal [DecidableEq ϖ] {x : ϖ} :
-    (HeyLo.Quant HeyLo.QuantOp.Inf x e).sem = ⨅ (v : ENNReal), e.sem[x ↦ ↑v] := by
+theorem HeyLo.Sup_sem_eq_iInf_ennreal {x : Ident} :
+    (HeyLo.Quant HeyLo.QuantOp.Inf x e).sem = ⨅ (v : x.type.lit), e.sem[x ↦ fun _ ↦ v] := by
   rfl
 
-variable [DecidableEq ϖ]
+variable [DecidableEq 𝒱]
 
 @[grind =, simp]
-theorem HeyLo.sem_subst {X : HeyLo ϖ α} : X[x ↦ v].sem = X.sem[x ↦ v.sem] := rfl
+theorem HeyLo.sem_subst {X : HeyLo α} : X[x ↦ v].sem = X.sem[x ↦ v.sem] := rfl
 @[grind =, simp]
-theorem UnOp.sem_subst {op : UnOp α β} {a : α.expr ϖ} : (op.sem a)[x ↦ v] = op.sem a[x ↦ v] := by
+theorem UnOp.sem_subst {op : UnOp α β} {a : α.expr} : (op.sem a)[x ↦ v] = op.sem a[x ↦ v] := by
   cases op <;> try rfl
   · cases α <;> rfl
 @[grind =, simp]
-theorem BinOp.sem_subst {op : BinOp α β} {a : α.expr ϖ} :
-    (op.sem a b)[x ↦ v] = op.sem a[x ↦ v] b[x ↦ v] := by cases op <;> try rfl
+theorem BinOp.sem_subst {op : BinOp α β} {a : α.expr} :
+    (op.sem a b)[x ↦ v] = op.sem a[x ↦ v] b[x ↦ v] := by
+  cases op <;> try rfl
+  all_goals cases α <;> try rfl
+  all_goals cases ‹Ty.Bool.Compare›
 @[grind =, simp]
-theorem HeyLo.sem_Forall_apply {c : 𝔼b[ϖ]} :
-    (HeyLo.Quant QuantOp.Forall x c).sem σ ↔ ∀ (v : ENNReal), c.sem σ[x ↦ ↑v] := by
-  rfl
+theorem HeyLo.sem_Forall_apply {c : 𝔼b} :
+    (HeyLo.Quant QuantOp.Forall x c).sem σ ↔ ∀ (v : x.type.lit), c.sem σ[x ↦ v] := by
+  simp [sem]
 @[grind =, simp]
-theorem HeyLo.sem_Exists_apply {c : 𝔼b[ϖ]} :
-    (HeyLo.Quant QuantOp.Exists x c).sem σ ↔ ∃ (v : ENNReal), c.sem σ[x ↦ ↑v] := by
-  rfl
+theorem HeyLo.sem_Exists_apply {c : 𝔼b} :
+    (HeyLo.Quant QuantOp.Exists x c).sem σ ↔ ∃ (v : x.type.lit), c.sem σ[x ↦ v] := by
+  simp [sem]
 
 theorem Array.flatMap_sum {α β : Type*} {A : Array α} {f : α → Array β} [AddMonoid β] :
     (A.flatMap f).sum = (A.map (fun a ↦ (f a).sum)).sum := by
@@ -395,38 +495,43 @@ theorem Array.map_mul_sum {α β : Type*} [MonoidWithZero β] [AddMonoid β] [Le
   obtain ⟨A⟩ := A
   induction A with grind [mul_zero, left_distrib]
 
-structure Distribution (ϖ : Type) [DecidableEq ϖ] where
-  values : Array (𝔼r[ϖ] × 𝔼r[ϖ])
-  prop : ∀ (σ : States ϖ), (values.map (·.fst.sem σ)).sum = 1
--- deriving DecidableEq
+structure Distribution (α : Ty) where
+  values : Array (𝔼r × HeyLo α)
+  prop : ∀ (σ : States Ty.ϖ), (values.map (·.fst.sem σ)).sum = 1
 
 attribute [simp] Distribution.prop
 
 open Lean in
-instance [ToExpr ϖ] : Lean.ToExpr (Distribution ϖ) where
+instance : Lean.ToExpr (Distribution α) where
   toExpr μ :=
     toExpr μ.values
   toTypeExpr := .const ``Distribution []
 
-def Distribution.pure (v : 𝔼r[ϖ]) : Distribution ϖ := ⟨#[(1, v)], by simp [sem]⟩
-def Distribution.bind (μ : Distribution ϖ) (f : 𝔼r[ϖ] → Distribution ϖ) : Distribution ϖ :=
+def Distribution.pure (v : HeyLo α) : Distribution α := ⟨#[(1, v)], by simp [sem]⟩
+def Distribution.bind {α β : Ty} (μ : Distribution α) (f : HeyLo α → Distribution β) :
+    Distribution β :=
   let values := μ.values.flatMap (fun (p, v) ↦ (f v).values.map (fun (p', v') ↦ (p * p', v')))
   {values, prop := by
     intro σ
     simp only [Array.map_flatMap, Array.map_map, values]
     unfold Function.comp
-    simp only [sem, BinOp.sem, Ty.expr, Pi.mul_apply, Array.flatMap_sum, Array.map_mul_sum, prop,
-      mul_one]
+    simp only [sem, BinOp.sem, Ty.expr, Pi.mul_apply, Array.flatMap_sum, Array.map_mul_sum]
+    conv => enter [1, 1, 1, a, 2]; rw [prop]
+    simp only [mul_one]
+    rw [prop]
   }
-def Distribution.map (μ : Distribution ϖ) (f : 𝔼r[ϖ] → 𝔼r[ϖ]) : Distribution ϖ :=
-  ⟨μ.values.map (fun (p, v) ↦ (p, f v)), by simp; unfold Function.comp; simp⟩
+def Distribution.map (μ : Distribution α) (f : HeyLo α → HeyLo β) : Distribution β :=
+  ⟨μ.values.map (fun (p, v) ↦ (p, f v)), by simp; unfold Function.comp; simp; apply prop⟩
+
+instance {x : Ident} : Inhabited (x.type.lit) where
+  default := by simp; split <;> exact default
 
 @[grind ., simp]
-theorem Distribution.values_ne_empty (μ : Distribution ϖ) : μ.values ≠ #[] := by
-  have := μ.prop fun _ ↦ 0
+theorem Distribution.values_ne_empty (μ : Distribution α) : μ.values ≠ #[] := by
+  have := μ.prop fun x ↦ default
   grind [zero_ne_one]
 @[simp]
-theorem Distribution.exists_in_values (μ : Distribution ϖ) : ∃ x v, (x, v) ∈ μ.values := by
+theorem Distribution.exists_in_values (μ : Distribution α) : ∃ x v, (x, v) ∈ μ.values := by
   have : ∃ x, x ∈ μ.values := by simp [Array.isEmpty_eq_false_iff_exists_mem.mp]
   grind
 
@@ -437,55 +542,55 @@ theorem Array.sum_replicate {α : Type*} {x : α} [Semiring α] :
   | zero => grind
   | succ n ih => grind [push, toList_replicate, List.sum_replicate]
 
-def Distribution.unif (vs : Array 𝔼r[ϖ]) (h : vs ≠ #[]) : Distribution ϖ :=
-  ⟨vs.map fun v ↦ (.Binary .Div (1 : 𝔼r[ϖ]) (OfNat.ofNat vs.size), v), by
+def Distribution.unif (vs : Array (HeyLo α)) (h : vs ≠ #[]) : Distribution α :=
+  ⟨vs.map fun v ↦ (.Binary (.Div .yes) (1 : 𝔼r) (OfNat.ofNat vs.size), v), by
     intro σ
     simp only [Array.map_map]
     unfold Function.comp
     simp [sem, BinOp.sem, Array.map_const', h, ENNReal.mul_inv_cancel]⟩
-def Distribution.bin (a : 𝔼r[ϖ]) (p : 𝔼r[ϖ]) (b : 𝔼r[ϖ]) : Distribution ϖ :=
+def Distribution.bin (a : HeyLo α) (p : 𝔼r) (b : HeyLo α) : Distribution α :=
   ⟨#[(p ⊓ 1, a), (1 - (p ⊓ 1), b)], by intro σ; simp [sem, BinOp.sem]⟩
 
 @[grind =, simp]
-theorem Distribution.pure_map {e : 𝔼r[ϖ]} :
+theorem Distribution.pure_map {e : HeyLo α} :
     (Distribution.pure e).map f = Distribution.pure (f e) := by
   simp [pure, map]
 @[grind =, simp]
-theorem Distribution.bin_map {a b : 𝔼r[ϖ]} :
+theorem Distribution.bin_map {a b : HeyLo α} :
     (Distribution.bin a p b).map f = Distribution.bin (f a) p (f b) := by
   simp [bin, map]
 
-def Distribution.toExpr (μ : Distribution ϖ) : 𝔼r[ϖ] :=
+def Distribution.toExpr (μ : Distribution .ENNReal) : 𝔼r :=
   μ.values.map (fun (p, v) ↦ p * v) |>.sum
 @[grind =, simp]
-theorem Distribution.pure_toExpr {a : 𝔼r[ϖ]} :
+theorem Distribution.pure_toExpr {a : 𝔼r} :
     (Distribution.pure a).toExpr = 1 * a + 0 := by
   simp [pure, toExpr]
 @[grind =, simp]
-theorem Distribution.bin_toExpr {a b : 𝔼r[ϖ]} :
+theorem Distribution.bin_toExpr {a b : 𝔼r} :
     (Distribution.bin a p b).toExpr = (p ⊓ 1) * a + ((1 - (p ⊓ 1)) * b + 0) := by
   simp [bin, toExpr]
 
-inductive HeyVL (ϖ : Type) [DecidableEq ϖ] where
+inductive HeyVL where
   --
-  | Assign (x : ϖ) (μ : Distribution ϖ)
-  | Reward (a : 𝔼r[ϖ])
-  | Seq (S₁ S₂ : HeyVL ϖ)
+  | Assign (x : Ident) (μ : Distribution x.type)
+  | Reward (a : 𝔼r)
+  | Seq (S₁ S₂ : HeyVL)
   --
-  | IfInf (S₁ S₂ : HeyVL ϖ)
-  | Assert (φ : 𝔼r[ϖ])
-  | Assume (φ : 𝔼r[ϖ])
-  | Havoc (xs : ϖ)
+  | IfInf (S₁ S₂ : HeyVL)
+  | Assert (φ : 𝔼r)
+  | Assume (φ : 𝔼r)
+  | Havoc (xs : Ident)
   | Validate
   --
-  | IfSup (S₁ S₂ : HeyVL ϖ)
-  | Coassert (φ : 𝔼r[ϖ])
-  | Coassume (φ : 𝔼r[ϖ])
-  | Cohavoc (x : ϖ)
+  | IfSup (S₁ S₂ : HeyVL)
+  | Coassert (φ : 𝔼r)
+  | Coassume (φ : 𝔼r)
+  | Cohavoc (x : Ident)
   | Covalidate
 -- deriving Lean.ToExpr
 
-def HeyVL.vp (C : HeyVL ϖ) : 𝔼r[ϖ] → 𝔼r[ϖ] := fun φ ↦
+def HeyVL.vp (C : HeyVL) : 𝔼r → 𝔼r := fun φ ↦
   match C with
   --
   | .Assign x μ => μ.map (fun v ↦ φ[x ↦ v]) |>.toExpr

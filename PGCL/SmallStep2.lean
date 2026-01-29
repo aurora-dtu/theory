@@ -11,7 +11,7 @@ import MDP.SmallStepSemantics
 
 namespace pGCL
 
-variable {ϖ : Type*} [DecidableEq ϖ]
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
 
 /-- Probabilistic small step operational semantics for `pGCL` -/
 @[aesop safe [constructors, cases], grind]
@@ -82,7 +82,8 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
     induction h' <;> try grind
   · grind
 @[simp] theorem assign_iff :
-    (conf₀[~x := ~e, σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf₁[⇓, σ[x ↦ e σ]] := by grind
+    (conf₀[~x := ~e, σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf₁[⇓, σ[x ↦ e σ]] := by
+  aesop
 @[simp] theorem prob_iff :
     (conf₀[{~C₁} [~p] {~C₂},σ] ⤳[α,p'] c') ↔
       α = .N ∧ (if C₁ = C₂ then p' = 1 ∧ c' = conf₁[~C₁,σ] else
@@ -252,6 +253,7 @@ noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × C
 --     · simp_all; rcases P <;> simp_all [succs_univ_fin] <;> split_ifs <;> simp_all
 --     · simp_all [succs_univ_fin]
 
+set_option maxHeartbeats 500000 in
 theorem succs_univ_fin'_eq_r (c : Conf₀ ϖ) :
     ∀ α p c', (α, p, c') ∈ succs_univ_fin' c ↔ c ⤳[α, p] c' := by
   induction c using succs_univ_fin'.induct <;> simp_all [succs_univ_fin'] <;> try grind

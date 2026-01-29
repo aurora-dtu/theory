@@ -4,6 +4,8 @@ import PGCL.pGCL
 
 namespace pGCL
 
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
+
 inductive Act where | L | R | N
 deriving BEq, DecidableEq, Inhabited
 
@@ -15,12 +17,12 @@ noncomputable instance Act.instFintype : Fintype Act where
 inductive Termination where | fault | term
 
 @[reducible]
-def Conf₀ (ϖ : Type*) := pGCL ϖ × States ϖ
+def Conf₀ (ϖ : Γ[𝒱]) := pGCL ϖ × States ϖ
 @[reducible]
-def Conf₁ (ϖ : Type*) := (pGCL ϖ ⊕ Termination) × States ϖ
+def Conf₁ (ϖ : Γ[𝒱]) := (pGCL ϖ ⊕ Termination) × States ϖ
 
 @[reducible]
-def Conf' (ϖ : Type*) := Conf (pGCL ϖ) (States ϖ) Termination
+def Conf' (ϖ : Γ[𝒱]) := Conf (pGCL ϖ) (States ϖ) Termination
 
 namespace Conf
 

@@ -3,10 +3,10 @@ import PGCL.WeakestLiberalPre
 
 namespace pGCL
 
-variable {ϖ : Type*} [DecidableEq ϖ]
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
 
 @[simp]
-noncomputable def cost_t : Exp ϖ →o Termination × States ϖ → ENNReal :=
+noncomputable def cost_t : 𝔼[ϖ, ENNReal] →o Termination × States ϖ → ENNReal :=
   ⟨fun X c ↦ match c with
   | (.term, σ) => X σ
   | (.fault, _) => 0, fun _ _ _ _ ↦ by
@@ -15,7 +15,7 @@ noncomputable def cost_t : Exp ϖ →o Termination × States ϖ → ENNReal :=
     · rfl⟩
 
 @[simp]
-noncomputable def cost_t' : Exp ϖ →o Termination × States ϖ → ENNReal :=
+noncomputable def cost_t' : 𝔼[ϖ, ENNReal] →o Termination × States ϖ → ENNReal :=
   ⟨fun X c ↦ match c with
   | (.term, σ) => X σ
   | (.fault, σ) => 1, fun _ _ _ _ ↦ by
@@ -33,7 +33,7 @@ noncomputable def cost_p : pGCL ϖ × States ϖ → ENNReal
 noncomputable def cost_p' : pGCL ϖ × States ϖ → ENNReal := 0
 
 noncomputable instance 𝕊
-    (cT : Exp ϖ →o Termination × States ϖ → ENNReal) (cP : pGCL ϖ × States ϖ → ENNReal) :
+    (cT : 𝔼[ϖ, ENNReal] →o Termination × States ϖ → ENNReal) (cP : pGCL ϖ × States ϖ → ENNReal) :
     SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act where
   r := SmallStep
   relation_p_pos := SmallStep.p_ne_zero
@@ -44,7 +44,7 @@ noncomputable instance 𝕊
 
 noncomputable instance : SmallStepSemantics (pGCL ϖ) (States ϖ) Termination Act := 𝕊 cost_t cost_p
 
-variable (cT : Exp ϖ →o Termination × States ϖ → ENNReal)
+variable (cT : 𝔼[ϖ, ENNReal] →o Termination × States ϖ → ENNReal)
 variable (cP : pGCL ϖ × States ϖ → ENNReal)
 
 -- @[simp] alias cP := cost_p
@@ -62,7 +62,7 @@ open scoped Classical in
 noncomputable instance : (𝕊 cost_t cost_p (ϖ:=ϖ)).FiniteBranching where
   finite := by simp [r, ← SmallStep.succs_univ_fin'_eq_r]
 
-variable {f : pGCL ϖ → Exp ϖ →o Exp ϖ}
+variable {f : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]}
 
 variable {C : pGCL ϖ} {σ : States ϖ}
 
@@ -86,22 +86,22 @@ variable {b : BExpr ϖ} [DecidablePred b] {O : Optimization}
 
 open scoped Optimization.Notation
 
--- instance : Coe (𝔼[States ϖ] →o 𝔼[States ϖ]) (Exp ϖ →o Exp ϖ) where
+-- instance : Coe (𝔼[States ϖ] →o 𝔼[States ϖ]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) where
 --   coe x := x
 
--- instance : HAdd (Exp ϖ →o Exp ϖ) (Exp ϖ →o Exp ϖ) (Exp ϖ →o Exp ϖ) := OrderHom.instHAdd
+-- instance : HAdd (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) := OrderHom.instHAdd
 
 @[reducible, simp]
-noncomputable instance : HAdd (Exp ϖ →o Exp ϖ) (𝔼[States ϖ] →o 𝔼[States ϖ]) (Exp ϖ →o Exp ϖ) where
+noncomputable instance : HAdd (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[States ϖ] →o 𝔼[States ϖ]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) where
   hAdd a b :=
-    let b' : Exp ϖ →o Exp ϖ := b
+    let b' : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] := b
     a + b'
 
 -- @[simp]
-def cP' (f : pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → Exp ϖ →o Exp ϖ :=
+def cP' (f : pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
   fun C ↦ ⟨fun X σ ↦ f (C, σ), fun a b h σ ↦ by simp⟩
 
-omit [DecidableEq ϖ] in
+omit [DecidableEq 𝒱] in
 @[grind =, simp] theorem cP'_apply {f : pGCL ϖ × States ϖ → ENNReal} :
     cP' f C X = fun σ ↦ f (C, σ) := rfl
 
@@ -146,7 +146,7 @@ omit [DecidableEq ϖ] in
 @[simp] theorem ς.prob :
       (𝕊 cT cP).ς O f (.prob C₁ p C₂)
     = cP' cP (.prob C₁ p C₂) + p.pick' (f C₁) (f C₂) := by
-  ext (X : Exp ϖ) σ
+  ext (X : 𝔼[ϖ, ENNReal]) σ
   simp [ς, psucc, r, Optimization.act]
   simp only [DFunLike.coe]
   simp
@@ -249,7 +249,7 @@ theorem ς.seq'' {C₁ C₂ : pGCL ϖ}
     grind
 
 theorem op_le_seq [(𝕊 cT cP).mdp.FiniteBranching]
-    (t_const : Exp ϖ)
+    (t_const : 𝔼[ϖ, ENNReal])
     (hp : ∀ C C' σ, cP (pgcl {~C ; ~C'}, σ) = cP (C, σ))
     (ht : ∀ X σ, cT X (Termination.term, σ) ≤ X σ)
     (ht' : ∀ X σ, cT X (Termination.fault, σ) = t_const σ) :
@@ -283,8 +283,8 @@ theorem wp_le_op.loop (ih : C.wp O ≤ (𝕊 cost_t cost_p).op O C) :
   gcongr
   apply le_trans (ih _) <| op_le_seq cost_t cost_p 0 _ _ _ _ <;> simp
 
-omit [DecidableEq ϖ] in
-@[simp] theorem Exp.mk_zero_eq : (fun _ ↦ 0 : Exp ϖ) = 0 := by rfl
+omit [DecidableEq 𝒱] in
+@[simp] theorem Exp.mk_zero_eq : (fun _ ↦ 0 : 𝔼[ϖ, ENNReal]) = 0 := by rfl
 
 noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
   et_le_op := by
@@ -305,8 +305,8 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       simp
       rw [← ς_op_eq_op]
       simp only [ς.prob, cP']
-      simp only [instHAddOrderHomExpForallStatesENNReal, cost_p, OrderHom.add_apply,
-        OrderHom.coe_mk, Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
+      simp only [instHAddOrderHomForallStatesENNReal, cost_p, OrderHom.add_apply, OrderHom.coe_mk,
+        Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
       intro X
@@ -365,7 +365,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X
       rw [← ς_op_eq_op]
-      simp only [OrderHom.toFun_eq_coe, ς.prob, instHAddOrderHomExpForallStatesENNReal,
+      simp only [OrderHom.toFun_eq_coe, ς.prob, instHAddOrderHomForallStatesENNReal,
         OrderHom.add_apply, cP'_apply, Pi.ofNat_apply, Exp.mk_zero_eq, ProbExp.pick'_apply,
         zero_add]
       simp [wfp']

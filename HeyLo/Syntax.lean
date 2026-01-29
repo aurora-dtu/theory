@@ -4,7 +4,7 @@ import Lean.PrettyPrinter.Delaborator
 
 namespace HeyLo
 
-section Syntax
+namespace Syntax
 
 open Lean PrettyPrinter Delaborator SubExpr
 
@@ -43,6 +43,7 @@ syntax:65 cheylo:65 " + " cheylo:66 : cheylo
 syntax:65 cheylo:65 " - " cheylo:66 : cheylo
 
 syntax:40 "¬" cheylo:40 : cheylo
+syntax:80 "↑" cheylo:80 : cheylo
 
 syntax:50 cheylo:50 " < " cheylo:51 : cheylo
 syntax:50 cheylo:50 " ≤ " cheylo:51 : cheylo
@@ -86,28 +87,30 @@ macro_rules
 | `(heylo_var { $v:ident }) => `(term|$(quote v.getId.toString))
 -- pexp
 -- | `(pgcl_pexp { $n:cheylo ⁻¹ }) => `(ProbExp.inv heylo {$n})
-| `(heylo { $n:num }) => `(($n : HeyLo _ .ENNReal))
+| `(heylo { $n:num }) => `(($n : HeyLo _))
 | `(heylo { true }) => `(HeyLo.Lit (.Bool true))
 | `(heylo { false }) => `(HeyLo.Lit (.Bool false))
 | `(heylo { nfloor $x }) => `(term|HeyLo.Call .NFloor heylo {$x} )
 | `(heylo { nlog₂ $x }) => `(term|HeyLo.Call .NLog₂ heylo {$x} )
 | `(heylo { isNat $x }) => `(term|HeyLo.Call .IsNat heylo {$x} )
-| `(heylo { $v:ident }) => `(term|HeyLo.Var $(quote v.getId.toString))
+-- | `(heylo { $v:ident }) => `(term|HeyLo.Var $(quote v.getId.toString))
+| `(heylo { $v:ident }) => `(term|HeyLo.Var ($v).name ($v).type)
 | `(heylo { $l:cheylo + $r }) => `(heylo {$l} + heylo {$r})
 | `(heylo { $l:cheylo - $r }) => `(heylo {$l} - heylo {$r})
 | `(heylo { $l:cheylo * $r }) => `(heylo {$l} * heylo {$r})
 | `(heylo { $l:cheylo / $r }) => `(heylo {$l} / heylo {$r})
 | `(heylo { [$b:cheylo] }) => `(i[heylo {$b}])
 | `(heylo { ($a:cheylo) }) => `(heylo {$a})
-| `(heylo { $l:cheylo < $r }) => `(HeyLo.Binary .Lt (heylo {$l}) (heylo {$r}))
-| `(heylo { $l:cheylo ≤ $r }) => `(HeyLo.Binary .Le (heylo {$l}) (heylo {$r}))
+| `(heylo { $l:cheylo < $r }) => `(HeyLo.Binary (.Lt Yes.yes) (heylo {$l}) (heylo {$r}))
+| `(heylo { $l:cheylo ≤ $r }) => `(HeyLo.Binary (.Le Yes.yes) (heylo {$l}) (heylo {$r}))
 | `(heylo { $l:cheylo = $r }) => `(HeyLo.Binary .Eq (heylo {$l}) (heylo {$r}))
 | `(heylo { $l:cheylo ∧ $r }) => `(HeyLo.Binary .And (heylo {$l}) (heylo {$r}))
 | `(heylo { $l:cheylo ∨ $r }) => `(HeyLo.Binary .Or (heylo {$l}) (heylo {$r}))
 | `(heylo { ¬$l:cheylo }) => `(HeyLo.Unary .Not (heylo {$l}))
+| `(heylo { ↑ $l:cheylo }) => `(HeyLo.Unary .NatToENNReal (heylo {$l}))
 -- pGCL'
 | `(pgcl' { skip }) => `(pGCL'.skip)
-| `(pgcl' { $v:cheylo_var := $e }) => `(pGCL'.assign heylo_var {$v} heylo {$e})
+| `(pgcl' { $v:ident := $e }) => `(pGCL'.assign $v heylo {$e})
 | `(pgcl' { $C₁ ; $C₂ }) => `(pGCL'.seq pgcl' {$C₁} pgcl' {$C₂})
 -- | `(pgcl' { { $C₁:cpgcl' } [ $p ] { $C₂ } }) => `(pGCL'.prob pgcl' {$C₁} heylo {$p} pgcl' {$C₂})
 | `(pgcl' { { $C₁:cpgcl' } [ $p ] { $C₂ } }) => `(pGCL'.prob pgcl' {$C₁} heylo {$p} pgcl' {$C₂})
@@ -117,7 +120,17 @@ macro_rules
 | `(pgcl' { observe($b) }) => `(pGCL'.observe heylo {$b})
 | `(pgcl' { if $b then $C₁ else $C₂ end }) => `(pGCL'.ite heylo {$b} pgcl' {$C₁} pgcl' {$C₂})
 
-#check (pgcl' { y := nlog₂ (nfloor y) / 2 } : pGCL' String).pGCL
+abbrev y : Ident := ⟨"y", .ENNReal⟩
+abbrev z : Ident := ⟨"z", .Nat⟩
+
+#check (heylo { nlog₂ (nfloor y) } : HeyLo .Nat)
+#check (pgcl' { z := nlog₂ (nfloor y) } : pGCL').pGCL
+#check (heylo { y ≤ y } : HeyLo .Bool)
+
+#check heylo { ~(.Unary .NatToENNReal (.Var z.name z.type)) + [0 < z] * (↑(z + nlog₂ z)) }
+#check (heylo { ↑z + [0 < z] * ↑(z + nlog₂ z) } : HeyLo .ENNReal)
+
+abbrev n : Ident := ⟨"n", .Nat⟩
 
 #check pgcl' { while n < 10 inv [n ≤ 10] { {n := n + 2} [1/2] {n := n + 1} } }
 
@@ -129,7 +142,7 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
 | `(heylo { $c }) => pure c
 | `($a:num) => `(cheylo|$a:num)
 | `(fun $_ ↦ $a:num) => `(cheylo|$a:num)
-| `(HeyLo.Var $x:str) =>
+| `(HeyLo.Var $x:str $_) =>
     let name := mkIdent <| Name.mkSimple x.getString
     `(cheylo|$name:ident)
 | `(fun $σ ↦ $σ' $x:str) =>
@@ -196,13 +209,13 @@ def LitUnexpander : Unexpander
   | _ => `(idk)
 | _ => throw ()
 
-/-- info: heylo {~true ∧ ~true} : 𝔼b[String] -/
+/-- info: heylo {~true ∧ ~true} : 𝔼b -/
 #guard_msgs in
-#check (heylo { true ∧ true } : HeyLo String .Bool)
+#check (heylo { true ∧ true } : HeyLo .Bool)
 
-/-- info: heylo {1 + 2 = 2 ∧ ~true} : 𝔼b[String] -/
+/-- info: heylo {1 + 2 = 2 ∧ ~true} : 𝔼b -/
 #guard_msgs in
-#check (heylo { ((1 + 2) = 2) ∧ true } : HeyLo String .Bool)
+#check (heylo { ((1 + 2) = 2) ∧ true } : HeyLo .Bool)
 
 @[app_unexpander pGCL'.skip]
 def skipUnexpander : Unexpander
@@ -210,7 +223,7 @@ def skipUnexpander : Unexpander
   let name := mkIdent <| Name.mkSimple "skip"
   `(pgcl' { $name:ident })
 
-/-- info: pgcl' {skip} : pGCL' ?_ -/
+/-- info: pgcl' {skip} : pGCL' -/
 #guard_msgs in
 #check pgcl' { skip }
 
@@ -225,15 +238,17 @@ def assignUnexpander : Unexpander
   `(pgcl' { ~$name := $e })
 | _ => throw ()
 
-/-- info: pgcl' {x := x} : pGCL' String -/
+abbrev x : Ident := ⟨"x", .ENNReal⟩
+
+/-- info: pgcl' {~x := ~(Var x.name x.type)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := x }
 
-/-- info: pgcl' {x := x - 1} : pGCL' String -/
+/-- info: pgcl' {~x := ~(Var x.name x.type - 1)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := x - 1 }
 
-/-- info: pgcl' {x := 1} : pGCL' String -/
+/-- info: pgcl' {~x := ~1} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := 1 }
 
@@ -245,7 +260,7 @@ def seqUnexpander : Unexpander
   `(pgcl' { $l ; $r })
 | _ => throw ()
 
-/-- info: pgcl' {x := 1 ; skip} : pGCL' String -/
+/-- info: pgcl' {~x := ~1 ; skip} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := 1 ; skip }
 
@@ -258,7 +273,7 @@ def probUnexpander : Unexpander
   `(pgcl' { { $l } [$p] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ x := 1 } [1] { skip }} : pGCL' String -/
+/-- info: pgcl' {{ ~x := ~1 } [1] { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { { x := 1 } [1] { skip } }
 
@@ -270,7 +285,7 @@ def nonDetUnexpander : Unexpander
   `(pgcl' { { $l } [] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ x := 1 } [] { skip }} : pGCL' String -/
+/-- info: pgcl' {{ ~x := ~1 } [] { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { { x := 1 } [] { skip } }
 
@@ -284,7 +299,7 @@ def loopUnexpander : Unexpander
   `(pgcl' { while $b inv $i {$C} })
 | _ => throw ()
 
-/-- info: pgcl' {while x = 1 inv ~i[true] { skip }} : pGCL' String -/
+/-- info: pgcl' {while ~(Var x.name x.type) = 1 inv ~i[true] { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { while x = 1 inv [true] { skip } }
 
@@ -295,11 +310,11 @@ def tickUnexpander : Unexpander
   `(pgcl' { tick($r) })
 | _ => throw ()
 
-/-- info: pgcl' {tick(1)} : pGCL' ?_ -/
+/-- info: pgcl' {tick(1)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { tick(1) }
 
-/-- info: fun r ↦ pgcl' {tick(~ r)} : 𝔼r[?_] → pGCL' ?_ -/
+/-- info: fun r ↦ pgcl' {tick(~ r)} : 𝔼r → pGCL' -/
 #guard_msgs in
 #check fun r ↦ pgcl' { tick(~ r) }
 
@@ -310,7 +325,7 @@ def observeUnexpander : Unexpander
   `(pgcl' { observe($r) })
 | _ => throw ()
 
-/-- info: pgcl' {observe(~false) ; observe(~true)} : pGCL' ?_ -/
+/-- info: pgcl' {observe(~false) ; observe(~true)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { observe(false) ; observe(true) }
 
@@ -323,7 +338,7 @@ def iteUnexpander : Unexpander
   `(pgcl' { if $b then $l else $r end })
 | _ => throw ()
 
-/-- info: pgcl' {if ~false then skip else tick(1) end} : pGCL' ?_ -/
+/-- info: pgcl' {if ~false then skip else tick(1) end} : pGCL' -/
 #guard_msgs in
 #check pgcl' { if false then skip else tick(1) end }
 
