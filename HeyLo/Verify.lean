@@ -152,7 +152,7 @@ theorem ENNReal.two (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
   simp [*]
 
-def C₀ :=
+def NatLog :=
   vc[𝒟, wp]
     { ↑c + [0 < y] * ↑(y + nlog₂ y) }
       while 0 < y
@@ -162,9 +162,9 @@ def C₀ :=
       }
     { ↑c }
 
-theorem C₀.soundess : C₀.sound := by
-  apply C₀.show fun σ ↦ ?_
-  simp [C₀]
+theorem NatLog.soundess : NatLog.sound := by
+  apply NatLog.show fun σ ↦ ?_
+  simp [NatLog]
   simp [BinOp.sem, UnOp.sem, sem, Fun.sem]
   set c : ℕ := σ c; set y : ℕ := σ y
   intro c' y'
@@ -188,9 +188,9 @@ theorem C₀.soundess : C₀.sound := by
     simp [add_comm]
 
 /--
-info: 'C₀.soundess' depends on axioms: [propext, Classical.choice, Lean.ofReduceBool, Lean.trustCompiler, Quot.sound]
+info: 'NatLog.soundess' depends on axioms: [propext, Classical.choice, Lean.ofReduceBool, Lean.trustCompiler, Quot.sound]
 -/
 #guard_msgs in
-#print axioms C₀.soundess
+#print axioms NatLog.soundess
 
 -- end

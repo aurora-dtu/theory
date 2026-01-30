@@ -95,6 +95,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
   := by grind
 @[simp] theorem tick_iff : (conf₀[tick(~ r), σ] ⤳[α,p] c') ↔ p = 1 ∧ α = .N ∧ c' = conf₁[⇓, σ]
   := by grind
+open scoped Classical in
 @[simp] theorem observe_iff :
       (conf₀[observe(~b), σ] ⤳[α,p] c')
     ↔ p = 1 ∧ α = .N ∧ c' = (if b σ then conf₁[⇓, σ] else conf₁[↯, σ])
@@ -107,6 +108,7 @@ theorem of_to_fault_succ (h : c ⤳[α,p] conf₁[↯, σ]) :
         ∨ (∃ σ', (conf₀[~C₁, σ] ⤳[α,p] conf₁[⇓, σ']) ∧ c' = conf₁[~C₂, σ'])
         ∨ ((conf₀[~C₁, σ] ⤳[α,p] conf₁[↯, σ]) ∧ c' = conf₁[↯, σ] ∧ α = .N ∧ p = 1)
   := by grind
+open scoped Classical in
 @[simp] theorem loop_iff : (conf₀[while ~b {~C}, σ] ⤳[α,p] c')
     ↔ p = 1 ∧ α = .N ∧ c' = if b σ then conf₁[~C ; while ~b {~C}, σ] else conf₁[⇓, σ] := by grind
 def act (c : Conf₀ ϖ) : Set Act := {α | ∃ p c', c ⤳[α,p] c'}

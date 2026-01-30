@@ -1,6 +1,7 @@
 import MDP.OptimalCost
+import MDP.SupSup
 import PGCL.OperationalSemantics
-import PGCL.ProofRules
+-- import PGCL.ProofRules
 
 /-!
 # _probabilistic Guarded Command Language_ (pGCL)
@@ -20,12 +21,29 @@ import PGCL.ProofRules
   is equal to the weakest preexpectation.
 -/
 
-theorem pGCL.iSup_iInf_EC_eq_dwp [DecidableEq ϖ] :
-  ⨅ 𝒮, ⨆ n, (𝒪 (ϖ:=ϖ)).EC (instSSS.cost X) 𝒮 n conf[~C,σ] = dwp⟦~C⟧ X σ
-:= by
-  suffices (⨅ 𝒮, ⨆ n, MDP.EC _ _ _) conf[~C,σ] = _ by
-    simpa only [iInf_apply, iSup_apply]
-  rw [instDemonicET.det_eq_dop, SmallStepSemantics.dop]
+open scoped Optimization.Notation
+
+theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
+      ⨆ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[~C,σ]
+    = wfp'[𝒜]⟦~C⟧ X σ := by
+  rw [instET'.et_eq_op]
+  rw [SmallStepSemantics.op]
+  simp only [OrderHom.coe_mk]
+  classical
+  rw [← MDP.iSup_iSup_EC_eq_lfp_aΦ, iSup_comm]
+  simp only [iSup_apply]
+
+theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :
+      ⨅ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[~C,σ]
+    = wfp'[𝒟]⟦~C⟧ X σ := by
+  rw [instET'.et_eq_op]
+  rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
   classical
   rw [← MDP.iSup_iInf_EC_eq_lfp_dΦ, MDP.iSup_iInf_EC_eq_iInf_iSup_EC]
+  simp only [iInf_apply, iSup_apply]
+
+/-- info: 'pGCL.iSup_iSup_EC_eq_wfp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms pGCL.iSup_iSup_EC_eq_wfp
+/-- info: 'pGCL.iInf_iSup_EC_eq_wfp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms pGCL.iInf_iSup_EC_eq_wfp

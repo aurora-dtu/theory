@@ -82,14 +82,9 @@ theorem act_seq :
 attribute [simp] iInf_and
 attribute [simp] iSup_and
 
-variable {b : BExpr ϖ} [DecidablePred b] {O : Optimization}
+variable {b : BExpr ϖ} {O : Optimization}
 
 open scoped Optimization.Notation
-
--- instance : Coe (𝔼[States ϖ] →o 𝔼[States ϖ]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) where
---   coe x := x
-
--- instance : HAdd (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) := OrderHom.instHAdd
 
 @[reducible, simp]
 noncomputable instance : HAdd (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[States ϖ] →o 𝔼[States ϖ]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) where
