@@ -268,7 +268,6 @@ theorem 𝒮_x_𝒮_len_one : (𝒮_x 𝓅 (𝒮_len 𝓅 n) 1) = 𝒮_len 𝓅 
   split_ifs with h <;> try simp_all
   · ring_nf
   · contrapose h
-    simp_all
     apply Path_s₁_prior (i:=‖π‖ - 1) <;> simp_all
 
 @[simp]
@@ -429,7 +428,6 @@ theorem tsum_paths_eq_ite_tprod :
       intro π h h' h'' h'''
       simp_all [Membership.mem]
       contrapose h''
-      simp_all
       ext i h₁ h₂ <;>simp_all [π']
       exact h''' ⟨i, by omega⟩
 

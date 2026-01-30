@@ -104,7 +104,7 @@ theorem lfp_Φ_eq_iSup_succ_Φ {O : Optimization} [i : O.ΦContinuous M] :
 theorem Φ_𝒜_ωScottContinuous : ωScottContinuous (M.Φ 𝒜 c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
   simp [Φ, Φf_ωScottContinuous.map_ωSup]
-  simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt, iSup_subtype']
+  simp [ωSup, ← ENNReal.add_iSup, iSup_subtype']
   congr
   rw [iSup_comm]
 
@@ -118,9 +118,10 @@ variable [M.FiniteBranching]
 theorem Φ_𝒟_ωScottContinuous : ωScottContinuous (M.Φ 𝒟 c) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom fun c ↦ funext fun s ↦ ?_
   simp [Φ, Φf_ωScottContinuous.map_ωSup]
-  simp [ωSup, ← ENNReal.add_iSup, Optimization.sOpt_eq_opt]
+  simp [ωSup, ← ENNReal.add_iSup]
   congr
-  exact Eq.symm (Set.iSup_iInf_of_monotone fun α _ _ _ ↦ (M.Φf s α).mono (by gcongr))
+  refine Eq.symm (Set.Finite.iSup_biInf_of_monotone M.actFinite ?_)
+  intro α hα _ _ _; simp only; gcongr
 @[deprecated]
 alias dΦ_ωScottContinuous := Φ_𝒟_ωScottContinuous
 

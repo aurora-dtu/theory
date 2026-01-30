@@ -77,6 +77,11 @@ theorem 𝒜_opt {f : ι → α} : (𝒜 : Optimization).opt f = iSup f := rfl
 theorem 𝒟_opt {f : ι → α} : (𝒟 : Optimization).opt f = iInf f := rfl
 
 @[grind =, simp]
+theorem 𝒜_sOpt {S : Set ι} {f : ι → α} : (𝒜 : Optimization).sOpt S f = ⨆ α ∈ S, f α := rfl
+@[grind =, simp]
+theorem 𝒟_sOpt {S : Set ι} {f : ι → α} : (𝒟 : Optimization).sOpt S f = ⨅ α ∈ S, f α := rfl
+
+@[grind =, simp]
 theorem opt_apply {f : ι → β → α} : O.opt f s = O.opt (f · s) := by
   cases O <;> simp [opt]
 

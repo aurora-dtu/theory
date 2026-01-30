@@ -37,8 +37,7 @@ noncomputable def M : MDP State ℕ := ofRelation Step
     cases h
     · rw [tsum_eq_single (.node α)] <;> simp_all [step_iff]
     · rw [tsum_eq_single .term] <;> simp_all
-    · rw [tsum_eq_single .term] <;> simp_all
-      )
+    · rw [tsum_eq_single .term] <;> simp_all)
   (by rintro (_ | i | _) <;> simp)
 
 @[simp] noncomputable def M.cost : M.Costs

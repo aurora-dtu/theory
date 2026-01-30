@@ -4,6 +4,8 @@ import MDP.Counterexample.D
 
 namespace MDP
 
+open scoped Optimization.Notation
+
 open Counterexample.A in
 /-- There exists a (necessarily infinite branching) MDP such that the two notions of optimization
   order (`⨆⨅` vs. `⨅⨆`) is not equivalent. See `MDP.Counterexample.A.M` for an instance of such and
@@ -28,8 +30,8 @@ open Counterexample.A in
   such and MDP. -/
 theorem exists_iSup_iInf_EC_lt_lfp_Φ :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
-      ⨆ n, ⨅ 𝒮, M.EC c 𝒮 n s < M.lfp_Φ c s :=
-  ⟨_, _, _, M.cost, State.init, iSup_iInf_EC_lt_lfp_Φ⟩
+      ⨆ n, ⨅ 𝒮, M.EC c 𝒮 n s < OrderHom.lfp (M.Φ 𝒟 c) s :=
+  ⟨_, _, _, M.cost, State.init, iSup_iInf_EC_lt_lfp_dΦ⟩
 
 open Counterexample.C in
 /-- There exists a (necessarily infinite branching) MDP such that the optimal cost given by `⨅⨆`
