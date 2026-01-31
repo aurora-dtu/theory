@@ -362,8 +362,9 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
   | seq_L =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq <;> try grind
+    apply C₂.tsum_after_eq
     · simp
+    · grind
     · simp
       rintro C' σ p (⟨C'', h⟩ | h) hp
       · simp_all
@@ -372,29 +373,40 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
       · simp_all
         use p
         grind
+    · grind
+    · grind
     · simp
   | seq_R =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq <;> try grind
+    apply C₂.tsum_after_eq
     · simp
+    · grind
     · simp
       rintro C' σ p (⟨C'', h⟩ | h) hp
       on_goal 1 => left; use C'', σ
       on_goal 2 => right; use .term, σ
       all_goals simp_all; use p; grind
     · simp
+    · grind
+    · grind
   | seq_F =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq <;> try grind
+    apply C₂.tsum_after_eq
     · simp
+    · grind
     · simp
       rintro C' σ p (⟨C'', h⟩ | h) hp
       on_goal 1 => left; use C'', σ
       on_goal 2 => right; use .term, σ
-      all_goals simp_all; use p; grind
+      · simp_all only [after_eq_seq_iff, and_true]
+        use p, h.left
+      · simp_all only [after_term, and_true]
+        use p, h.left
     · simp
+    · grind
+    · grind
   | prob_L | prob_R =>
     rename_i C₁ C₂ _ σ _ _
     rw [ENNReal.tsum_eq_add_tsum_ite conf₁[~C₁,σ], ENNReal.tsum_eq_add_tsum_ite conf₁[~C₂,σ]]

@@ -17,6 +17,7 @@ def HeyLo.opt : HeyLo α → HeyLo α
   | .Binary .Impl l r => .Binary .Impl l.opt r.opt
   | .Binary .Sup l r => .Binary .Sup l.opt r.opt
   | .Binary .Inf l r => .Binary .Inf l.opt r.opt
+  | .Binary .Mod l r => .Binary .Mod l.opt r.opt
   | .Binary (.Div h) l r => .Binary (.Div h) l.opt r.opt
   | .Binary (.Mul h) l r => .Binary (.Mul h) l.opt r.opt
   | .Binary (.Sub h) l r => .Binary (.Sub h) l.opt r.opt
@@ -204,7 +205,7 @@ theorem NatLog.soundess : NatLog.sound := by
     have : y' = 0 := by omega
     subst_eqs
     ring_nf
-    simp [add_comm]
+    grind [ENNReal.two_inv_mul_two, add_comm, CharP.cast_eq_zero, zero_add]
 
 /--
 info: 'NatLog.soundess' depends on axioms: [propext, Classical.choice, Lean.ofReduceBool, Lean.trustCompiler, Quot.sound]

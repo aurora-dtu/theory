@@ -146,80 +146,20 @@ noncomputable section
 @[ext]
 theorem ext {a b : 𝔼[ϖ, α]} (h : ∀ σ, a σ = b σ) : a = b := funext h
 
--- @[coe] def ennreal_coe : ENNReal → 𝔼[ϖ, α] := fun x _ ↦ x
--- instance : Coe ENNReal (𝔼[ϖ, α]) := ⟨ennreal_coe⟩
-
--- @[grind =, simp] theorem ennreal_coe_apply : ennreal_coe x σ = x := by rfl
-
--- instance : CommSemiring (𝔼[ϖ, α]) := inferInstanceAs (CommSemiring (States ϖ → ENNReal))
--- instance : DivInvOneMonoid (𝔼[ϖ, α]) := inferInstanceAs (DivInvOneMonoid (States ϖ → ENNReal))
--- instance : Sub (𝔼[ϖ, α]) := inferInstanceAs (Sub (States ϖ → ENNReal))
--- instance : CompleteLattice (𝔼[ϖ, α]) :=
---   inferInstanceAs (CompleteLattice (States ϖ → ENNReal))
-
--- @[simp] theorem bot_eq_0 : (⊥ : 𝔼[ϖ, α]) = 0 := by rfl
--- @[grind =, simp] theorem top_apply : (⊤ : 𝔼[ϖ, α]) x = ⊤ := by rfl
-
--- @[grind =, simp] theorem zero_apply : (@OfNat.ofNat (𝔼[ϖ, α]) 0 _) x = 0 := rfl
--- @[grind =, simp] theorem one_apply : (@OfNat.ofNat (𝔼[ϖ, α]) 1 _) x = 1 := rfl
--- @[grind =, simp] theorem ofNat_apply {n : ℕ} : (n : 𝔼[ϖ, α]) x = n := rfl
--- @[grind =, simp] theorem ofNat_apply' [Nat.AtLeastTwo n] :
---     @OfNat.ofNat (𝔼[ϖ, α]) n instOfNatAtLeastTwo x = n := rfl
-
--- instance instSubstitution {α : Type} [DecidableEq 𝒱] : Substitution (States ϖ → α) (States ϖ → ϖ ·) where
---   subst X := fun x σ ↦ X (σ[x.1 ↦ x.2 σ])
-
 variable [DecidableEq 𝒱] in
 instance States.instSubstitution' : Substitution ((s : 𝒱) → ϖ s) ϖ := States.instSubstitution
 
--- variable [DecidableEq 𝒱] in
--- example : sorry := by
---   let h := States.instSubstitution (ϖ:=ϖ)
---   simp [States] at h
---   sorry
-
--- instance instSubstitution {α : Type} [DecidableEq 𝒱] : Substitution 𝔼[ϖ, α] (𝔼[ϖ, ϖ ·]) where
---   subst X := fun x σ ↦ X (σ[x.1 ↦ x.2 σ])
--- instance instSubst_ennreal [DecidableEq 𝒱] : Subst (𝔼[ϖ, α]) ϖ (fun _ ↦ ENNReal) where
---   subst X x A := X[x ↦ (A : 𝔼[ϖ, α])]
--- instance instSubst_nat [DecidableEq 𝒱] : Subst (𝔼[ϖ, α]) ϖ (fun _ ↦ ℕ) where
---   subst X x A := X[x ↦ (A : 𝔼[ϖ, α])]
 theorem subst₀_apply [DecidableEq 𝒱] {b : 𝔼[ϖ, α]} : Substitution.subst b x σ = b σ[x.1 ↦ x.2 σ] :=
   rfl
-
--- @[grind =, simp] theorem subst_ennreal_eq [DecidableEq 𝒱] {X : 𝔼[ϖ, α]} {x : 𝒱} {A : ENNReal} :
---     X[x ↦ ↑A] = X[x ↦ (A : 𝔼[ϖ, α])] := rfl
--- @[grind =, simp] theorem subst_nat_eq [DecidableEq 𝒱] {X : 𝔼[ϖ, α]} {x : 𝒱} {A : ℕ} :
---     X[x ↦ ↑A] = X[x ↦ (A : 𝔼[ϖ, α])] := rfl
 
 section
 
 variable {a b : 𝔼[ϖ, α]}
 
--- @[grind =, simp] theorem add_apply : (a + b) x = a x + b x := rfl
--- @[grind =, simp] theorem sub_apply : (a - b) x = a x - b x := rfl
--- @[grind =, simp] theorem mul_apply : (a * b) x = a x * b x := rfl
--- @[grind =, simp] theorem div_apply : (a / b) x = a x / b x := rfl
--- @[grind =, simp] theorem max_apply : (a ⊔ b) x = a x ⊔ b x := rfl
--- @[grind =, simp] theorem min_apply : (a ⊓ b) x = a x ⊓ b x := rfl
--- @[simp] theorem iSup_apply (f : ι → 𝔼[ϖ, α]) : (⨆ i, f i) x = ⨆ i, f i x := _root_.iSup_apply
--- @[simp] theorem iInf_apply (f : ι → 𝔼[ϖ, α]) : (⨅ i, f i) x = ⨅ i, f i x := _root_.iInf_apply
-
 instance [Add α] [LE α] [AddLeftMono α] : AddLeftMono 𝔼[ϖ, α] := ⟨fun a b c h σ ↦ by
   simp only [Pi.add_apply]; gcongr; apply h⟩
 instance [Add α] [LE α] [AddRightMono α] : AddRightMono 𝔼[ϖ, α] := ⟨fun a b c h σ ↦ by
   simp only [Function.swap, Pi.add_apply]; gcongr; apply h⟩
-
--- @[gcongr]
--- theorem div_le_div {a b c d : 𝔼[ϖ, α]} (hac : a ≤ c) (hdb : d ≤ b) :
---     a / b ≤ c / d := by
---   intro σ; simp; gcongr <;> apply_assumption
-
--- @[grind =, simp] theorem inv_apply {X : 𝔼[ϖ, α]} : X⁻¹ σ = (X σ)⁻¹ := by rfl
--- @[grind =, simp] theorem pow_apply {X : 𝔼[ϖ, α]} {n : ℕ} : (X^n) σ = (X σ)^n := by rfl
-
--- @[simp] theorem one_sub_one : (1 : 𝔼[ϖ, α]) - 1 = 0 := by ext; simp
--- @[grind =, simp] theorem sub_zero : (x : 𝔼[ϖ, α]) - 0 = x := by ext; simp
 
 variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[ϖ, α]}
 
@@ -654,36 +594,32 @@ noncomputable instance : CompleteLattice (ProbExp ϖ) where
   bot_le := by simp; intro; apply zero_le
 
 @[simp]
+theorem sSup_apply (S : Set (ProbExp ϖ)) : sSup S x = ⨆ s ∈ S, s x := by
+  rw [sSup]
+  simp only [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice,
+    CompleteLattice.toCompleteSemilatticeSup, coe_apply, iSup_apply]
+  rfl
+@[simp]
+theorem sInf_apply (S : Set (ProbExp ϖ)) (hS : S.Nonempty) : sInf S x = ⨅ s ∈ S, s x := by
+  rw [sInf]
+  simp only [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice,
+    CompleteLattice.toCompleteSemilatticeInf, coe_apply]
+  have : ¬S = ∅ := Set.nonempty_iff_ne_empty.mp hS
+  simp_all only [↓reduceIte, iInf_apply]
+  rfl
+
+@[simp]
 theorem iSup_apply (f : ι → ProbExp ϖ) : (⨆ i, f i) x = ⨆ i, f i x := by
   rw [iSup]
-  simp [instCompleteLattice, CompleteLattice.toConditionallyCompleteLattice]
-  apply le_antisymm
-  · simp
-    intro i
-    apply le_iSup_of_le i
-    rfl
-  · simp
-    intro i
-    apply le_iSup₂_of_le (f i) i
-    simp; rfl
+  simp only [sSup_apply, Set.mem_range, iSup_exists]
+  rw [iSup_comm]
+  simp only [iSup_iSup_eq_right]
 @[simp]
 theorem iInf_apply [Nonempty ι] (f : ι → ProbExp ϖ) : (⨅ i, f i) x = ⨅ i, f i x := by
-  rw [iInf]
-  simp [instCompleteLattice, CompleteLattice.toConditionallyCompleteLattice]
-  apply le_antisymm
-  · simp; intro i; apply iInf₂_le_of_le (f i) i; simp; rfl
-  · simp_all; intro i; apply iInf_le_of_le i; rfl
-@[grind =, simp]
-theorem sSup_apply (S : Set (ProbExp ϖ)) : sSup S x = ⨆ i : S, i.val x := by
-  simp [instCompleteLattice, CompleteLattice.toConditionallyCompleteLattice]
-  exact iSup_subtype'
-@[grind =, simp]
-theorem sInf_apply (S : Set (ProbExp ϖ)) [Nonempty S] : sInf S x = ⨅ i : S, i.val x := by
-  simp [instCompleteLattice, CompleteLattice.toConditionallyCompleteLattice]
-  split_ifs
-  · simp_all
-  · simp_all
-    exact iInf_subtype'
+  rw [iInf, sInf_apply _ (Set.range_nonempty fun i ↦ f i)]
+  simp only [Set.mem_range, iInf_exists]
+  rw [iInf_comm]
+  simp only [iInf_iInf_eq_right]
 @[grind =, simp] theorem sup_apply {f g : ProbExp ϖ} : (f ⊔ g) σ = f σ ⊔ g σ := rfl
 @[grind =, simp] theorem inf_apply {f g : ProbExp ϖ} : (f ⊓ g) σ = f σ ⊓ g σ := rfl
 @[grind =, simp] theorem sup_coe_apply {f g : ProbExp ϖ} : (f ⊔ g).val σ = f σ ⊔ g σ := rfl

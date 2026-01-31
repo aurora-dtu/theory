@@ -209,7 +209,7 @@ theorem take_last_nat : (π.take n).last = π[min n (‖π‖ - 1)] := by simp [
 @[grind, simp]
 theorem take_last_nat' (h : n < ‖π‖) : (π.take n).last = π[n] := by simp [take]; congr; omega
 @[grind, simp]
-theorem take_last (n : Fin ‖π‖) : (π.take n).last = π[n] := by simp [take]; congr; omega
+theorem take_last (n : Fin ‖π‖) : (π.take n).last = π[n] := by simp [take]
 @[grind, simp]
 theorem take_last' (n : Fin (‖π‖ - 1)) : (π.take n).last = π[n] := by simp [take]; congr; omega
 @[grind, simp]
@@ -260,7 +260,7 @@ theorem extend_take_length_pred_eq_prev : (π.extend s).take (‖π‖ - 1) = π
   simp [take, extend]
 @[grind, simp]
 theorem extend_take (i : Fin ‖π‖) : (π.extend s).take i = π.take i := by
-  simp [extend, take]; omega
+  simp [extend, take]
 @[grind, simp]
 theorem extend_take' (i : Fin (‖π‖ - 1)) : (π.extend s).take i = π.take i := by
   simp [extend, take]; omega

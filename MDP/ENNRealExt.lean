@@ -1,3 +1,4 @@
+import Mathlib.Topology.Algebra.InfiniteSum.ENNReal
 import Mathlib.Topology.Instances.ENNReal.Lemmas
 
 /-!
