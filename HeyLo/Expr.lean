@@ -86,9 +86,8 @@ inductive BinOp : Ty → Ty → Type where
   | Mul : {α : Ty} → α.Arith → BinOp α α
   /-- The `/` operator (divison). -/
   | Div : {α : Ty} → α.Arith → BinOp α α
-  -- NOTE: This does not really make sense when we only have ENNReals and no integers
-  -- /-- The `%` operator (modulo). -/
-  -- | Mod : BinOp ENNReal ENNReal
+  /-- The `%` operator (modulo). -/
+  | Mod : BinOp Nat Nat
   /-- The `&&` operator (logical and). -/
   | And : BinOp Bool Bool
   /-- The `||` operator (logical or). -/
@@ -118,26 +117,26 @@ deriving Lean.ToExpr, DecidableEq
 #check eval% @BinOp.Lt .ENNReal .yes
 
 inductive UnOp : Ty → Ty → Type where
-  /- The `!` operator (negation). -/
+  /-- The `!` operator (negation). -/
   | Not : UnOp α α
-  /- The `~` operator (dual of negation), -/
+  /-- The `~` operator (dual of negation), -/
   | Non : UnOp ENNReal ENNReal
-  /- Boolean embedding (maps true to top in the lattice). -/
+  /-- Boolean embedding (maps true to top in the lattice). -/
   | Embed : UnOp Bool ENNReal
-  /- Iverson bracket (maps true to 1). -/
+  /-- Iverson bracket (maps true to 1). -/
   | Iverson : UnOp Bool ENNReal
-  /- Cast Nat to ENNReal -/
+  /-- Cast Nat to ENNReal -/
   | NatToENNReal : UnOp Nat ENNReal
 deriving Lean.ToExpr, DecidableEq
 
 inductive QuantOp : Ty → Type where
-  /- The infimum of a set. -/
+  /-- The infimum of a set. -/
   | Inf : QuantOp ENNReal
-  /- The supremum of a set. -/
+  /-- The supremum of a set. -/
   | Sup : QuantOp ENNReal
-  /- Boolean forall (equivalent to `Inf` on the lattice of booleans). -/
+  /-- Boolean forall (equivalent to `Inf` on the lattice of booleans). -/
   | Forall : QuantOp Bool
-  /- Boolean exists (equivalent to `Sup` on the lattice of booleans). -/
+  /-- Boolean exists (equivalent to `Sup` on the lattice of booleans). -/
   | Exists : QuantOp Bool
 deriving Lean.ToExpr, DecidableEq
 
@@ -178,15 +177,15 @@ instance : Lean.ToExpr NNRat where
   toTypeExpr := .const ``NNRat []
 
 inductive Literal : Ty → Type where
-  -- /- A string literal (`"something"`). -/
+  -- /-- A string literal (`"something"`). -/
   -- | Str : Ident → Literal Ident
-  /- An unsigned integer literal (`123`). -/
+  /-- An unsigned integer literal (`123`). -/
   | UInt : {α : Ty} → (h : α.Arith) → Nat → Literal α
-  /- A number literal represented by a fraction. -/
+  /-- A number literal represented by a fraction. -/
   | Frac : NNRat → Literal ENNReal
-  /- Infinity, -/
+  /-- Infinity, -/
   | Infinity : Literal ENNReal
-  /- A boolean literal. -/
+  /-- A boolean literal. -/
   | Bool : Bool → Literal Bool
 deriving DecidableEq, Lean.ToExpr
 
@@ -202,42 +201,26 @@ end HeyLo
 
 open HeyLo HeyLo.Ty in
 inductive HeyLo : Ty → Type where
-  -- /- A variable. -/
-  -- | Var : Ident → HeyLo ENNReal
-  /- A call to a procedure or function. -/
+  /-- A call to a procedure or function. -/
   | Call : {α β : Ty} → Fun α β → HeyLo α → HeyLo β
-  -- /- Boolean if-then-else -/
-  -- | Ite : HeyLo Bool → HeyLo ENNReal → HeyLo ENNReal → HeyLo ENNReal
   | Unary : UnOp α β → HeyLo α → HeyLo β
   | Binary : BinOp α β → HeyLo α → HeyLo α → HeyLo β
-  -- /- Type casting. -/
-  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
-  -- /- A quantifier over some variables. -/
-  -- | Quant : QuantOp → Ident → HeyLo ENNReal → HeyLo ENNReal
-  -- /- A substitution. -/
-  -- | Subst : Ident → HeyLo ENNReal → HeyLo ENNReal → HeyLo ENNReal
-  /- A value literal. -/
-  -- /- A de Bruijn index. -/
-  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
--- deriving Lean.ToExpr, Inhabited
-
-  /- A variable. -/
+  /-- A variable. -/
   | Var : String → (α : Ty) → HeyLo α
-  -- /- A call to a procedure or function. -/
-  -- | Call : Ident → List HeyLo ENNReal → HeyLo ENNReal
-  /- Boolean if-then-else -/
+  /-- Boolean if-then-else -/
   | Ite : HeyLo Bool → HeyLo α → HeyLo α → HeyLo α
-  -- /- Type casting. -/
-  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
-  /- A quantifier over some variables. -/
+  /-- A quantifier over some variables. -/
   | Quant : QuantOp α → Ident → HeyLo α → HeyLo α
-  /- A substitution. -/
+  /-- A substitution. -/
   | Subst : (v : Ident) → HeyLo v.type → HeyLo α → HeyLo α
-  /- A value literal. -/
+  /-- A value literal. -/
   | Lit : Literal α → HeyLo α
-  -- /- A de Bruijn index. -/
-  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
 deriving Lean.ToExpr, DecidableEq
+
+  -- /-- Type casting. -/
+  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
+  -- /-- A de Bruijn index. -/
+  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
 
 open HeyLo
 
@@ -319,6 +302,7 @@ noncomputable def HeyLo.BinOp.sem
   | .Eq => fun σ ↦ l σ = r σ
   | .Or => fun σ ↦ l σ ∨ r σ
   | .And => fun σ ↦ l σ ∧ r σ
+  | .Mod => fun σ ↦ l σ % r σ
   | .Div h => match β with | .ENNReal | .Nat => l / r
   | .Mul h => match β with | .ENNReal | .Nat => l * r
   | .Sub h => match β with | .ENNReal | .Nat => l - r
@@ -358,34 +342,10 @@ noncomputable def HeyLo.QuantOp.sem (op : HeyLo.QuantOp α) (x : Ident) (m : α.
   | .Forall => ⨅ (v : x.type.lit), m[x ↦ fun _ ↦ v]
   | .Exists => ⨆ (v : x.type.lit), m[x ↦ fun _ ↦ v]
 
--- theorem HeyLo.iSup_sem_eq_iSup_exp [DecidableEq 𝒱] {x : Ident} :
---     HeyLo.QuantOp.Sup.sem x e = ⨆ (v : Exp ϖ), e[x ↦ ↑v] := by
---   ext σ
---   simp [QuantOp.sem]
---   apply le_antisymm
---   · refine iSup_mono' ?_
---     intro v
---     use v
---     rfl
---   · refine iSup_mono' ?_
---     intro v
---     use v σ
 @[simp]
 theorem HeyLo.QuantOp.Sup_sem_eq_iSup_ennreal [DecidableEq 𝒱] {x : Ident} :
     HeyLo.QuantOp.Sup.sem x e = ⨆ (v : x.type.lit), e[x ↦ fun _ ↦ v] := by
   rfl
--- theorem HeyLo.iInf_sem_eq_iInf_exp [DecidableEq 𝒱] {x : Ident} :
---     HeyLo.QuantOp.Inf.sem x e = ⨅ (v : Exp ϖ), e[x ↦ ↑v] := by
---   ext σ
---   simp [QuantOp.sem]
---   apply le_antisymm
---   · refine iInf_mono' ?_
---     intro v
---     use v σ
---   · refine iInf_mono' ?_
---     intro v
---     use v
---     rfl
 @[simp]
 theorem HeyLo.QuantOp.Sup_sem_eq_iInf_ennreal {x : Ident} :
     HeyLo.QuantOp.Inf.sem x e = ⨅ (v : x.type.lit), e[x ↦ fun _ ↦ v] := by
@@ -415,7 +375,6 @@ noncomputable def HeyLo.sem (X : HeyLo α) : α.expr :=
   | .Var x α => fun σ ↦ σ ⟨x, α⟩
   | .Unary op m => op.sem m.sem
 
--- @[grind =, simp]
 theorem QuantOp.Forall_sem_aux : (QuantOp.sem .Forall x m) σ = ∀ v, m[x ↦ v] σ := by
   simp [QuantOp.sem]
   exact { mp := fun a v ↦ a (v σ), mpr := fun a x ↦ a fun {σ} ↦ x }
@@ -439,16 +398,8 @@ theorem QuantOp.Exists_sem :
   simp
   use fun _ ↦ y
 
--- @[reducible]
--- instance {α : Ty} : FunLike (α.expr) (States Ty.ϖ) α.lit :=
---   match α with
---   | .Bool => {coe := id, coe_injective' := fun _ _ a ↦ a}
---   | .ENNReal => {coe := id, coe_injective' := fun _ _ a ↦ a}
---   | .Nat => {coe := id, coe_injective' := fun _ _ a ↦ a}
-
 attribute [simp] Ty.expr
 attribute [simp] Ty.lit
--- attribute [simp] instFunLikeExprStatesIdentLitType
 
 @[grind =, simp]
 theorem HeyLo.Sup_sem_eq_iSup_ennreal {x : Ident} :
@@ -572,7 +523,6 @@ theorem Distribution.bin_toExpr {a b : 𝔼r} :
   simp [bin, toExpr]
 
 inductive HeyVL where
-  --
   | Assign (x : Ident) (μ : Distribution x.type)
   | Reward (a : 𝔼r)
   | Seq (S₁ S₂ : HeyVL)
@@ -588,12 +538,11 @@ inductive HeyVL where
   | Coassume (φ : 𝔼r)
   | Cohavoc (x : Ident)
   | Covalidate
--- deriving Lean.ToExpr
+deriving Lean.ToExpr
 
 def HeyVL.vp (C : HeyVL) : 𝔼r → 𝔼r := fun φ ↦
   match C with
-  --
-  | .Assign x μ => μ.map (fun v ↦ φ[x ↦ v]) |>.toExpr
+  | .Assign x μ => μ.map (φ[x ↦ ·]) |>.toExpr
   | .Reward a => φ + a
   | .Seq S₁ S₂ => S₁.vp (S₂.vp φ)
   --

@@ -1036,9 +1036,7 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
     if r.sem σ then simp_all [Iverson.iver] else simp_all
 
 theorem pGCL'.wp_le_vp {C : pGCL'} :
-    wp[O]⟦~C.pGCL⟧ φ.sem ≤ (C.vp O .Lower φ).sem := by
-  apply wp_le_vp_aux
-  rfl
+    wp[O]⟦~C.pGCL⟧ φ.sem ≤ (C.vp O .Lower φ).sem := wp_le_vp_aux (by rfl)
 
 /-- info: 'pGCL'.wp_le_vp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
