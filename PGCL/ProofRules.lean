@@ -7,7 +7,7 @@ import ENNRealArith
 
 namespace pGCL
 
-variable {ϖ : Type*} [DecidableEq ϖ]
+variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
 
 open OrderHom
 open Optimization.Notation
@@ -16,7 +16,7 @@ open Optimization.Notation
   is one is. -/
 def AST (C : pGCL ϖ) : Prop := C.st.dwp 1 = 1
 
-noncomputable def cwp (O : Optimization) (C : pGCL ϖ) : Exp ϖ →o Exp ϖ :=
+noncomputable def cwp (O : Optimization) (C : pGCL ϖ) : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
   ⟨(wp[O]⟦~C⟧ · / wlp[O]⟦~C⟧ 1),
     fun a b hab σ ↦ ENNReal.div_le_div ((wp _ _).monotone hab _) (by rfl)⟩
 
@@ -39,10 +39,10 @@ theorem park_coinduction {O: Optimization} {b : BExpr ϖ} {C : pGCL ϖ} {f}
     (I) (h : I ≤ p[b].pickProb (wlp[O]⟦~C⟧ I) f) : wlp[O]⟦while ~b { ~C }⟧ f ≥ I :=
   le_gfp _ (by simp; exact h)
 
-noncomputable def Ψ (f : Exp ϖ) (Φ : Exp ϖ →o Exp ϖ) : Exp ϖ →o Exp ϖ :=
+noncomputable def Ψ (f : 𝔼[ϖ, ENNReal]) (Φ : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
   ⟨(Φ · ⊓ f), fun a b hab ↦ by simp; refine inf_le_of_left_le (Φ.mono hab)⟩
 
-def Ψ_iter_antitone (f : Exp ϖ) (Φ : Exp ϖ →o Exp ϖ) : Antitone ((Ψ f Φ)^[·] f) := by
+def Ψ_iter_antitone (f : 𝔼[ϖ, ENNReal]) (Φ : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) : Antitone ((Ψ f Φ)^[·] f) := by
   refine antitone_nat_of_succ_le fun n ↦ ?_
   induction n with
   | zero => simp [Ψ]
@@ -51,7 +51,7 @@ def Ψ_iter_antitone (f : Exp ϖ) (Φ : Exp ϖ →o Exp ϖ) : Antitone ((Ψ f Φ
     gcongr
 
 omit [DecidableEq ϖ] in
-theorem k_induction_park (Φ : Exp ϖ →o Exp ϖ) (f) (k) :
+theorem k_induction_park (Φ : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (f) (k) :
     Φ ((Ψ f Φ)^[k] f) ≤ f ↔ Φ ((Ψ f Φ)^[k] f) ≤ (Ψ f Φ)^[k] f := by
   constructor
   · intro h
@@ -68,12 +68,12 @@ theorem k_induction_park (Φ : Exp ϖ →o Exp ϖ) (f) (k) :
     | succ k ih => simp_all only [Function.iterate_succ', Function.comp_apply, inf_le_right]
 
 omit [DecidableEq ϖ] in
-theorem k_induction {Φ : Exp ϖ →o Exp ϖ} {f} (k : ℕ) (h : Φ ((Ψ f Φ)^[k] f) ≤ f) :
+theorem k_induction {Φ : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} {f} (k : ℕ) (h : Φ ((Ψ f Φ)^[k] f) ≤ f) :
     lfp Φ ≤ f :=
   (lfp_le Φ ((k_induction_park Φ f k).mp h)).trans (Ψ_iter_antitone f Φ (by omega : 0 ≤ k))
 
 omit [DecidableEq ϖ] in
-theorem k_coinduction {Φ : Exp ϖ →o Exp ϖ} {f} (k : ℕ) (h : f ≤ Φ ((Ψ f Φ)^[k] f)) :
+theorem k_coinduction {Φ : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} {f} (k : ℕ) (h : f ≤ Φ ((Ψ f Φ)^[k] f)) :
     f ≤ gfp Φ := by
   sorry
   -- apply le_trans h; clear h
@@ -92,11 +92,11 @@ theorem k_coinduction {Φ : Exp ϖ →o Exp ϖ} {f} (k : ℕ) (h : f ≤ Φ ((Ψ
   -- (gfp_le Φ ((k_induction_park Φ f k).mp h)).trans (Ψ_iter_antitone f Φ (by omega : 0 ≤ k))
 
 theorem park_k_induction {O: Optimization} {b : BExpr ϖ} [DecidablePred b] {C : pGCL ϖ} {f} (k : ℕ)
-    (I : Exp ϖ) (h : Φ O b C f ((fun x ↦ (i[b] * wp[O]⟦~C⟧ x + i[b.not] * f) ⊓ I)^[k] I) ≤ I) :
+    (I : 𝔼[ϖ, ENNReal]) (h : Φ O b C f ((fun x ↦ (i[b] * wp[O]⟦~C⟧ x + i[b.not] * f) ⊓ I)^[k] I) ≤ I) :
     wp[O]⟦while ~b { ~C }⟧ f ≤ I := k_induction k h
 
-theorem park_k_coinduction {O: Optimization} {b : BExpr ϖ} [DecidablePred b] {C : pGCL ϖ} {f : ProbExp ϖ} (k : ℕ)
-    (I : ProbExp ϖ) (h : fΦ' O b C f ((fun x ↦ (p[b] * wlp[O]⟦~C⟧ x + p[b.not] * f) ⊓ I)^[k] I) ≤ I) :
+theorem park_k_coinduction {O: Optimization} {b : BExpr ϖ} [DecidablePred b] {C : pGCL ϖ} {f : Prob𝔼[ϖ, ENNReal]} (k : ℕ)
+    (I : Prob𝔼[ϖ, ENNReal]) (h : fΦ' O b C f ((fun x ↦ (p[b] * wlp[O]⟦~C⟧ x + p[b.not] * f) ⊓ I)^[k] I) ≤ I) :
     I ≤ wlp[O]⟦while ~b { ~C }⟧ f := sorry
 
 -- /-- Park induction -/
@@ -182,7 +182,7 @@ theorem _root_.ENNReal.sub_inv_ne_zero {n : ENNReal} (h : 1 < n) : 1 - n ⁻¹ �
   refine pos_iff_ne_zero.mp ?_
   simp [h]
 
--- theorem Exp.div_le_iff_le_mul {a b c : Exp ϖ} (hb0 : b ≠ 0 ∨ c ≠ ⊤) (hbt : b ≠ ⊤ ∨ c ≠ 0) :
+-- theorem Exp.div_le_iff_le_mul {a b c : 𝔼[ϖ, ENNReal]} (hb0 : b ≠ 0 ∨ c ≠ ⊤) (hbt : b ≠ ⊤ ∨ c ≠ 0) :
 --     a / b ≤ c ↔ a ≤ c * b := by
 --   constructor
 --   · intro h σ; specialize h σ
@@ -198,17 +198,17 @@ theorem _root_.ENNReal.sub_inv_ne_zero {n : ENNReal} (h : 1 < n) : 1 - n ⁻¹ �
 --     simp_all
 --     rw [Exp.div_le_iff_le_mul]
 
-@[simp] theorem BExpr.iver_subst {b : BExpr ϖ} {x : ϖ} {e : Exp ϖ} : i[b][x ↦ e] = i[b[x ↦ e]] :=
+@[simp] theorem BExpr.iver_subst {b : BExpr ϖ} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} : i[b][x ↦ e] = i[b[x ↦ e]] :=
   rfl
-@[simp] theorem BExpr.probOf_subst {b : BExpr ϖ} {x : ϖ} {e : Exp ϖ} : p[b][x ↦ e] = p[b[x ↦ e]] :=
+@[simp] theorem BExpr.probOf_subst {b : BExpr ϖ} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} : p[b][x ↦ e] = p[b[x ↦ e]] :=
   rfl
-@[simp] theorem BExpr.eq_subst {l r : Exp ϖ} {x : ϖ} {e : Exp ϖ} :
+@[simp] theorem BExpr.eq_subst {l r : 𝔼[ϖ, ENNReal]} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} :
   (BExpr.eq l r)[x ↦ e] = BExpr.eq l[x ↦ e] r[x ↦ e] := rfl
-@[simp] theorem BExpr.and_subst {l r : BExpr ϖ} {x : ϖ} {e : Exp ϖ} :
+@[simp] theorem BExpr.and_subst {l r : BExpr ϖ} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} :
   (BExpr.and l r)[x ↦ e] = BExpr.and l[x ↦ e] r[x ↦ e] := rfl
-@[simp] theorem BExpr.not_subst {l : BExpr ϖ} {x : ϖ} {e : Exp ϖ} :
+@[simp] theorem BExpr.not_subst {l : BExpr ϖ} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} :
   (BExpr.not l)[x ↦ e] = BExpr.not l[x ↦ e] := rfl
-@[simp] theorem Exp.const_subst {y : ϖ} {x : ϖ} {e : Exp ϖ} :
+@[simp] theorem Exp.const_subst {y : ϖ} {x : ϖ} {e : 𝔼[ϖ, ENNReal]} :
     (Exp.const y)[x ↦ e] = if x = y then e else Exp.const y := by
   ext; simp; split_ifs <;> simp_all [const]
 
@@ -217,8 +217,8 @@ omit [DecidableEq ϖ] in
 
 @[simp] theorem BExpr.true_apply : (true : BExpr ϖ) σ ↔ true := by rfl
 @[simp] theorem BExpr.false_apply : (false : BExpr ϖ) σ ↔ false := by rfl
-@[simp] theorem BExpr.true_subst {x : ϖ} {A : Exp ϖ} : (true : BExpr ϖ)[x ↦ A] = true := by rfl
-@[simp] theorem BExpr.false_subst {x : ϖ} {A : Exp ϖ} : (false : BExpr ϖ)[x ↦ A] = false := by rfl
+@[simp] theorem BExpr.true_subst {x : ϖ} {A : 𝔼[ϖ, ENNReal]} : (true : BExpr ϖ)[x ↦ A] = true := by rfl
+@[simp] theorem BExpr.false_subst {x : ϖ} {A : 𝔼[ϖ, ENNReal]} : (false : BExpr ϖ)[x ↦ A] = false := by rfl
 
 @[simp] theorem BExpr.false_and {x : BExpr ϖ} : BExpr.and false x = false := by ext; simp
 @[simp] theorem BExpr.true_and {x : BExpr ϖ} : BExpr.and true x = x := by ext; simp
@@ -227,41 +227,41 @@ omit [DecidableEq ϖ] in
 @[simp] theorem BExpr.not_false : BExpr.not (false : BExpr ϖ) = true := by ext; simp
 @[simp] theorem BExpr.not_true : BExpr.not (true : BExpr ϖ) = false := by ext; simp
 
-@[simp] theorem BExpr.eq_of {a b : Exp ϖ} (h : a = b) : BExpr.eq a b = true := by
+@[simp] theorem BExpr.eq_of {a b : 𝔼[ϖ, ENNReal]} (h : a = b) : BExpr.eq a b = true := by
   subst_eqs; ext; simp
-@[simp] theorem BExpr.neq_of {a b : Exp ϖ} (h : ∀ σ, a σ ≠ b σ) : BExpr.eq a b = false := by
+@[simp] theorem BExpr.neq_of {a b : 𝔼[ϖ, ENNReal]} (h : ∀ σ, a σ ≠ b σ) : BExpr.eq a b = false := by
   ext σ; simp; contrapose! h; use σ
 
-@[simp] theorem BExpr.iver_true : (i[true] : Exp ϖ) = 1 := by rfl
-@[simp] theorem BExpr.iver_false : (i[false] : Exp ϖ) = 0 := by rfl
-@[simp] theorem BExpr.probOf_true : (p[true] : ProbExp ϖ) = 1 := by rfl
-@[simp] theorem BExpr.probOf_false : (p[false] : ProbExp ϖ) = 0 := by rfl
+@[simp] theorem BExpr.iver_true : (i[true] : 𝔼[ϖ, ENNReal]) = 1 := by rfl
+@[simp] theorem BExpr.iver_false : (i[false] : 𝔼[ϖ, ENNReal]) = 0 := by rfl
+@[simp] theorem BExpr.probOf_true : (p[true] : Prob𝔼[ϖ, ENNReal]) = 1 := by rfl
+@[simp] theorem BExpr.probOf_false : (p[false] : Prob𝔼[ϖ, ENNReal]) = 0 := by rfl
 
-@[simp] theorem wtf {x : ϖ} {e : Exp ϖ} : (@OfNat.ofNat (Exp ϖ) 2 instOfNatAtLeastTwo)[x ↦ e] = 2 := by rfl
-@[simp] theorem wtf₃ {x : ϖ} {e : Exp ϖ} : (3 : Exp ϖ)[x ↦ e] = 3 := by rfl
-@[simp] theorem wtf₈ {x : ϖ} {e : Exp ϖ} : (8 : Exp ϖ)[x ↦ e] = 8 := by rfl
-@[simp] theorem wtf'₂ : 2⁻¹ ⊓ (1 : Exp ϖ) = 2⁻¹ := by ext σ; simp
-@[simp] theorem wtf'₃ : 3⁻¹ ⊓ (1 : Exp ϖ) = 3⁻¹ := by ext σ; simp
-@[simp] theorem wtf'₈ : 8⁻¹ ⊓ (1 : Exp ϖ) = 8⁻¹ := by ext σ; simp
-@[simp] theorem Exp.one_sub_half : (1 : Exp ϖ) - 2⁻¹ = 2⁻¹ := by
+@[simp] theorem wtf {x : ϖ} {e : 𝔼[ϖ, ENNReal]} : (@OfNat.ofNat (𝔼[ϖ, ENNReal]) 2 instOfNatAtLeastTwo)[x ↦ e] = 2 := by rfl
+@[simp] theorem wtf₃ {x : ϖ} {e : 𝔼[ϖ, ENNReal]} : (3 : 𝔼[ϖ, ENNReal])[x ↦ e] = 3 := by rfl
+@[simp] theorem wtf₈ {x : ϖ} {e : 𝔼[ϖ, ENNReal]} : (8 : 𝔼[ϖ, ENNReal])[x ↦ e] = 8 := by rfl
+@[simp] theorem wtf'₂ : 2⁻¹ ⊓ (1 : 𝔼[ϖ, ENNReal]) = 2⁻¹ := by ext σ; simp
+@[simp] theorem wtf'₃ : 3⁻¹ ⊓ (1 : 𝔼[ϖ, ENNReal]) = 3⁻¹ := by ext σ; simp
+@[simp] theorem wtf'₈ : 8⁻¹ ⊓ (1 : 𝔼[ϖ, ENNReal]) = 8⁻¹ := by ext σ; simp
+@[simp] theorem Exp.one_sub_half : (1 : 𝔼[ϖ, ENNReal]) - 2⁻¹ = 2⁻¹ := by
   ext σ; simp
-@[simp] theorem ProbExp.one_sub_half : (1 : ProbExp ϖ) - ProbExp.inv 2 = ProbExp.inv 2 := by
+@[simp] theorem ProbExp.one_sub_half : (1 : Prob𝔼[ϖ, ENNReal]) - ProbExp.inv 2 = ProbExp.inv 2 := by
   ext σ; simp
 
-@[simp] theorem ProbExp.inf_subst {X Y : ProbExp ϖ} {x : ϖ} {A : Exp ϖ} :
+@[simp] theorem ProbExp.inf_subst {X Y : Prob𝔼[ϖ, ENNReal]} {x : ϖ} {A : 𝔼[ϖ, ENNReal]} :
     (X ⊓ Y)[x ↦ A] = X[x ↦ A] ⊓ Y[x ↦ A] := by rfl
-@[simp] theorem ProbExp.mul_inf {s X Y : ProbExp ϖ} :
+@[simp] theorem ProbExp.mul_inf {s X Y : Prob𝔼[ϖ, ENNReal]} :
     s * (X ⊓ Y) = s * X ⊓ s * Y := by ext; simp [mul_min]
-@[simp] theorem ProbExp.mul_le_left {s X : ProbExp ϖ} :
+@[simp] theorem ProbExp.mul_le_left {s X : Prob𝔼[ϖ, ENNReal]} :
     s * X ≤ X := by intro σ; simp; exact mul_le_of_le_one_left' (le_one s σ)
-@[simp] theorem ProbExp.mul_le_right {s X : ProbExp ϖ} :
+@[simp] theorem ProbExp.mul_le_right {s X : Prob𝔼[ϖ, ENNReal]} :
     X * s ≤ X := by intro σ; simp; exact mul_le_of_le_one_right' (le_one s σ)
-@[simp] theorem ProbExp.inf_mul_right {s X : ProbExp ϖ} :
+@[simp] theorem ProbExp.inf_mul_right {s X : Prob𝔼[ϖ, ENNReal]} :
     X ⊓ X * s = X * s := by ext; simp
 
 @[simp] theorem BExpr.coe_probOf : ProbExp.exp_coe p[x] = i[x] := by rfl
 
-example {X : Exp ϖ} :
+example {X : 𝔼[ϖ, ENNReal]} :
     cwp[O]⟦skip⟧ X = X := by
   ext; simp [cwp, wlp]
 example {X : Exp String} :
@@ -333,7 +333,7 @@ example :
 theorem cool {C : pGCL ϖ} (h : X ≤ Y) : wlp[O]⟦~C⟧ X ≤ wlp[O]⟦~C⟧ Y := by
   gcongr
 
-theorem cwp_rule (P : Exp ϖ) (Q : ProbExp ϖ) (h : P / Q ≤ Y)
+theorem cwp_rule (P : 𝔼[ϖ, ENNReal]) (Q : Prob𝔼[ϖ, ENNReal]) (h : P / Q ≤ Y)
     (hwp : wp[O]⟦~C⟧ X ≤ P) (hwlp : Q ≤ wlp[O]⟦~C⟧ 1) : cwp[O]⟦~C⟧ X ≤ Y := by
   simp [cwp]
   simp only [DFunLike.coe] at hwlp ⊢
@@ -361,18 +361,18 @@ example :
     apply ProbExp.le_one
 
 @[gcongr]
-theorem Exp.le_subst {X Y : Exp ϖ} {x : ϖ} {A : Exp ϖ} (h : X ≤ Y) : X[x ↦ A] ≤ Y[x ↦ A] :=
+theorem Exp.le_subst {X Y : 𝔼[ϖ, ENNReal]} {x : ϖ} {A : 𝔼[ϖ, ENNReal]} (h : X ≤ Y) : X[x ↦ A] ≤ Y[x ↦ A] :=
   fun _ ↦ h _
 
 @[gcongr]
-theorem ProbExp.le_subst {X Y : ProbExp ϖ} {x : ϖ} {A : Exp ϖ} (h : X ≤ Y) : X[x ↦ A] ≤ Y[x ↦ A] :=
+theorem ProbExp.le_subst {X Y : Prob𝔼[ϖ, ENNReal]} {x : ϖ} {A : 𝔼[ϖ, ENNReal]} (h : X ≤ Y) : X[x ↦ A] ≤ Y[x ↦ A] :=
   fun _ ↦ h _
 
 @[simp]
 theorem States.subst_rfl {σ : States ϖ} {c : ϖ} : σ[c ↦ σ c] = σ := by
   ext; simp +contextual
 
-theorem Exp.iver_eq_mul_cases (c : ϖ) (x : Exp ϖ) :
+theorem Exp.iver_eq_mul_cases (c : ϖ) (x : 𝔼[ϖ, ENNReal]) :
     i[pgcl_bexp { ~(Exp.const c) = ~d }] * x = i[pgcl_bexp { ~(Exp.const c) = ~d }] * x[c ↦ d] := by
   ext σ
   simp [BExpr.iver, const]
@@ -386,19 +386,19 @@ theorem Exp.iver_eq_mul_cases (c : ϖ) (x : Exp ϖ) :
 @[simp] theorem States.subst_comm_ne {σ : States ϖ} {x y : ϖ} {A B : ENNReal}
     (h : x ≠ y) : σ[x ↦ A][y ↦ B] = σ[y ↦ B][x ↦ A] := by
   ext σ; simp; grind
-@[simp] theorem Exp.subst_same {X : Exp ϖ} {x : ϖ} {A B : Exp ϖ} :
+@[simp] theorem Exp.subst_same {X : 𝔼[ϖ, ENNReal]} {x : ϖ} {A B : 𝔼[ϖ, ENNReal]} :
     X[x ↦ B][x ↦ A] = X[x ↦ B[x ↦ A]] := by
   ext σ; simp
-@[simp] theorem ProbExp.subst_same {X : ProbExp ϖ} {x : ϖ} {A B : Exp ϖ} :
+@[simp] theorem ProbExp.subst_same {X : Prob𝔼[ϖ, ENNReal]} {x : ϖ} {A B : 𝔼[ϖ, ENNReal]} :
     X[x ↦ B][x ↦ A] = X[x ↦ B[x ↦ A]] := by
   ext σ; simp
-theorem Exp.subst_sort_nat [Preorder ϖ] {X : Exp ϖ} {x y : ϖ} {A B : ℕ}
+theorem Exp.subst_sort_nat [Preorder ϖ] {X : 𝔼[ϖ, ENNReal]} {x y : ϖ} {A B : ℕ}
     (h : x < y := by simp [List.lex_eq_true_iff_lt.mp]) :
-    X[x ↦ (A : Exp ϖ)][y ↦ (B : Exp ϖ)] = X[y ↦ (B : Exp ϖ)][x ↦ (A : Exp ϖ)] := by
+    X[x ↦ (A : 𝔼[ϖ, ENNReal])][y ↦ (B : 𝔼[ϖ, ENNReal])] = X[y ↦ (B : 𝔼[ϖ, ENNReal])][x ↦ (A : 𝔼[ϖ, ENNReal])] := by
   ext σ; simp; rw [States.subst_comm_ne]; exact h.ne.symm
 
 omit [DecidableEq ϖ] in
-@[simp] theorem Epr.inf_zero {X : Exp ϖ} : X ⊓ 0 = 0 := by ext; simp
+@[simp] theorem Epr.inf_zero {X : 𝔼[ϖ, ENNReal]} : X ⊓ 0 = 0 := by ext; simp
 
 open scoped Classical in
 example {a b : ENNReal} (ha : a ≤ 1) (hb : b ≤ 1) :
@@ -505,7 +505,7 @@ example {a b : ENNReal} (ha : a ≤ 1) (hb : b ≤ 1) :
   -- simp
   -- -- simp [← mul_add]
   -- -- refine (ENNReal.inv_mul_le_iff ?_ ?_).mpr ?_ <;> try simp
-  -- let I : Exp ϖ := sorry
+  -- let I : 𝔼[ϖ, ENNReal] := sorry
   -- grw [park_induction I]
   -- · sorry
   -- · sorry
@@ -529,42 +529,42 @@ noncomputable def RabinsMutualExclusion.pre : ProbExp String :=
 noncomputable def RabinsMutualExclusion.post : ProbExp String :=
   ⟨pgcl_aexp { [i = 1] }, by simp⟩
 
-noncomputable def Exp.fakePow (x y : Exp ϖ) : Exp ϖ :=
+noncomputable def Exp.fakePow (x y : 𝔼[ϖ, ENNReal]) : 𝔼[ϖ, ENNReal] :=
   fun σ ↦ (x σ)^(FloorSemiring.floor (y σ).toNNReal : ℕ)
 
 @[simp]
-theorem Exp.fakePow_subst {X Y e : Exp ϖ} {x : ϖ} :
+theorem Exp.fakePow_subst {X Y e : 𝔼[ϖ, ENNReal]} {x : ϖ} :
     (X.fakePow Y)[x ↦ e] = X[x ↦ e].fakePow Y[x ↦ e] := by rfl
 @[simp]
-theorem Exp.fakePow_apply {X Y : Exp ϖ} :
+theorem Exp.fakePow_apply {X Y : 𝔼[ϖ, ENNReal]} :
     (X.fakePow Y) σ = (X σ)^(FloorSemiring.floor (Y σ).toNNReal) := by rfl
 
-@[simp] theorem BExpr.zero_le {X : Exp ϖ} : BExpr.le 0 X = true := by ext; simp
-@[simp] theorem BExpr.le_refl {X : Exp ϖ} : BExpr.le X X = true := by ext; simp
-@[simp] theorem BExpr.le_subst {X Y e : Exp ϖ} {x : ϖ} :
+@[simp] theorem BExpr.zero_le {X : 𝔼[ϖ, ENNReal]} : BExpr.le 0 X = true := by ext; simp
+@[simp] theorem BExpr.le_refl {X : 𝔼[ϖ, ENNReal]} : BExpr.le X X = true := by ext; simp
+@[simp] theorem BExpr.le_subst {X Y e : 𝔼[ϖ, ENNReal]} {x : ϖ} :
     (BExpr.le X Y)[x ↦ e] = BExpr.le X[x ↦ e] Y[x ↦ e] := rfl
-@[simp] theorem BExpr.lt_refl {X : Exp ϖ} : BExpr.lt X X = false := by ext; simp
-@[simp] theorem BExpr.lt_subst {X Y e : Exp ϖ} {x : ϖ} :
+@[simp] theorem BExpr.lt_refl {X : 𝔼[ϖ, ENNReal]} : BExpr.lt X X = false := by ext; simp
+@[simp] theorem BExpr.lt_subst {X Y e : 𝔼[ϖ, ENNReal]} {x : ϖ} :
     (BExpr.lt X Y)[x ↦ e] = BExpr.lt X[x ↦ e] Y[x ↦ e] := rfl
 
-theorem ProbExp.gcongr {X Y : ProbExp ϖ} (h : ProbExp.exp_coe X ≤ ProbExp.exp_coe Y) : X ≤ Y := by apply h
-theorem ProbExp.coe_add {X Y : ProbExp ϖ} :
+theorem ProbExp.gcongr {X Y : Prob𝔼[ϖ, ENNReal]} (h : ProbExp.exp_coe X ≤ ProbExp.exp_coe Y) : X ≤ Y := by apply h
+theorem ProbExp.coe_add {X Y : Prob𝔼[ϖ, ENNReal]} :
     ProbExp.exp_coe (X + Y) = (X.exp_coe + Y.exp_coe) ⊓ 1 := by
   ext σ
   simp
-theorem ProbExp.coe_sub {X Y : ProbExp ϖ} :
+theorem ProbExp.coe_sub {X Y : Prob𝔼[ϖ, ENNReal]} :
     ProbExp.exp_coe (X - Y) = (X.exp_coe - Y.exp_coe) ⊓ 1 := by
   ext σ
   simp
   apply le_add_right
   simp
-theorem ProbExp.coe_mul {X Y : ProbExp ϖ} :
+theorem ProbExp.coe_mul {X Y : Prob𝔼[ϖ, ENNReal]} :
     ProbExp.exp_coe (X * Y) = (X.exp_coe * Y.exp_coe) := by
   ext σ
   simp only [exp_coe_apply, mul_apply, Exp.mul_apply]
 
 @[simp]
-theorem Exp.one_ne_top : (1 : Exp ϖ) ≠ ⊤ := by
+theorem Exp.one_ne_top : (1 : 𝔼[ϖ, ENNReal]) ≠ ⊤ := by
   intro h
   have := congrFun h (fun _ ↦ 0)
   simp at this

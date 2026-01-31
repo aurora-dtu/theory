@@ -18,11 +18,16 @@ noncomputable def Φ (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (φ : BExpr 
 notation "Φ[" g "]" => Φ g
 
 omit [DecidableEq 𝒱] in
-theorem Φ_eq_pick {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
-  ext σ
+theorem Φ_eq_pick :
+    Φ[g] φ f = ⟨fun (X : 𝔼[ϖ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
+  ext X σ
   simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
     Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick, BExpr.probOf_apply,
     Pi.sub_apply, Pi.one_apply]
+
+omit [DecidableEq 𝒱] in
+theorem Φ_eq_pick_apply {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
+  simp [Φ_eq_pick]
 
 noncomputable def wp (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
@@ -134,6 +139,16 @@ def Φ.continuous {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (ih : ωScottCo
   ext σ
   simp [ih, ENNReal.mul_iSup, ENNReal.iSup_add]
 
+omit [DecidableEq 𝒱] in
+theorem Φ_iSup {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (f : ℕ → 𝔼[ϖ, ENNReal]) :
+    Φ[g] b (⨆ i, f i) = ⨆ i, Φ[g] b (f i) := by
+  ext X σ
+  simp [Φ, ENNReal.mul_iSup, ENNReal.add_iSup]
+omit [DecidableEq 𝒱] in
+theorem Φ_iSup' {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (f : ℕ → 𝔼[ϖ, ENNReal]) :
+    Φ[g] b (fun a ↦ ⨆ i, f i a) = ⨆ i, Φ[g] b (f i) := by
+  ext X σ
+  simp [Φ, ENNReal.mul_iSup, ENNReal.add_iSup]
 
 omit [DecidableEq 𝒱] in
 theorem ωScottContinuous_dual_iff {f : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} :
@@ -141,8 +156,8 @@ theorem ωScottContinuous_dual_iff {f : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]; rfl
 
 omit [DecidableEq 𝒱] in
-theorem ωScottContinuous_dual_iff' {f : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} :
-      ωScottContinuous f.dual ↔ (∀ (c : ℕ → 𝔼[ϖ, ENNReal]), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i)) := by
+theorem ωScottContinuous_dual_iff' {α ι : Type*} [CompleteLattice α] {f : (ι → α) →o (ι → α)} :
+    ωScottContinuous f.dual ↔ (∀ (c : ℕ → (ι → α)), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i)) := by
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
   constructor
   · intro h c hc; exact h ⟨c, hc⟩

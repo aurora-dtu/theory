@@ -86,13 +86,6 @@ variable {b : BExpr ϖ} {O : Optimization}
 
 open scoped Optimization.Notation
 
-@[reducible, simp]
-noncomputable instance : HAdd (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (𝔼[States ϖ] →o 𝔼[States ϖ]) (𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) where
-  hAdd a b :=
-    let b' : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] := b
-    a + b'
-
--- @[simp]
 def cP' (f : pGCL ϖ × States ϖ → ENNReal) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
   fun C ↦ ⟨fun X σ ↦ f (C, σ), fun a b h σ ↦ by simp⟩
 
@@ -110,7 +103,6 @@ omit [DecidableEq 𝒱] in
   rw [tsum_eq_single ⟨(1, conf₁[⇓, σ]), by simp⟩] <;> simp
 @[simp] theorem ς.assign :
       (𝕊 cT cP).ς O f (pgcl {~x := ~e})
-    -- = ⟨fun X σ ↦ X (σ[x ↦ e σ]), fun _ _ h σ ↦ h (σ[x ↦ e σ])⟩ := by
     = ⟨fun X σ ↦ cP (.assign x e, σ) + cT X (.term, σ[x ↦ e σ]),
         fun _ _ h _ ↦ by
           simp; gcongr; apply cT.mono h⟩ := by
@@ -300,8 +292,8 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       simp
       rw [← ς_op_eq_op]
       simp only [ς.prob, cP']
-      simp only [instHAddOrderHomForallStatesENNReal, cost_p, OrderHom.add_apply, OrderHom.coe_mk,
-        Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
+      simp only [cost_p, OrderHom.add_apply, OrderHom.coe_mk, Exp.mk_zero_eq, ProbExp.pick'_apply,
+        zero_add]
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
       intro X
@@ -342,12 +334,12 @@ theorem wfp'_le_op.loop (ih : C.wfp' O ≤ (𝕊 cost_t' cost_p').op O C) :
   nth_rw 2 [← (𝕊 cost_t' cost_p').ς_op_eq_op]
   intro σ
   if hb : b σ then
-    simp [ς.loop, BExpr.probOf, ProbExp.pick, hb]
+    simp [ς.loop, hb, Φ]
     apply le_trans (ih _)
     simp
     apply op_le_seq _ _ 1 <;> try simp +contextual
   else
-    simp [ς.loop, BExpr.probOf, ProbExp.pick, hb]
+    simp [ς.loop, hb, Φ]
 
 noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) where
   et_le_op := by
@@ -360,9 +352,8 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X
       rw [← ς_op_eq_op]
-      simp only [OrderHom.toFun_eq_coe, ς.prob, instHAddOrderHomForallStatesENNReal,
-        OrderHom.add_apply, cP'_apply, Pi.ofNat_apply, Exp.mk_zero_eq, ProbExp.pick'_apply,
-        zero_add]
+      simp only [OrderHom.toFun_eq_coe, ς.prob, OrderHom.add_apply, cP'_apply, Pi.ofNat_apply,
+        Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
       simp [wfp']
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
@@ -381,8 +372,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       nth_rw 1 [wfp']
       simp
       nth_rw 2 [← wfp'_fp]
-      simp [fΦ, ProbExp.pick]
-      if hb : b σ then simp [hb] else simp [hb]
+      simp [Φ]
     | observe b =>
       ext X σ
       simp [wfp']

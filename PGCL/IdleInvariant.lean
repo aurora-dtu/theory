@@ -299,13 +299,33 @@ theorem wlp''_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S :
     Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ = wlp''[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with simp_all [fix, mods] <;> try rfl
+  | assign x A =>
+    ext σ
+    simp_all only [Pi.inf_apply, Pi.substs_cons, Exp.fix_apply, Substitution.substs_nil,
+      Pi.one_apply]
+    congr
+    ext v
+    simp
+    if hv : v ∈ S then
+      simp [hv]
+      grind
+    else
+      simp [States.cofix, hv]
+  | seq C₁ C₂ ih₁ ih₂ =>
+    ext
+    simp [fix]
+    specialize ih₁ (wlp''[O]⟦~C₂⟧ φ ⊓ 1)
+    have : (Exp.fix (wlp''[O]⟦~C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦~C₂⟧ φ) S σ₀) ⊓ 1 := by ext; simp
+    simp [this] at ih₁
+    simp [ih₁]
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
   | loop b C ih =>
     ext σ
     simp only [wlp''_loop_eq_iter, iInf_apply, Exp.iInf_fix]
+    simp
     congr with i
     induction i generalizing σ with
-    | zero => simp only [Function.iterate_zero, id_eq, Pi.top_apply, Exp.top_fix]
+    | zero => simp only [Function.iterate_zero, id_eq, Pi.one_apply, Exp.fix_apply]
     | succ i ih' =>
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Φ]
@@ -317,7 +337,23 @@ theorem wlp''_fix [DecidableEq 𝒱] (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S :
       classical
       rw [← Exp.ext_iff] at ih'
       rw [ih']
-      exact congrFun (ih ((Φ[_] b φ)^[i] ⊤)) σ
+      exact congrFun (ih ((Φ[_] b (φ ⊓ 1))^[i] 1)) σ
+
+theorem wlp_fix_apply [DecidableEq 𝒱] (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
+    Exp.fix (wlp[O]⟦~C⟧ φ) S σ₀ σ = wlp[O]⟦~(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp⟩ σ := by
+  simp
+  have := congrFun (C.wlp''_fix φ.val S hS (O:=O) (σ₀:=σ₀)) σ
+  simp at this
+  convert this
+  · simp [wlp'']; congr; ext σ; have := φ.prop σ; simp_all only [Pi.one_apply,
+    ProbExp.ofExp_apply, inf_of_le_left]; rfl
+  · simp [wlp'']
+    congr
+    ext σ
+    simp
+    have := φ.prop (σ₀.cofix σ)
+    simp_all
+    rfl
 
 /-- An _Idle invariant_ is _Park invariant_ that holds for states with a set of fixed variables. -/
 def IdleInvariant [DecidableEq 𝒱] (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
@@ -347,21 +383,39 @@ def IdleCoinvariant [DecidableEq 𝒱] (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNR
     (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
   ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → I σ ≤ Φ[g] b φ I σ
 
+theorem OrderHom.le_gfp_prob {x : 𝔼[ϖ, ENNReal]} {f : ProbExp ϖ →o ProbExp ϖ}
+    (h₁ : x ≤ 1)
+    (h₂ : x ≤ f ⟨x, h₁⟩):
+    x ≤ OrderHom.gfp f := by
+  suffices ⟨x, h₁⟩ ≤ OrderHom.gfp f by exact this
+  apply OrderHom.le_gfp _ h₂
+
+theorem wlp_apply_eq_wlp''_apply [DecidableEq 𝒱] {C : pGCL ϖ} :
+    wlp[O]⟦~C⟧ X σ = wlp''[O]⟦~C⟧ X σ := by
+  simp [wlp'']
+  congr; ext; simp
+
 /-- _Idle coinduction_ is _Park coinduction_, but the engine is running (i.e. an initial state is
 given), and as a consequence only states that vary over the modified variables need to be
 considered for the coinductive invariant. -/
 theorem IdleCoinduction [DecidableEq 𝒱] {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
-    {σ₀ : States ϖ} (h : IdleCoinvariant wlp''[O]⟦~C⟧  b φ I C.modsᶜ σ₀) :
+    {σ₀ : States ϖ} (h : IdleCoinvariant wlp''[O]⟦~C⟧ b φ I C.modsᶜ σ₀) (hI : I ≤ 1) (hφ : φ ≤ 1) :
     I σ₀ ≤ wlp''[O]⟦while ~b { ~C }⟧ φ σ₀ := by
   apply le_wlp''_of_fix (S:=C.modsᶜ)
   rw [wlp''_fix _ _ _ (by simp; rfl)]
-  apply OrderHom.le_gfp
+  simp [fix]
+  rw [wlp''_loop_eq_gfp]
+  fapply OrderHom.le_gfp_prob
+  · exact fun i ↦ hI (σ₀.cofix i)
   intro σ'
-  simp only [Exp.fix_apply, Φ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply,
-    BExpr.iver_apply, BExpr.fix_apply, BExpr.not_apply]
+  simp only [Exp.fix_apply, fΦ', OrderHom.coe_mk, ProbExp.pickProb_apply, ProbExp.pick,
+    Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, BExpr.fix_apply, wlp_apply_eq_wlp''_apply,
+    ProbExp.mk_vcoe, Pi.sub_apply, Pi.one_apply, ProbExp.ofExp_apply]
   simp [IdleCoinvariant, Φ] at h
   rw [← wlp''_fix _ _ _ (by simp)]
   convert h (σ₀.cofix σ') ?_
-  simp +contextual
+  · simp [Iverson.iver]; split <;> simp
+  · simp; exact hφ _
+  · simp +contextual
 
 end pGCL

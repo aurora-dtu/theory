@@ -18,6 +18,12 @@ open scoped Notation
 
 variable {ι α : Type*} [CompleteLattice α] (O : Optimization)
 
+abbrev dual : Optimization → Optimization
+  | 𝒜 => 𝒟
+  | 𝒟 => 𝒜
+@[grind =, simp] theorem 𝓐_dual : Optimization.Angelic.dual = 𝒟 := by rfl
+@[grind =, simp] theorem 𝒟_dual : Optimization.Demonic.dual = 𝒜 := by rfl
+
 def opt₂ (a b : α) : α :=
   match O with
     | 𝒜 => a ⊔ b

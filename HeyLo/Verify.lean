@@ -90,17 +90,27 @@ structure Conditions (D : Direction) where
   prop : original.vp O D post = encoding
   fv : Globals
   fv_prop : fv = original.fv ∪ post.fv ∪ pre.fv
+  invs : List 𝔼r
+  invs_prop : invs = original.invsList
 
 abbrev y : Ident := ⟨"y", .Nat⟩
 abbrev c : Ident := ⟨"c", .Nat⟩
 
-syntax "vc[" term "," ident "]" "{" cheylo "}" cpgcl' "{" cheylo "}" : term
+declare_syntax_cat wp_direction
+syntax ident : wp_direction
+syntax "wpDirection[" wp_direction "]" : term
+
+syntax "vc[" term "," wp_direction "]" "{" cheylo "}" cpgcl' "{" cheylo "}" : term
 
 macro_rules
-| `(vc[$O, wp] { $P } $C { $Q }) =>
+| `(wpDirection[wp]) => `(Direction.Lower)
+| `(wpDirection[wlp]) => `(Direction.Upper)
+| `(vc[$O, $D] { $P } $C { $Q }) =>
   `(
     let C' :=
-      eval% (pGCL'.vp pgcl' {$C} 𝒟 .Lower heylo {$Q})
+      eval% (pGCL'.vp pgcl' {$C} $O wpDirection[$D] heylo {$Q})
+    let invs :=
+      eval% (pGCL'.invsList pgcl' {$C})
     let P := heylo {$P}
     let C := pgcl' {$C}
     let Q := heylo {$Q}
@@ -111,9 +121,11 @@ macro_rules
       post := Q
       fv := C.fv ∪ P.fv ∪ Q.fv
       fv_prop := by decide
+      invs := invs
+      invs_prop := by decide +native
       encoding := C'
       prop := by decide +native
-    } : Conditions .Lower)
+    } : Conditions  wpDirection[$D])
   )
 
 def Conditions.sound (C : Conditions D) : Prop :=
@@ -121,10 +133,17 @@ def Conditions.sound (C : Conditions D) : Prop :=
   | .Lower => wp[C.O]⟦~C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
   | .Upper => C.pre.sem ≤ wlp''[C.O]⟦~C.original.pGCL⟧ C.post.sem
 
-def Conditions.show (C : Conditions .Lower) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
+def Conditions.show_lower (C : Conditions .Lower) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]
   apply le_trans pGCL'.wp_le_vp
   simpa [C.prop]
+
+def Conditions.show_upper (C : Conditions .Upper) (h : C.pre.sem ≤ C.encoding.sem)
+    (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
+  simp [sound]
+  apply le_trans _ (pGCL'.vp_le_wlp'' hpost _)
+  · simpa [C.prop]
+  · grind [cases Conditions]
 
 @[grind =, simp]
 theorem Nat.log2_div_2 (n : ℕ) : Nat.log2 (n / 2) = Nat.log2 n - 1 := by
@@ -163,7 +182,7 @@ def NatLog :=
     { ↑c }
 
 theorem NatLog.soundess : NatLog.sound := by
-  apply NatLog.show fun σ ↦ ?_
+  apply NatLog.show_lower fun σ ↦ ?_
   simp [NatLog]
   simp [BinOp.sem, UnOp.sem, sem, Fun.sem]
   set c : ℕ := σ c; set y : ℕ := σ y
@@ -192,5 +211,27 @@ info: 'NatLog.soundess' depends on axioms: [propext, Classical.choice, Lean.ofRe
 -/
 #guard_msgs in
 #print axioms NatLog.soundess
+
+def NatLog' :=
+  vc[𝒜, wlp]
+    { 1 }
+      while 0 < y
+        inv 1
+      {
+        { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
+      }
+    { 1 }
+
+theorem NatLog'.soundess : NatLog'.sound := by
+  apply NatLog'.show_upper fun σ ↦ ?_
+  · intro σ; simp [NatLog']
+  · simp [NatLog', sem]
+  simp [NatLog', BinOp.sem, UnOp.sem, sem, ENNReal.inv_two_add_inv_two, hnot]
+
+/--
+info: 'NatLog'.soundess' depends on axioms: [propext, Classical.choice, Lean.ofReduceBool, Lean.trustCompiler, Quot.sound]
+-/
+#guard_msgs in
+#print axioms NatLog'.soundess
 
 -- end
