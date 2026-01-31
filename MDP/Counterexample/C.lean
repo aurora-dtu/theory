@@ -166,7 +166,7 @@ noncomputable abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[M 𝓅]) := 𝒮 {.s₁}
   | succ n ih => simp_all [EC_succ]
 
 @[simp] theorem EC_succ_s₂ : (M 𝓅).EC M.cost 𝒮 n .s₂ = if n = 0 then 0 else 1 := by
-  rcases n <;> simp_all [EC_succ]; rw [tsum_eq_single ⟨.s₃, by simp_all [M]⟩] <;> simp_all
+  rcases n <;> simp_all [EC_succ]
 
 theorem EC_succ_s₁' :
       (M 𝓅).EC M.cost 𝒮 (n + 1) .s₁

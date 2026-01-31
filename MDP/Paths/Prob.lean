@@ -40,10 +40,7 @@ theorem extend_Prob (s : M.succs_univ π.last) (𝒮 : 𝔖[M]) :
   rw [←Fin.prod_congr' _ (by omega : n = ‖π‖ - 1)]
   rw [Fin.prod_univ_castSucc]
   simp only [Fin.getElem_fin, Fin.val_succ]
-  rw [mul_comm]
-  have hn' : n = ‖π‖ - 1 := by omega
-  subst_eqs
-  simp
+  grind [mul_comm]
 
 theorem prepend_Prob [DecidableEq State] (𝒮 : 𝔖[M]) (s : M.prev_univ π[0]) :
     (π.prepend s).Prob 𝒮 = M.P s (𝒮 {s.val}) π[0] * π.Prob (𝒮[s ↦ π[0]]'(by simp)) := by

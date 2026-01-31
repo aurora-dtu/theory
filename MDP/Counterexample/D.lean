@@ -123,9 +123,7 @@ theorem ER_term_eq_0 : M.EC M.rew 𝒮 n .term = 0 := by
   | succ => simp_all [EC_succ]
 @[simp] theorem ER_node_i_le_j_eq_top :
     M.EC M.rew 𝒮 n (.node i) = if n = 0 then 0 else i := by
-  cases n <;> simp [EC_succ]
-  rw [tsum_eq_single ⟨.term, by simp⟩ (by simp_all)]
-  simp_all
+  cases n <;> simp +contextual [EC_succ]
 theorem ER_init :
     M.EC M.rew 𝒮 n .init = if n < 2 then 0 else 𝒮 {.init} := by
   rcases n with _ | n <;> simp_all
