@@ -2,6 +2,7 @@ import Mathlib.Data.ENNReal.Operations
 import Mathlib.Data.ENNReal.Inv
 import Mathlib.Order.OmegaCompletePartialOrder
 import STDX.Subst
+import MDP.Optimization
 
 /-! # Custom operators -/
 
@@ -526,6 +527,33 @@ theorem pickProb_apply : (p.pickProb x y) σ = p.pick x y σ := by
   exact this
 
 @[grind =, simp] theorem pick_same : p.pick x x = x := by ext σ; simp [pick, ← add_mul]
+
+
+open OmegaCompletePartialOrder in
+def _root_.OmegaCompletePartialOrder.ωScottContinuous.apply_iSup
+    {α ι : Type*} [CompleteLattice α] [CompleteLattice ι] {f : ι →o α}
+    (hf : OmegaCompletePartialOrder.ωScottContinuous f) (c : Chain ι) :
+    f (⨆ i, c i) = ⨆ i, f (c i) := hf.map_ωSup_of_orderHom (c:=c)
+
+
+open OmegaCompletePartialOrder in
+theorem pick_ωScottContinuous {ι : Type*} [CompleteLattice ι] {f g : ι →o 𝔼[ϖ, ENNReal]}
+    (hf : ωScottContinuous f) (hg : ωScottContinuous g) :
+    ωScottContinuous (fun X ↦ p.pick (f X) (g X)) := by
+  simp [pick]
+  refine ωScottContinuous.of_apply₂ fun σ ↦ ?_
+  simp
+  refine ωScottContinuous.of_monotone_map_ωSup ?_
+  simp [ωSup]
+  constructor
+  · intro _ _ _; simp; gcongr
+    · apply f.mono ‹_›
+    · apply g.mono ‹_›
+  · simp [hf.apply_iSup, hg.apply_iSup, ENNReal.mul_iSup, ENNReal.add_iSup, ENNReal.iSup_add]
+    intro c
+    refine iSup_iSup_eq_iSup (fun i j ↦ p σ * f (c j) σ + (1 - p σ) * g (c i) σ) ?_ ?_
+    · intro _ _ _; simp only; intro _; simp only; gcongr; apply g.mono (c.mono ‹_›)
+    · intro _ _ _ _; simp only; gcongr; apply f.mono (c.mono ‹_›)
 
 instance instLE : LE (ProbExp ϖ) where
   le a b := ∀ x, a x ≤ b x

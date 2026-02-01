@@ -3,6 +3,14 @@ import Mathlib.Data.ENNReal.Inv
 import Mathlib.Order.Hom.Order
 import Mathlib.Order.OmegaCompletePartialOrder
 
+theorem iSup_iSup_eq_iSup {α ι : Type*} [CompleteLattice α] [SemilatticeSup ι] (f : ι → ι → α)
+    (hf₁ : Monotone f) (hf₂ : ∀ i, Monotone (f i)) :
+    ⨆ i, ⨆ j, f i j = ⨆ i, f i i := by
+  apply le_antisymm
+  · apply iSup₂_le_iff.mpr fun i j ↦ le_iSup_of_le (i ⊔ j) ?_
+    apply le_trans (hf₁ le_sup_left j) (hf₂ (i ⊔ j) le_sup_right)
+  · apply iSup_le_iff.mpr fun i ↦ le_iSup₂_of_le i i (by rfl)
+
 inductive Optimization where | Angelic | Demonic
 
 namespace Optimization
@@ -16,7 +24,7 @@ end Notation
 
 open scoped Notation
 
-variable {ι α : Type*} [CompleteLattice α] (O : Optimization)
+variable {ι α : Type*} (O : Optimization)
 
 abbrev dual : Optimization → Optimization
   | 𝒜 => 𝒟
@@ -24,10 +32,60 @@ abbrev dual : Optimization → Optimization
 @[grind =, simp] theorem 𝓐_dual : Optimization.Angelic.dual = 𝒟 := by rfl
 @[grind =, simp] theorem 𝒟_dual : Optimization.Demonic.dual = 𝒜 := by rfl
 
+section opt₂
+
+variable [Lattice α]
+
 def opt₂ (a b : α) : α :=
   match O with
     | 𝒜 => a ⊔ b
     | 𝒟 => a ⊓ b
+
+@[simp]
+theorem opt₂_apply (f g : γ → α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
+  cases O <;> simp [opt₂]
+@[simp]
+theorem opt₂_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
+  cases O <;> simp [opt₂]
+
+@[gcongr]
+theorem opt₂_le {a b c d : α} (hac : a ≤ c) (hbd : b ≤ d) : O.opt₂ a b ≤ O.opt₂ c d := by
+  cases O <;> simp [opt₂] <;> constructor
+  · exact le_sup_of_le_left hac
+  · exact le_sup_of_le_right hbd
+  · exact inf_le_of_left_le hac
+  · exact inf_le_of_right_le hbd
+
+@[grind =, simp]
+theorem 𝒜_opt₂ {a b : α} : (𝒜 : Optimization).opt₂ a b = a ⊔ b := rfl
+@[grind =, simp]
+theorem 𝒟_opt₂ {a b : α} : (𝒟 : Optimization).opt₂ a b = a ⊓ b := rfl
+
+open OmegaCompletePartialOrder
+
+theorem opt₂_ωScottContinuous {α β : Type*} [Order.Frame α] [Order.Frame β]
+    (O : Optimization)
+    {f : α →o β} {g : α →o β} (hf : ωScottContinuous f) (hg : ωScottContinuous g) :
+    ωScottContinuous (O.opt₂ f g) := by
+  cases O
+  · simp only [𝒜_opt₂]
+    exact CompleteLattice.ωScottContinuous.sup hf hg
+  · simp only [𝒟_opt₂]
+    refine ωScottContinuous.of_monotone_map_ωSup ?_
+    simp [ωSup]
+    constructor
+    · intro a b hab; simp only [Pi.inf_apply]; gcongr
+    · intro c
+      have := hf.map_ωSup_of_orderHom; simp [ωSup] at this; rw [this]; clear this
+      have := hg.map_ωSup_of_orderHom; simp [ωSup] at this; rw [this]; clear this
+      simp [iSup_inf_eq, inf_iSup_eq]
+      refine iSup_iSup_eq_iSup (fun i j ↦ f (c j) ⊓ g (c i)) ?_ ?_
+      · intro _ _ _ _; simp only; gcongr
+      · intro _ _ _ _; simp only; gcongr
+
+end opt₂
+
+variable [CompleteLattice α]
 
 def opt : (ι → α) →o α :=
   match O with
@@ -61,21 +119,6 @@ theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt₂ (f a) (f b) := by
       · apply iInf_le_of_le a; simp
       · apply iInf_le_of_le b; simp
     · simp
-
-@[simp]
-theorem opt₂_apply (f g : γ → α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
-@[simp]
-theorem opt₂_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
-
-@[gcongr]
-theorem opt₂_le {a b c d : α} (hac : a ≤ c) (hbd : b ≤ d) : O.opt₂ a b ≤ O.opt₂ c d := by
-  cases O <;> simp [opt₂] <;> constructor
-  · exact le_sup_of_le_left hac
-  · exact le_sup_of_le_right hbd
-  · exact inf_le_of_left_le hac
-  · exact inf_le_of_right_le hbd
 
 @[grind =, simp]
 theorem 𝒜_opt {f : ι → α} : (𝒜 : Optimization).opt f = iSup f := rfl
