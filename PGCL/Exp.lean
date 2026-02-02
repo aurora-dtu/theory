@@ -94,22 +94,30 @@ theorem Pi.substs_cons (f : α → β) (x₀ : ((a : ι) × (α → γ a))) (xs 
 
 end
 
-noncomputable instance Pi.instIverson {α : Type*} : Iverson (α → Prop) (α → ENNReal) where
+namespace Pi
+
+noncomputable instance instIverson {α : Type*} : Iverson (α → Prop) (α → ENNReal) where
   iver v := fun σ ↦ i[v σ]
-noncomputable instance Pi.instIversonBool {α : Type*} : Iverson (α → Bool) (α → ENNReal) where
+noncomputable instance instIversonBool {α : Type*} : Iverson (α → Bool) (α → ENNReal) where
   iver v := fun σ ↦ i[v σ]
-@[grind =, simp] theorem Pi.iver_apply {α : Type*} (f : α → Prop) (a : α) :
+instance instLawfulIverson {α : Type*} : LawfulIverson (α → Prop) (α → ENNReal) where
+  iver_le_one b := by intro σ; simp [instIverson]
+instance instLawfulIversonBool {α : Type*} : LawfulIverson (α → Bool) (α → ENNReal) where
+  iver_le_one b := by intro σ; simp [instIversonBool]
+@[grind =, simp] theorem iver_apply {α : Type*} (f : α → Prop) (a : α) :
     i[f] a = i[f a] := rfl
-@[grind =, simp] theorem Pi.iver_subst {α ι : Type*} {γ : ι → Type*}
+@[grind =, simp] theorem iver_subst {α ι : Type*} {γ : ι → Type*}
     [Substitution α γ]
     (f : α → Prop) (x : ι) (y : α → γ x) : i[f][x ↦ y] = i[f[x ↦ y]] := by
   rfl
-@[grind =, simp] theorem Pi.iver_bool_apply {α : Type*} (f : α → Bool) (a : α) :
+@[grind =, simp] theorem iver_bool_apply {α : Type*} (f : α → Bool) (a : α) :
     i[f] a = i[f a] := rfl
-@[grind =, simp] theorem Pi.iver_bool_subst {α ι : Type*} {γ : ι → Type*}
+@[grind =, simp] theorem iver_bool_subst {α ι : Type*} {γ : ι → Type*}
     [Substitution α γ]
     (f : α → Bool) (x : ι) (y : α → γ x) : i[f][x ↦ y] = i[f[x ↦ y]] := by
   rfl
+
+end Pi
 
 
 /-! # Expressions & States -/
@@ -121,17 +129,8 @@ def States {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
 
 variable {𝒱 : Type*} {ϖ : Γ[𝒱]}
 
--- instance : Nonempty (States Γ) := ⟨fun _ ↦ Inhabited.default⟩
-
--- 𝔼[ϖ, α]
 notation "𝔼[" ϖ "," α "]" => States ϖ → α
 
--- def NExp (ϖ : Type*) := States ϖ → ℕ
--- abbrev Exp (ϖ : Γ[𝒱]) (α : Type) := States Γ → α
--- alias NExp := Exp
-
--- instance States.instSubstitution [DecidableEq 𝒱] : Subst (States Γ) ϖ (fun _ ↦ ENNReal) where
---   subst σ x v := fun α ↦ if x = α then v else σ α
 instance States.instSubstitution [DecidableEq 𝒱] : Substitution (States ϖ) ϖ where
   subst σ := fun ⟨v, t⟩ α ↦ if h : v = α then cast (congrArg ϖ h) t else σ α
 
@@ -181,16 +180,6 @@ variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[ϖ, α]}
 @[simp] theorem hcoimp_subst [HCoImp α] :
     (a ↜ b)[..xs] = a[..xs] ↜ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
 
--- @[grind =, simp] theorem ennreal_coe_subst {Y : ENNReal} : (↑Y : 𝔼[ϖ, α])[v ↦ e] = ↑Y := rfl
-
--- @[grind =, simp] theorem zero_subst : (@OfNat.ofNat (𝔼[ϖ, α]) 0 _)[v ↦ e] = 0 := rfl
--- @[grind =, simp] theorem one_subst : (@OfNat.ofNat (𝔼[ϖ, α]) 1 _)[v ↦ e] = 1 := rfl
--- @[grind =, simp] theorem ofNat_subst {n : ℕ} : (n : 𝔼[ϖ, α])[v ↦ e] = n := rfl
--- @[grind =, simp] theorem ofNat_subst' [Nat.AtLeastTwo n] :
---     (@OfNat.ofNat (𝔼[ϖ, α]) n instOfNatAtLeastTwo)[v ↦ e] = n := rfl
--- @[grind =, simp] theorem pow_subst {X : 𝔼[ϖ, α]} {x} {e : 𝔼[ϖ, α]} : (X^n)[x ↦ e] = X[x ↦ e]^n := rfl
--- @[grind =, simp] theorem inv_subst {X : 𝔼[ϖ, α]} {x} {e : 𝔼[ϖ, α]} : X⁻¹[x ↦ e] = X[x ↦ e]⁻¹ := rfl
-
 omit [DecidableEq 𝒱]
 
 theorem himp_apply [HImp α] {φ ψ : 𝔼[ϖ, α]} :
@@ -228,41 +217,6 @@ theorem subst_apply [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (A : 𝔼[�
 theorem subst₂_apply [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (A : 𝔼[ϖ, ϖ x]) :
     e[x ↦ A, y ↦ B] σ = e (σ[y ↦ B σ[x ↦ A σ], x ↦ A σ]) := by
   simp_all [Substitution.substs_cons, Substitution.subst]
--- @[grind =, simp]
--- theorem substs_apply [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (xs : List (ϖ × 𝔼[ϖ, α])) :
---     e[..xs] σ = e (σ[..xs.reverse.map (fun (x, v) ↦ (x, v σ))]) := by
---   simp
---   induction xs generalizing e σ with
---   | nil => simp
---   | cons x xs ih =>
---     obtain ⟨x, X⟩ := x
---     simp_all [Substitution.substs_cons]
---     simp [Substitution.substs_append]
---     simp [Substitution.subst, ih]
---     congr! 1
---     nth_rw 2 [Substitution.substs]
---     nth_rw 4 [Substitution.substs]
---     simp
---     simp [Substitution.substs]
---     apply?
---     ext a
---     simp [Substitution.subst]
---     simp [Substitution.substs]
---     simp [Substitution.subst]
---     apply?
---     split_ifs
---     · subst_eqs
---       sorry
---     · nth_rw 2 [Substitution.substs]
---       simp_all [Substitution.subst]
---       sorry
--- @[grind =, simp]
--- theorem subst_apply_ennreal [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (n : ENNReal) :
---     e[x ↦ n] σ = e (σ[x ↦ n]) := rfl
--- @[grind =, simp]
--- theorem subst_apply_nat [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (n : ℕ) :
---     e[x ↦ n] σ = e (σ[x ↦ (n : ENNReal)]) := rfl
-
 
 @[gcongr]
 theorem add_le_add [Add α] [Preorder α] [AddLeftMono α] [AddRightMono α] (a b c d : 𝔼[ϖ, α])
@@ -300,19 +254,6 @@ end ProbExp
 
 namespace BExpr
 
--- instance : FunLike 𝔼[ϖ, Prop] (States ϖ) Prop where
---   coe := BExpr.toFun
---   coe_injective' := fun ⟨b, _⟩ ⟨b', _⟩ h ↦ by simp at h; subst_eqs; simp; ext; grind
--- instance {b : BExpr ϖ} : Decidable (b σ) := b.decidable σ
-
-@[ext] theorem ext {a b : BExpr ϖ} (h : ∀ σ, a σ ↔ b σ) : a = b := by
-  simp [funext_iff, h]
-
-abbrev not (b : BExpr ϖ) : BExpr ϖ := bᶜ
-instance : Iverson 𝔼[ϖ, Bool] (𝔼[ϖ, ENNReal]) := ⟨fun b σ ↦ i[b σ]⟩
-noncomputable instance : Iverson 𝔼[ϖ, Prop] (𝔼[ϖ, ENNReal]) := ⟨fun b σ ↦ i[b σ]⟩
-instance : LawfulIverson 𝔼[ϖ, Prop] (𝔼[ϖ, ENNReal]) :=
-  ⟨by intro b σ; simp [instIversonForallStatesPropForallENNReal]⟩
 noncomputable def probOf (b : BExpr ϖ) : ProbExp ϖ :=
   ⟨i[b], by intro; simp [Iverson.iver]; split <;> simp⟩
 notation "p[" b "]" => BExpr.probOf b
@@ -322,9 +263,7 @@ noncomputable def forall_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr ϖ) : BExpr �
 noncomputable def exists_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr ϖ) : BExpr ϖ :=
   fun σ ↦ ∃ (v : ϖ x), b σ[x ↦ v]
 
-@[grind =, simp] theorem not_apply : (not b) σ = ¬b σ := by rfl
-
-instance : HNot (BExpr α) where hnot := .not
+instance : HNot (BExpr α) where hnot := compl
 
 variable {b : BExpr ϖ}
 
@@ -332,33 +271,16 @@ variable {b : BExpr ϖ}
 instance : Coe Prop 𝔼[ϖ, Prop] := ⟨coe_prop⟩
 @[grind =, simp] theorem coe_prop_apply {b} : coe_prop (ϖ:=ϖ) b σ = b := by rfl
 
-@[grind =, simp] theorem iver_apply : i[b] σ = i[b σ] := rfl
-@[grind ., simp] theorem iver_le_one : i[b] ≤ 1 := by intro σ; simp
 @[simp] theorem iver_mul_le_apply {X : 𝔼[ϖ, ENNReal]} : i[b σ] * X σ ≤ X σ := by calc
   _ ≤ 1 * X σ := by gcongr; simp
   _ = _ := by simp
 @[grind ., simp] theorem iver_mul_le : i[b] * X ≤ X := by intro; simp
-@[simp] theorem mul_iver_le_apply {X : 𝔼[ϖ, ENNReal]} : X σ * i[b] σ ≤ X σ := by calc
+@[simp] theorem mul_iver_le_apply {X : 𝔼[ϖ, ENNReal]} : X σ * i[b σ] ≤ X σ := by calc
   _ ≤ X σ * 1 := by gcongr; simp
   _ = _ := by simp
-@[grind ., simp] theorem mul_iver_le : i[b] * X ≤ X := by intro; simp
-
-@[simp] theorem true_iver (h : b σ = true) : i[b σ] = 1 := by simp [h]
-@[simp] theorem false_iver (h : b σ = false) : i[b σ] = 0 := by simp [h]
-@[grind =, simp] theorem true_not_iver (h : b σ = true) : i[b.not σ] = 0 := by simp [h]
-@[grind =, simp] theorem false_not_iver (h : b σ = false) : i[b.not σ] = 1 := by simp [h]
-
-@[grind =, simp] theorem true_probOf (h : b σ = true) : p[b] σ = 1 := by simp [probOf, h]
-@[grind =, simp] theorem false_probOf (h : b σ = false) : p[b] σ = 0 := by simp [probOf, h]
-@[grind =, simp] theorem true_not_probOf (h : b σ = true) : p[b.not] σ = 0 := by simp [probOf, h]
-@[grind =, simp] theorem false_not_probOf (h : b σ = false) : p[b.not] σ = 1 := by simp [probOf, h]
+@[grind ., simp] theorem mul_iver_le : X * i[b] ≤ X := by intro; simp
 
 @[grind =, simp] theorem probOf_apply (b : BExpr ϖ) : p[b] σ = i[b σ] := by simp [probOf]
-
--- instance [DecidableEq 𝒱] : Substitution 𝔼[ϖ, Prop] (𝔼[ϖ, ϖ ·]) where
---   subst b := fun x ↦ fun σ ↦ b (σ[x.1 ↦ x.2 σ])
--- theorem subst_apply [DecidableEq 𝒱] {b : BExpr ϖ} : Substitution.subst b x σ = b σ[x.1 ↦ x.2 σ] :=
---   rfl
 
 variable [PartialOrder α]
 
@@ -737,8 +659,6 @@ instance : AddRightMono (States ϖ → ENNReal) where
 instance instAdd : Add (α →o β) where
   add a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
 @[simp] theorem add_apply (f g : α →o β) : (f + g) x = f x + g x := by rfl
--- @[simp] theorem add_apply' (f g : α →o 𝔼[ϖ, α]) : (f + g) x = f x + g x := by rfl
--- @[simp] theorem add_apply2 (f g : α →o 𝔼[ϖ, α]) : (f + g) x y = f x y + g x y := by rfl
 @[simp] theorem add_apply2' (f g : α →o States ϖ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
 
 instance [OfNat β n] : OfNat (α →o β) n := ⟨fun _ ↦ OfNat.ofNat n, by intro; simp⟩

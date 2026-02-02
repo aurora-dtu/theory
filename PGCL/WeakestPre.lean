@@ -75,7 +75,7 @@ variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
 
 noncomputable def Φ (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (φ : BExpr ϖ) :
     𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
-  ⟨fun f ↦ ⟨fun X ↦ i[φ] * g X + i[φ.not] * f, by intro _ _ _; simp; gcongr⟩,
+  ⟨fun f ↦ ⟨fun X ↦ i[φ] * g X + i[φᶜ] * f, by intro _ _ _; simp; gcongr⟩,
     by intro _ _ _ _; simp; gcongr⟩
 
 notation "Φ[" g "]" => Φ g
@@ -84,9 +84,9 @@ omit [DecidableEq 𝒱] in
 theorem Φ_eq_pick :
     Φ[g] φ f = ⟨fun (X : 𝔼[ϖ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
   ext X σ
-  simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
-    Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick, BExpr.probOf_apply,
-    Pi.sub_apply, Pi.one_apply]
+  simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
+    compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick,
+    BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
 
 omit [DecidableEq 𝒱] in
 theorem Φ_eq_pick_apply {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
@@ -230,8 +230,9 @@ def Φ.cocontinuous {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (ih : ωScott
   intro c
   simp [Φ] at ih ⊢
   ext σ
-  simp only [ih, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, _root_.iInf_apply,
-    ENNReal.natCast_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf, BExpr.not_apply, ENNReal.iInf_add]
+  simp only [ih, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, _root_.iInf_apply,
+    ENNReal.natCast_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf, Pi.compl_apply, compl_iff_not,
+    ENNReal.iInf_add]
 
 @[simp]
 def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
@@ -277,8 +278,8 @@ theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]�
     simp [st]
     apply lfp_le
     intro σ
-    simp_all only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply,
-      BExpr.not_apply, Pi.ofNat_apply]
+    simp_all only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
+      compl_iff_not, Pi.one_apply]
     if b σ then
       simp_all
       apply ih _ (by rfl)

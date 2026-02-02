@@ -432,8 +432,8 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
             nth_rw 1 [pΦ_apply₂]
             nth_rw 1 [pΦ_apply₂]
             simp_all only [BExpr.probOf, ProbExp.pickProb_apply, ProbExp.pick, ProbExp.mk_vcoe,
-              Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, Iverson.iver_True, Nat.cast_one,
-              one_mul, Pi.sub_apply, Pi.one_apply, tsub_self, ProbExp.sub_apply, ProbExp.one_apply,
+              Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Iverson.iver_True, Nat.cast_one, one_mul,
+              Pi.sub_apply, Pi.ofNat_apply, tsub_self, ProbExp.sub_apply, ProbExp.one_apply,
               zero_mul, add_zero]
             gcongr
             apply (wfp _ _).mono
@@ -551,7 +551,7 @@ theorem wlp''_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
     simp [ProbExp.pick]
     congr! 4
     · ext; simp [ProbExp.ofExp]
-    · ext; simp [BExpr.not, Iverson.iver, BExpr.probOf, compl]; split_ifs <;> simp
+    · ext; simp [Iverson.iver, BExpr.probOf, compl]; split_ifs <;> simp
 
 
 end pGCL
