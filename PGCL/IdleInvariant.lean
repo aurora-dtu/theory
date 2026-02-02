@@ -90,7 +90,7 @@ theorem States.subst_comm [DecidableEq 𝒱] {σ : States ϖ} {x₁ x₂ : 𝒱}
 
 namespace Exp
 
-variable {ϖ : Γ[𝒱]} [DecidableEq 𝒱] {a b : 𝔼[ϖ, ENNReal]} {p : BExpr ϖ}
+variable {ϖ : Γ[𝒱]} [DecidableEq 𝒱] {a b : 𝔼[ϖ, ENNReal]} {b : BExpr ϖ}
 variable (xs : List ((v : 𝒱) × 𝔼[ϖ, ϖ v]))
 
 @[simp] theorem top_subst :
@@ -101,16 +101,16 @@ variable (xs : List ((v : 𝒱) × 𝔼[ϖ, ϖ v]))
     rfl
 
 @[simp] theorem iver_subst :
-    i[p][..xs] = i[(p)[..xs]] := by
-  induction xs generalizing p with try simp
+    i[b][..xs] = i[(b)[..xs]] := by
+  induction xs generalizing b with try simp
   | cons x xs ih =>
-    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil, ih, id_eq]
+    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil, ih]
     rfl
 @[simp] theorem not_subst :
-    (p.not)[..xs] = (p)[..xs].not := by
-  induction xs generalizing p with try simp
+    (b.not)[..xs] = (b)[..xs].not := by
+  induction xs generalizing b with try simp
   | cons x xs ih =>
-    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil, id_eq]
+    simp only [Substitution.substs_cons, Substitution.subst, Substitution.substs_nil]
     rw [ih]
     rfl
 @[simp] theorem hnot_subst :
