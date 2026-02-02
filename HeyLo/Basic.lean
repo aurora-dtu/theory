@@ -711,7 +711,9 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     let (G, choice) := fresh G .Nat
-    (G, .Assign ⟨choice.name, .Nat⟩ (.bin 0 p 1) ;; .If (.Binary .Eq (.Var choice.name .Nat) 0) C₁ C₂)
+    (G,
+      .Assign ⟨choice.name, .Nat⟩ (.bin 0 p 1) ;;
+      .If (.Binary .Eq (.Var choice.name .Nat) 0) C₁ C₂)
   | nonDet C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
@@ -918,11 +920,13 @@ theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂)
     Exp.top_subst, Exp.not_subst, sem_sub_apply, sem_zero, add_zero]
   simp [BinOp.sem]
   have : i[fun (σ : States Ty.ϖ) ↦ True] = 1 := by ext; simp
-  have : i[BExpr.not fun (σ : States Ty.ϖ) ↦ True] = 0 := by ext; simp
+  have : i[(fun (σ : States Ty.ϖ) ↦ True)ᶜ] = 0 := by ext; simp
   have : i[fun (σ : States Ty.ϖ) ↦ False] = 0 := by ext; simp
-  have : i[BExpr.not fun (σ : States Ty.ϖ) ↦ False] = 1 := by ext; simp
+  have : i[(fun (σ : States Ty.ϖ) ↦ False)ᶜ] = 1 := by ext; simp
   simp [*]
-  have : { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2.name, type := Ty.Nat } = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2 := by
+  have :
+      { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2.name, type := Ty.Nat }
+    = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2 := by
     ext
     · rfl
     · simp
@@ -1000,9 +1004,9 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
         intro h
         specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
         simp_all only
-      simp_all only [Pi.sup_apply, iSup_apply, Exp.covalidate_apply, Exp.hcoimp_apply,
-        Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply, BExpr.iver_apply, BExpr.not_apply,
-        le_sup_iff]
+      simp_all only [Ty.lit, Exp.iver_subst, Exp.not_subst, Pi.sup_apply, iSup_apply,
+        Exp.covalidate_apply, Exp.hcoimp_apply, Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply,
+        Pi.iver_apply, Pi.compl_apply, compl_iff_not, le_sup_iff]
       right
       apply le_iSup_of_le Ξ
       simp [HeyVL.vp, HeyVL.Skip]
@@ -1028,7 +1032,7 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
     grind [pGCL'.HeyVL, HeyVL.vp, add_comm, pGCL'.pGCL, wp.tick_apply, le_refl]
   | observe r =>
     intro σ
-    simp only [Ty.lit, pGCL, wp.observe_apply, Pi.mul_apply, BExpr.iver_apply, HeyVL, HeyVL.vp,
+    simp only [Ty.lit, pGCL, wp.observe_apply, Pi.mul_apply, Pi.iver_apply, HeyVL, HeyVL.vp,
       sem_inf_apply, Ty.expr, sem_embed, Pi.inf_apply, Pi.top_apply, le_inf_iff,
       BExpr.iver_mul_le_apply, and_true]
     if r.sem σ then simp_all [Iverson.iver] else simp_all

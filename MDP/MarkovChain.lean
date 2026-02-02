@@ -118,6 +118,7 @@ def Path.pref (π : M.Path) : Finset M.Path := Finset.univ.map ⟨π.take, π.ta
 theorem Path.take_mem_pref {π : M.Path} {i} (hi) : π.take ⟨i, hi⟩ ∈ π.pref := by
   simp [take, pref]
   use ⟨i, by grind⟩
+  simp [hi]
 
 @[grind ., simp]
 theorem Path'.take_take {π : M.Path'} {i} (hi) : (π.take j).take ⟨i, hi⟩ = π.take i := by
@@ -463,7 +464,8 @@ theorem Pr_cyl_help (π : M.Path) :
     = ∏ i : Fin (‖π‖ - 1), (M.P π.states[i.val]) (π.states[↑i + 1]'(by grind only)) := by
   symm
   apply Finset.prod_bij_ne_one
-          fun i h h' ↦ ⟨π.take ⟨i, by omega⟩, by simp [Path.take, Path.pref]; use ⟨i, by omega⟩⟩
+          fun i h h' ↦ ⟨π.take ⟨i, by omega⟩,
+                        by simp [Path.take, Path.pref]; use ⟨i, by omega⟩; simp; omega⟩
   · grind only [← Finset.mem_attach]
   · grind only [take, = List.length_take, = min_def]
   · simp only [pref, Finset.mem_attach, eq_iff, take, pmf'_apply, mk_length, List.length_take,
