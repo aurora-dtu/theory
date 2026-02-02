@@ -264,7 +264,7 @@ theorem Path.rew_eq {π : M.Path} :
 
 noncomputable def Φ (M : MDP S A) (O : Optimization) :
     (S → ENNReal) →o (S → ENNReal) →o S → ENNReal :=
-  ⟨fun r ↦ ⟨fun v s ↦ r s + O.opt fun α ↦ ∑' s', M.P s α s' * v s',
+  ⟨fun r ↦ ⟨fun v s ↦ r s + O.iOpt fun α ↦ ∑' s', M.P s α s' * v s',
     by intro v₁ v₂ h s; simp only; gcongr; intro α; simp only; gcongr with s'; exact h s'⟩,
     by intro r₁ r₂ h v s; simp only; gcongr; exact h s⟩
 
@@ -279,7 +279,7 @@ open scoped Optimization.Notation
 theorem Φ_𝒜_iSup :
     ⨆ v, M.Φ 𝒜 r v = M.Φ 𝒜 r (fun s ↦ ⨆ v : S → ENNReal, v s) := by
   ext s
-  simp only [Φ, Optimization.opt, OrderHom.coe_mk, iSup_apply, ← ENNReal.add_iSup, ENNReal.mul_iSup]
+  simp only [Φ, Optimization.iOpt, OrderHom.coe_mk, iSup_apply, ← ENNReal.add_iSup, ENNReal.mul_iSup]
   rw [iSup_comm]
   congr with α
   simp [ENNReal.tsum_eq_iSup_sum]
@@ -291,7 +291,7 @@ theorem Φ_𝒜_iSup :
 theorem Φ_𝒟_iSup [M.FiniteBranching] :
     ⨆ v, M.Φ 𝒟 r v = M.Φ 𝒟 r (fun s ↦ ⨆ v : S → ENNReal, v s) := by
   ext s
-  simp only [Φ, Optimization.opt, OrderHom.coe_mk, iSup_apply, ← ENNReal.add_iSup, ENNReal.mul_iSup]
+  simp only [Φ, Optimization.iOpt, OrderHom.coe_mk, iSup_apply, ← ENNReal.add_iSup, ENNReal.mul_iSup]
   rw [Set.iSup_iInf_of_monotone]
   · congr with α
     simp [ENNReal.tsum_eq_iSup_sum]
@@ -318,7 +318,7 @@ theorem Φ_𝒟_cont [M.FiniteBranching] : ScottContinuous (M.Φ 𝒟 r) := by
     simp_all only [Subtype.exists]
     obtain ⟨f, hf⟩ := hZ'
     use f, hf.left, hf.right.left, hf.right.right
-  simp only [Optimization.opt, ENNReal.mul_iSup, OrderHom.coe_mk, ← ENNReal.add_iSup]
+  simp only [Optimization.iOpt, ENNReal.mul_iSup, OrderHom.coe_mk, ← ENNReal.add_iSup]
   rw [Set.iSup_iInf_of_monotone]
   · congr with α
     simp [ENNReal.tsum_eq_iSup_sum]
@@ -345,7 +345,7 @@ theorem Φ_𝒜_cont : ScottContinuous (M.Φ 𝒜 r) := by
     simp_all only [Subtype.exists]
     obtain ⟨f, hf⟩ := hZ'
     use f, hf.left, hf.right.left, hf.right.right
-  simp only [Optimization.opt, ENNReal.mul_iSup, OrderHom.coe_mk, ← ENNReal.add_iSup]
+  simp only [Optimization.iOpt, ENNReal.mul_iSup, OrderHom.coe_mk, ← ENNReal.add_iSup]
   rw [iSup_comm]
   congr with α
   simp [ENNReal.tsum_eq_iSup_sum]
@@ -499,7 +499,7 @@ noncomputable def EC (M : MDP S A) (r : S → ENNReal) (𝒮 : M.Scheduler) (n :
 theorem tsum_opt [Finite ι] [Nonempty ι] [DecidableEq γ] {O : Optimization} {f : ι → γ → ENNReal}
     (h₁ : ∀ (i j : ι), ∃ k, ∀ (a : γ), f i a ≤ f k a ∧ f j a ≤ f k a)
     (h₂ : ∀ (z) (Z) (i j : ι), z ∉ Z → ∃ k, f k z + ∑ s ∈ Z, f k s ≤ f i z + ∑ s ∈ Z, f j s) :
-    (O.opt fun i ↦ ∑' s, f i s) = ∑' s, (O.opt fun i ↦ f i s) := by
+    (O.iOpt fun i ↦ ∑' s, f i s) = ∑' s, (O.iOpt fun i ↦ f i s) := by
   simp [ENNReal.tsum_eq_iSup_sum]
   cases O
   · simp; rw [iSup_comm]; congr with Z; symm; apply ENNReal.finsetSum_iSup; apply h₁
@@ -513,7 +513,7 @@ theorem tsum_opt [Finite ι] [Nonempty ι] [DecidableEq γ] {O : Optimization} {
         exact fun i j ↦ h₂ z Z i j hzZ
     · intro i a b hab; simp_all; gcongr
 
-theorem EC_succ : (O.opt fun 𝒮 ↦ M.EC r 𝒮 (n + 1)) = ((M.Φ O) r) (O.opt fun 𝒮 ↦ M.EC r 𝒮 n) := by
+theorem EC_succ : (O.iOpt fun 𝒮 ↦ M.EC r 𝒮 (n + 1)) = ((M.Φ O) r) (O.iOpt fun 𝒮 ↦ M.EC r 𝒮 n) := by
   ext s
   simp [Φ, EC]
   rcases n with _ | n
@@ -525,10 +525,10 @@ theorem EC_succ : (O.opt fun 𝒮 ↦ M.EC r 𝒮 (n + 1)) = ((M.Φ O) r) (O.opt
     have : ∀ α s', (M.P s α) s' ≠ ⊤ := by intro _ _; exact PMF.apply_ne_top _ _
     simp [Optimization.ENNReal_add_opt, Optimization.ENNReal_mul_opt, this]
     congr
-    show (O.opt fun (𝒮 : M.Scheduler) ↦ ∑' (a : M.succ s), M.P s (𝒮 {s}) a * M.EC r (𝒮.prefix s) (n + 1) a) =
-          O.opt fun α ↦ ∑' (s' : S), (M.P s α) s' * O.opt fun 𝒮 ↦ M.EC r 𝒮 (n + 1) s'
-    have : ∀ s', (O.opt fun 𝒮 ↦ M.EC r 𝒮 (n + 1) s')
-                  = O.opt fun (𝒮 : M.Scheduler) ↦ M.EC r (𝒮.prefix s) (n + 1) s' := by
+    show (O.iOpt fun (𝒮 : M.Scheduler) ↦ ∑' (a : M.succ s), M.P s (𝒮 {s}) a * M.EC r (𝒮.prefix s) (n + 1) a) =
+          O.iOpt fun α ↦ ∑' (s' : S), (M.P s α) s' * O.iOpt fun 𝒮 ↦ M.EC r 𝒮 (n + 1) s'
+    have : ∀ s', (O.iOpt fun 𝒮 ↦ M.EC r 𝒮 (n + 1) s')
+                  = O.iOpt fun (𝒮 : M.Scheduler) ↦ M.EC r (𝒮.prefix s) (n + 1) s' := by
 
       sorry
     simp [this]; clear this
@@ -551,13 +551,13 @@ theorem EC_succ : (O.opt fun 𝒮 ↦ M.EC r 𝒮 (n + 1)) = ((M.Φ O) r) (O.opt
   -- · sorry
 
 theorem EC_eq_lfp_Φ [M.ΦContinuous O] :
-    (⨆ n, O.opt fun 𝒮 ↦ M.EC r 𝒮 n) = lfp (M.Φ O r) := by
+    (⨆ n, O.iOpt fun 𝒮 ↦ M.EC r 𝒮 n) = lfp (M.Φ O r) := by
   rw [lfp_Φ_eq]
   congr! with n
   induction n with
   | zero =>
     ext s
-    cases O <;> simp [EC, Optimization.opt]
+    cases O <;> simp [EC, Optimization.iOpt]
   | succ n ih =>
     simp only [Function.iterate_succ', Function.comp_apply]
     simp [← ih]; clear ih

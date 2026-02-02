@@ -87,7 +87,7 @@ end opt₂
 
 variable [CompleteLattice α]
 
-def opt : (ι → α) →o α :=
+def iOpt : (ι → α) →o α :=
   match O with
     | 𝒜 => ⟨fun f ↦ ⨆ α, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
     | 𝒟 => ⟨fun f ↦ ⨅ α, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
@@ -97,8 +97,8 @@ def sOpt (S : Set ι) : (ι → α) →o α :=
     | 𝒜 => ⟨fun f ↦ ⨆ α ∈ S, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
     | 𝒟 => ⟨fun f ↦ ⨅ α ∈ S, f α, fun f g h ↦ by simp only; gcongr; apply h⟩
 
-theorem sOpt_eq_opt (S : Set ι) (f : ι → α) : O.sOpt S f = O.opt fun (a : S) ↦ f a := by
-  simp [sOpt, opt]
+theorem sOpt_eq_iOpt (S : Set ι) (f : ι → α) : O.sOpt S f = O.iOpt fun (a : S) ↦ f a := by
+  simp [sOpt, iOpt]
   split <;> simp [iSup_subtype', iInf_subtype']
 
 @[simp]
@@ -121,9 +121,9 @@ theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt₂ (f a) (f b) := by
     · simp
 
 @[grind =, simp]
-theorem 𝒜_opt {f : ι → α} : (𝒜 : Optimization).opt f = iSup f := rfl
+theorem 𝒜_iOpt {f : ι → α} : (𝒜 : Optimization).iOpt f = iSup f := rfl
 @[grind =, simp]
-theorem 𝒟_opt {f : ι → α} : (𝒟 : Optimization).opt f = iInf f := rfl
+theorem 𝒟_iOpt {f : ι → α} : (𝒟 : Optimization).iOpt f = iInf f := rfl
 
 @[grind =, simp]
 theorem 𝒜_sOpt {S : Set ι} {f : ι → α} : (𝒜 : Optimization).sOpt S f = ⨆ α ∈ S, f α := rfl
@@ -131,24 +131,24 @@ theorem 𝒜_sOpt {S : Set ι} {f : ι → α} : (𝒜 : Optimization).sOpt S f 
 theorem 𝒟_sOpt {S : Set ι} {f : ι → α} : (𝒟 : Optimization).sOpt S f = ⨅ α ∈ S, f α := rfl
 
 @[grind =, simp]
-theorem opt_apply {f : ι → β → α} : O.opt f s = O.opt (f · s) := by
-  cases O <;> simp [opt]
+theorem iOpt_apply {f : ι → β → α} : O.iOpt f s = O.iOpt (f · s) := by
+  cases O <;> simp [iOpt]
 
 @[simp]
-theorem opt_const [Nonempty ι] {x : α} : O.opt (fun (_ : ι) ↦ x) = x := by
-  cases O <;> simp [opt]
+theorem iOpt_const [Nonempty ι] {x : α} : O.iOpt (fun (_ : ι) ↦ x) = x := by
+  cases O <;> simp [iOpt]
 
-theorem ENNReal_add_opt [Nonempty ι] {f : ι → ENNReal} :
-    O.opt (fun (i : ι) ↦ a + f i) = a + O.opt f := by
+theorem ENNReal_add_iOpt [Nonempty ι] {f : ι → ENNReal} :
+    O.iOpt (fun (i : ι) ↦ a + f i) = a + O.iOpt f := by
   cases O <;> simp [ENNReal.add_iSup, ENNReal.add_iInf]
-theorem ENNReal_opt_add [Nonempty ι] {f : ι → ENNReal} :
-    O.opt (fun (i : ι) ↦ f i + a) = O.opt f + a := by
+theorem ENNReal_iOpt_add [Nonempty ι] {f : ι → ENNReal} :
+    O.iOpt (fun (i : ι) ↦ f i + a) = O.iOpt f + a := by
   cases O <;> simp [ENNReal.iSup_add, ENNReal.iInf_add]
-theorem ENNReal_mul_opt [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
-    O.opt (fun (i : ι) ↦ a * f i) = a * O.opt f := by
+theorem ENNReal_mul_iOpt [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
+    O.iOpt (fun (i : ι) ↦ a * f i) = a * O.iOpt f := by
   cases O <;> simp [ENNReal.mul_iSup, ENNReal.mul_iInf, ha]
-theorem ENNReal_opt_mul [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
-    O.opt (fun (i : ι) ↦ f i * a) = O.opt f * a := by
+theorem ENNReal_iOpt_mul [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : a ≠ ⊤) :
+    O.iOpt (fun (i : ι) ↦ f i * a) = O.iOpt f * a := by
   cases O <;> simp [ENNReal.iSup_mul, ENNReal.iInf_mul, ha]
 
 end Optimization

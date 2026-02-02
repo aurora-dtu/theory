@@ -408,7 +408,7 @@ theorem IdleCoinduction [DecidableEq 𝒱] {b : BExpr ϖ} {C : pGCL ϖ} {φ : �
   fapply OrderHom.le_gfp_prob
   · exact fun i ↦ hI (σ₀.cofix i)
   intro σ'
-  simp only [Exp.fix_apply, fΦ', OrderHom.coe_mk, ProbExp.pickProb_apply, ProbExp.pick,
+  simp only [Exp.fix_apply, pΦ, OrderHom.coe_mk, ProbExp.pickProb_apply, ProbExp.pick,
     Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, BExpr.fix_apply, wlp_apply_eq_wlp''_apply,
     ProbExp.mk_vcoe, Pi.sub_apply, Pi.one_apply, ProbExp.ofExp_apply]
   simp [IdleCoinvariant, Φ] at h
