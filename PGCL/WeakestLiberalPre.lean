@@ -302,6 +302,32 @@ def wfp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp O) := by
   convert congrFun (this ⟨fun i ↦ c i, fun _ _ _ _ ↦ by simp; apply c.mono ‹_›⟩) σ
   simp
 
+omit [DecidableEq 𝒱] in
+theorem ωScottContinuous_dual_prob_iff {f : ProbExp ϖ →o ProbExp ϖ} :
+    ωScottContinuous f.dual ↔ ∀ (c : ℕ → ProbExp ϖ), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i) := by
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
+  constructor
+  · intro h c hc; exact h ⟨c, hc⟩
+  · intro h c; exact h c c.mono
+
+def wlp.continuous_aux (C : pGCL ϖ) (h : ∀ X, wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X)) :
+    ωScottContinuous (C.wlp O).dual := by
+  simp [ωScottContinuous_dual_prob_iff]
+  have :
+        wlp[O]⟦~C⟧
+      = ⟨fun X ↦ 1 - wfp[O.dual]⟦~C⟧ (1 - X), fun _ _ _ ↦ by simp; gcongr⟩ := by
+    ext; simp [h]
+  simp [this]; clear this
+  have wfp_con := wfp.continuous C (O:=O.dual)
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup] at wfp_con
+  intro c hc
+  have : (1 - ⨅ i, c i) = ⨆ i, 1 - c i := by ext σ; simp [ENNReal.sub_iInf]
+  simp [this]
+  specialize wfp_con ⟨fun i ↦ 1 - c i, fun _ _ h ↦ by simp; gcongr; apply hc h⟩
+  simp only [DFunLike.coe] at wfp_con; simp at wfp_con
+  ext
+  simp [wfp_con, ENNReal.sub_iSup]
+
 attribute [- simp] Function.iterate_succ in
 theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
     wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X) := by
@@ -387,79 +413,29 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
       ⟨fun X ↦ 1 - wfp[O.dual]⟦~C'⟧ (1 - X), fun _ _ _ ↦ by simp only; gcongr⟩
     have ih' : wlp[O]⟦~C'⟧ = F := by
       ext; simp [ih, F]
-    simp [ih']
-    rw [fixedPoints.lfp_eq_sSup_iterate _ (pΦ.continuous' (wfp.continuous C'))]
-    rw [fixedPoints.gfp_eq_sInf_iterate _ _]
-    · simp
+    apply le_antisymm
+    · suffices lfp (pΦ[wfp[O.dual]⟦~C'⟧] b (1 - X)) ≤ 1 - gfp (pΦ[wlp[O]⟦~C'⟧] b X) by
+        suffices 1 - (1 - gfp (pΦ[wlp[O]⟦~C'⟧] b X)) ≤ 1 - lfp (pΦ[wfp[O.dual]⟦~C'⟧] b (1 - X)) by
+          simpa [ProbExp.one_sub_one_sub]
+        exact ProbExp.sub_le_sub _ _ _ _ (by rfl) this
+      apply lfp_le
+      nth_rw 2 [← map_gfp]
+      apply le_of_eq
+      set f := gfp (pΦ[wlp[_]⟦~C'⟧] _ _)
+      simp [pΦ, ProbExp.pickProb]
       ext σ
-      simp [ENNReal.sub_iSup]
-      apply le_antisymm
-      · simp
-        intro i
-        apply iInf_le_of_le (i + 1)
-        induction i generalizing σ with
-        | zero => simp
-        | succ i ih =>
-          nth_rw 2 [Function.iterate_succ']
-          nth_rw 1 [Function.iterate_succ']
-          simp
-          if b σ then
-            nth_rw 1 [pΦ_apply₂]
-            nth_rw 1 [pΦ_apply₂]
-            simp_all only [ProbExp.pickProb_apply, ProbExp.pick_true, ProbExp.sub_apply,
-              ProbExp.one_apply]
-            gcongr
-            apply (wfp _ _).mono
-            intro σ
-            specialize ih σ
-            simp
-            grw [ih]
-            simp
-          else
-            simp_all [ProbExp.pick, BExpr.probOf, pΦ_apply₂]
-      · simp
-        intro i
-        apply iInf_le_of_le i
-        induction i generalizing σ with
-        | zero => simp
-        | succ i ih =>
-          nth_rw 2 [Function.iterate_succ']
-          nth_rw 1 [Function.iterate_succ']
-          simp only [Function.comp_apply]
-          set f := (fun Y ↦ p[b].pickProb (wfp[O.dual]⟦~C'.st⟧ Y) (1 - X))^[i]
-          set g := (fun Y ↦ p[b].pickProb (1 - wfp[O.dual]⟦~C'.st⟧ (1 - Y)) X)^[i]
-          if b σ then
-            nth_rw 1 [pΦ_apply₂]
-            nth_rw 1 [pΦ_apply₂]
-            simp_all only [BExpr.probOf, ProbExp.pickProb_apply, ProbExp.pick, ProbExp.mk_vcoe,
-              Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Iverson.iver_True, Nat.cast_one, one_mul,
-              Pi.sub_apply, Pi.ofNat_apply, tsub_self, ProbExp.sub_apply, ProbExp.one_apply,
-              zero_mul, add_zero]
-            gcongr
-            apply (wfp _ _).mono
-            intro σ
-            simp
-            exact tsub_le_iff_left.mp (ih σ)
-          else
-            simp_all only [tsub_le_iff_right, pΦ_apply₂, BExpr.probOf, ProbExp.pickProb_apply,
-              ProbExp.pick, ProbExp.mk_vcoe, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-              Iverson.iver_False, Nat.cast_zero, zero_mul, Pi.sub_apply, Pi.ofNat_apply, tsub_zero,
-              ProbExp.sub_apply, ProbExp.one_apply, one_mul, zero_add,
-              ProbExp.one_sub_one_sub_apply, le_refl]
-    · refine pΦ.continuous ?_
-      simp [F]
-      refine ProbExp.ωScottContinuous_dual_iff'.mpr ?_
-      simp
-      intro c hc
-      have h₁ := wfp.continuous C' (O:=O.dual)
-      simp [ωScottContinuous_iff_map_ωSup_of_orderHom] at h₁
-      replace h₁ := h₁ ⟨fun i ↦ 1 - c i, fun  _ _ h ↦ by simp; gcongr; apply hc h⟩
-      simp [ωSup] at h₁
-      simp only [DFunLike.coe] at h₁
-      simp at h₁
-      have h₂ : (⨆ i, 1 - c i) = 1 - ⨅ i, c i := by ext σ; simp [ENNReal.sub_iInf]
+      simp only [ih, ProbExp.add_apply, ProbExp.mul_apply, BExpr.probOf_apply, ProbExp.sub_apply,
+        ProbExp.one_apply]
+      by_cases hb : b σ <;> simp [hb]
+    · apply le_gfp
+      nth_rw 1 [← map_lfp]
+      apply le_of_eq
+      set f := lfp (pΦ[wfp[_]⟦~C'⟧] _ _)
+      simp [pΦ, ProbExp.pickProb]
       ext σ
-      simp [← h₂, h₁, ENNReal.sub_iSup]
+      simp only [ProbExp.sub_apply, ProbExp.one_apply, ProbExp.add_apply, ProbExp.mul_apply,
+        BExpr.probOf_apply, ih, ProbExp.one_sub_one_sub]
+      by_cases hb : b σ <;> simp [hb]
   | tick => ext; simp [wlp, wfp]
   | observe b =>
     ext σ; simp [wlp, wfp, BExpr.probOf, ProbExp.pick]
@@ -468,30 +444,8 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
     else
       simp [hb]
 
-omit [DecidableEq 𝒱] in
-theorem ωScottContinuous_dual_prob_iff {f : ProbExp ϖ →o ProbExp ϖ} :
-    ωScottContinuous f.dual ↔ ∀ (c : ℕ → ProbExp ϖ), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i) := by
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
-  constructor
-  · intro h c hc; exact h ⟨c, hc⟩
-  · intro h c; exact h c c.mono
-
-def wlp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wlp O).dual := by
-  simp [ωScottContinuous_dual_prob_iff]
-  have :
-        wlp[O]⟦~C⟧
-      = ⟨fun X ↦ 1 - wfp[O.dual]⟦~C⟧ (1 - X), fun _ _ _ ↦ by simp; gcongr⟩ := by
-    ext; simp [wlp'_sound]
-  simp [this]; clear this
-  have wfp_con := wfp.continuous C (O:=O.dual)
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup] at wfp_con
-  intro c hc
-  have : (1 - ⨅ i, c i) = ⨆ i, 1 - c i := by ext σ; simp [ENNReal.sub_iInf]
-  simp [this]
-  specialize wfp_con ⟨fun i ↦ 1 - c i, fun _ _ h ↦ by simp; gcongr; apply hc h⟩
-  simp only [DFunLike.coe] at wfp_con; simp at wfp_con
-  ext
-  simp [wfp_con, ENNReal.sub_iSup]
+def wlp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wlp O).dual :=
+  continuous_aux C (wlp'_sound C)
 
 omit [DecidableEq 𝒱] in
 theorem ProbExp.iInf_pick_of_Antitone (p : ProbExp ϖ) {f g : ℕ → 𝔼[ϖ, ENNReal]}

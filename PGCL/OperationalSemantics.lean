@@ -93,7 +93,7 @@ omit [DecidableEq 𝒱] in
 @[grind =, simp] theorem cP'_apply {f : pGCL ϖ × States ϖ → ENNReal} :
     cP' f C X = fun σ ↦ f (C, σ) := rfl
 
-@[simp] theorem ς.skip :
+@[simp]theorem ς.skip :
       (𝕊 cT cP).ς O f skip
     = ⟨(fun X σ ↦ cP (pgcl {skip}, σ) + cT X (.term, σ)),
         fun _ _ h _ ↦ by
@@ -310,11 +310,10 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (ϖ:=ϖ)) where
       ext
       simp
       nth_rw 2 [← wp_fp]
-      simp only [Φ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply,
-        BExpr.iver_apply, BExpr.not_apply]
+      simp only [Φ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
+        Pi.compl_apply, compl_iff_not]
 
-example : dwp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Demonic := by rw [← instET.et_eq_op]
-example : awp (ϖ:=ϖ) = (𝕊 cost_t cost_p).op .Angelic := by rw [← instET.et_eq_op]
+example {C : pGCL ϖ} : wp[O]⟦~C⟧ = (𝕊 cost_t cost_p).op O C := by rw [← instET.et_eq_op]
 
 /-- info: 'pGCL.instET' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -382,9 +381,6 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
 #guard_msgs in
 #print axioms instET'
 
-example {C : pGCL ϖ} : wfp'[𝒟]⟦~C⟧ = (𝕊 cost_t' cost_p').op .Demonic C := by rw [instET'.et_eq_op]
-example {C : pGCL ϖ} : wfp'[𝒜]⟦~C⟧ = (𝕊 cost_t' cost_p').op .Angelic C := by rw [instET'.et_eq_op]
+example {C : pGCL ϖ} : wfp'[O]⟦~C⟧ = (𝕊 cost_t' cost_p').op O C := by rw [instET'.et_eq_op]
 
 end pGCL
-
-#min_imports

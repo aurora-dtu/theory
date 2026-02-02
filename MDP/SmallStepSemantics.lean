@@ -4,10 +4,7 @@ import MDP.Relational
 
 open OrderHom OmegaCompletePartialOrder
 
--- abbrev 𝔼 (S : Type*) := S → ENNReal
--- notation "𝔼[" S "]" => 𝔼 S
--- abbrev 𝔼 (S : Type*) := S → ENNReal
-notation "𝔼[" S "]" => S → ENNReal
+local notation "𝔼[" S "]" => S → ENNReal
 
 inductive Conf (P S T : Type*) where
   | term (t : T) (σ : S)
@@ -196,6 +193,8 @@ def cost_mono : Monotone 𝕊.cost := by
   · rfl
   · apply 𝕊.cost_t.mono h
   · rfl
+@[gcongr]
+theorem cost_le_apply (h : a ≤ b) : 𝕊.cost a x ≤ 𝕊.cost b x := cost_mono h x
 
 @[simp] theorem cost_bot (X) : 𝕊.cost X .bot = 0 := by rfl
 
@@ -301,10 +300,9 @@ noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
   fun a b hab σ ↦ by
     simp
     gcongr with α
-    · apply 𝕊.cost_mono hab
-    · split <;> gcongr; split
-      · apply (Y _).mono hab
-      · apply 𝕊.cost_t.mono hab⟩),
+    split <;> gcongr; split
+    · apply (Y _).mono hab
+    · apply 𝕊.cost_t.mono hab⟩),
   fun a b hab C X σ ↦ by
     simp only [Φ']
     gcongr with α
@@ -483,8 +481,6 @@ theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (
           simp only [Function.iterate_succ', Function.comp_apply]
           simp [cost]
 
-noncomputable def olp (c : P) (X : 𝔼[S]) := 1 - 𝕊.op 𝒜 c (1 - X)
-
 class ET {P S T A : Type*} [Nonempty A] (𝕊 : SmallStepSemantics P S T A)
     (O : Optimization) [O.ΦContinuous 𝕊.mdp] (et : P → 𝔼[S] →o 𝔼[S]) where
   et_le_op : et ≤ 𝕊.op O
@@ -507,14 +503,6 @@ theorem op_le_seq
       𝕊.cost_t (𝕊.op O C' X) (t, σ) ≤ (𝕊.op O C' X) σ)
     (after_inj : ∀ x, Function.Injective (after x)) :
       𝕊.op O C ∘ 𝕊.op O C' ≤ 𝕊.op O (seq C C') := by
-  -- rw [← lfp_ς_eq_op]
-  -- intro X
-  -- simp
-  -- have := fun a h ↦ lfp_le (𝕊.ς O) (a:=a) h C ((lfp (𝕊.ς O) C') X)
-  -- simp at this
-  -- apply le_trans (this _ _)
-
-
   intro X σ
   simp
   nth_rw 1 [op_eq_iter]
