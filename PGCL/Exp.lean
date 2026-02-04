@@ -124,7 +124,7 @@ end Pi
 
 namespace pGCL
 
-notation "Γ[" ϖ "]" => ϖ → Type
+notation "Γ[" ϖ "]" => ϖ → Type*
 def States {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
 
 variable {𝒱 : Type*} {ϖ : Γ[𝒱]}

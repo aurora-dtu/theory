@@ -437,7 +437,6 @@ theorem embed.measurable : Measurable (embed (M:=M)) := by
   intro S hS
   induction hS with try measurability
   | basic T hT =>
-    simp_all
     obtain ⟨π, ⟨_⟩⟩ := hT
     rw [Path.Cyl_eq_cylinder]
     measurability

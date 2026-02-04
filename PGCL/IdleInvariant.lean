@@ -156,18 +156,18 @@ namespace States
 
 open scoped Classical in
 noncomputable
-def cofix (σ₀ : States ϖ) {S : Set 𝒱} (σ : States (ϖ · : ↑Sᶜ → Type)) : States ϖ :=
+def cofix (σ₀ : States ϖ) {S : Set 𝒱} (σ : States (ϖ · : ↑Sᶜ → _)) : States ϖ :=
   fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
 
 @[grind =, simp]
-theorem cofix_apply_mem {S : Set 𝒱} (h : v ∈ S) (σ₀ : States ϖ) (σ' : States (ϖ · : ↑Sᶜ → Type)) :
+theorem cofix_apply_mem {S : Set 𝒱} (h : v ∈ S) (σ₀ : States ϖ) (σ' : States (ϖ · : ↑Sᶜ → _)) :
     σ₀.cofix σ' v = σ₀ v := by simp [h, cofix]
 
 end States
 
 open scoped Classical in
 noncomputable
-def Exp.fix (X : 𝔼[ϖ, α]) (S : Set 𝒱) (σ₀ : States ϖ) : 𝔼[(ϖ · : ↑Sᶜ → Type), α] :=
+def Exp.fix (X : 𝔼[ϖ, α]) (S : Set 𝒱) (σ₀ : States ϖ) : 𝔼[(ϖ · : ↑Sᶜ → _), α] :=
   fun σ ↦ X (σ₀.cofix σ)
 
 @[grind =, simp]
@@ -187,17 +187,17 @@ theorem Exp.fix_compl_empty_eq (φ ψ : 𝔼[ϖ, α]) : Exp.fix φ ∅ᶜ = Exp.
 
 open scoped Classical in
 noncomputable
-def BExpr.fix (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : BExpr (ϖ · : ↑Sᶜ → Type) :=
+def BExpr.fix (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : BExpr (ϖ · : ↑Sᶜ → _) :=
   fun σ ↦ X (σ₀.cofix σ)
 
 open scoped Classical in
 @[grind =, simp]
-theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) (σ : States (ϖ · : ↑Sᶜ → Type)) :
+theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) (σ : States (ϖ · : ↑Sᶜ → _)) :
     (X.fix S σ₀) σ = X (σ₀.cofix σ) := rfl
 
 open scoped Classical in
 noncomputable
-def ProbExp.fix (X : ProbExp ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : ProbExp (ϖ · : ↑Sᶜ → Type) :=
+def ProbExp.fix (X : ProbExp ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : ProbExp (ϖ · : ↑Sᶜ → _) :=
   ⟨fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩, by intro σ; simp⟩
 
 -- @[gcongr]
@@ -217,7 +217,7 @@ def mods : pGCL ϖ → Set 𝒱
   | pgcl {observe(~ _)} => ∅
 
 open scoped Classical in
-noncomputable def fix (C : pGCL ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : pGCL (ϖ · : ↑Sᶜ → Type) :=
+noncomputable def fix (C : pGCL ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : pGCL (ϖ · : ↑Sᶜ → _) :=
   match C with
   | pgcl {skip} => pgcl {skip}
   | pgcl {~x := ~A} =>

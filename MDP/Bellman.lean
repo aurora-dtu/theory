@@ -131,7 +131,7 @@ instance : Optimization.ΦContinuous 𝒟 M where
 instance : Optimization.ΦContinuous O M where
   Φ_continuous _ :=
     match O with
-    | 𝒜 => MDP.Φ_𝒜_ωScottContinuous
-    | 𝒟 => MDP.Φ_𝒟_ωScottContinuous
+    | 𝒜 => M.Φ_𝒜_ωScottContinuous
+    | 𝒟 => M.Φ_𝒟_ωScottContinuous
 
 end MDP.FiniteBranching
