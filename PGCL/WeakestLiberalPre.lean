@@ -68,7 +68,7 @@ noncomputable def wfp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp �
   | pgcl {{~C₁} [] {~C₂}} => O.opt₂ (C₁.wfp O) (C₂.wfp O)
   | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (pΦ[wfp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨(p[b].pickProb · 1), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wfp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -93,7 +93,7 @@ noncomputable def wfp' (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o �
     ⟨O.opt₂ (C₁.wfp' O) (C₂.wfp' O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
   | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (Φ[wfp' O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨(p[b].pick · 1), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨fun X ↦ p[b].pick X 1, fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wfp'[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -109,6 +109,7 @@ def wfp'Unexpander : Lean.PrettyPrinter.Unexpander
 
 theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
   induction C generalizing X with try simp [wfp, wfp', *]; (try rfl); done
+  | observe b => ext σ; simp [wfp, wfp', himp]; if h : b σ then simp [h, eq_comm] else simp [h]
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [wfp, wfp', ← ih₁, ← ih₂]; ext; simp [Optimization.opt₂]
     cases O <;> simp
@@ -212,10 +213,6 @@ def wlp''Unexpander : Lean.PrettyPrinter.Unexpander
     `(wlp''[$o]⟦$c⟧)
 | _ => throw ()
 
--- TODO: remove this?
--- theorem wlp''_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
---     wlp'' O pgcl {while ~φ {~C'}} f = gfp (Φ[wlp''[O]⟦~C'⟧] φ f) := by rfl
-
 section
 
 variable {X : 𝔼[ϖ, ENNReal]}
@@ -233,14 +230,120 @@ variable {X : 𝔼[ϖ, ENNReal]}
   ext; simp [wlp'']; cases O <;> simp [Optimization.opt₂]
 @[simp] theorem wlp''.tick_apply : wlp''[O]⟦tick(~e)⟧ X = X ⊓ 1 := by
   simp [wlp'']; rfl
--- TODO: should the go to 0 or 1?
 @[simp] theorem wlp''.observe_apply :
     wlp''[O]⟦observe(~b)⟧ X = p[b].pick (X ⊓ 1) 0 := by
   ext σ
   simp [wlp'', ProbExp.ofExp, ProbExp.pick]
-  -- if hb : b σ then simp [hb] else simp [hb]
 
 end
+
+attribute [- simp] Function.iterate_succ in
+theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X) := by
+  induction C generalizing X with
+  | skip => ext σ; simp [wlp, wfp]
+  | assign => ext σ; simp [wlp, wfp]
+  | seq C₁ C₂ ih₁ ih₂ =>
+    ext σ
+    simp [wlp, wfp]
+    rw [ih₂ _, ih₁ _ ]
+    simp
+  | prob C₁ p C₂ ih₁ ih₂ =>
+    ext σ
+    simp [wlp, wfp]
+    simp [ih₁, ih₂]
+    simp [ProbExp.pick]
+    simp [ENNReal.mul_sub]
+    set f := wfp[O.dual]⟦~C₁⟧ (1 - X) σ
+    set g := wfp[O.dual]⟦~C₂⟧ (1 - X) σ
+    refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
+    · simp
+    · simp
+    · have hf : f ≤ 1 := by simp [f]
+      have hg : g ≤ 1 := by simp [g]
+      have hf' : f ≠ ⊤ := (hf.trans_lt ENNReal.one_lt_top).ne
+      have hg' : g ≠ ⊤ := (hg.trans_lt ENNReal.one_lt_top).ne
+      rw [ENNReal.toReal_add, ENNReal.toReal_sub_of_le, ENNReal.toReal_sub_of_le,
+          ENNReal.toReal_sub_of_le, ENNReal.toReal_sub_of_le, ENNReal.toReal_add]
+            <;> try simp [ENNReal.mul_ne_top, *]
+      · ring
+      · calc
+          p σ * f + (1 - p σ) * g ≤ p σ * 1 + (1 - p σ) * 1 := by gcongr
+          _ ≤ 1 := by simp
+      · calc (1 - p σ) * g ≤ (1 - p σ) * 1 := by gcongr
+          _ ≤ 1 - p σ := by simp
+      · calc p σ * f ≤ p σ * 1 := by gcongr
+          _ ≤ p σ := by simp
+  | nonDet C₁ C₂ ih₁ ih₂ =>
+    ext σ
+    simp [wfp, ih₁, ih₂]
+    cases O
+    · simp [Optimization.opt₂, Optimization.dual]
+      simp [Optimization.dual] at ih₁ ih₂
+      set f := wfp[𝒟]⟦~C₁⟧ (1 - X) σ
+      set g := wfp[𝒟]⟦~C₂⟧ (1 - X) σ
+      apply le_antisymm
+      · simp only [sup_le_iff]
+        constructor
+        · gcongr; exact min_le_left _ _
+        · gcongr; exact min_le_right _ _
+      · simp only [le_sup_iff]
+        if hfg : f ≤ g then
+          left
+          gcongr
+          simp [f, g] at hfg
+          apply le_min (by rfl) hfg
+        else
+          right
+          gcongr
+          apply le_min (le_of_not_ge hfg) (by rfl)
+    · simp [Optimization.opt₂, Optimization.dual]
+      simp [Optimization.dual] at ih₁ ih₂
+      set f := wfp[𝒜]⟦~C₁⟧ (1 - X) σ
+      set g := wfp[𝒜]⟦~C₂⟧ (1 - X) σ
+      apply le_antisymm
+      · simp only [inf_le_iff]
+        if hfg : f ≤ g then
+          right
+          gcongr
+          refine max_le hfg (by rfl)
+        else
+          left
+          gcongr
+          simp at hfg
+          refine max_le (by rfl) hfg.le
+      · simp only [le_inf_iff]
+        constructor
+        · gcongr; exact le_max_left f g
+        · gcongr; exact le_max_right f g
+  | loop b C' ih =>
+    simp [wlp, wfp]
+    rw [ProbExp.gfp_eq_lfp_compl]
+    simp [compl]
+    congr! 4 with Y
+    ext σ
+    simp [pΦ, ProbExp.pick]
+    if hb : b σ then simp [hb, ih] else simp [hb]
+  | tick => ext; simp [wlp, wfp]
+  | observe b =>
+    ext σ; simp [wlp, wfp, BExpr.probOf]
+    if hb : b σ then
+      simp [hb]
+      have : 1 ≤ 1 - X σ ↔ X σ = 0 := by
+        constructor
+        · intro h
+          have : X σ ≤ 1 := ProbExp.le_one_apply X σ
+          rw [ENNReal.le_sub_iff_add_le_left] at h
+          · have : (X σ + 1) - 1 ≤ 1 - 1 := tsub_le_tsub_right h 1
+            simp_all
+          · simp_all
+          · simp_all
+        · simp_all
+      split_ifs <;> simp_all
+    else
+      simp [hb]
+
+attribute [- simp] Function.iterate_succ in
+theorem wlp'_sound' (C : pGCL ϖ) : wlp[O]⟦~C⟧ = wfp[O.dual]⟦~C⟧ᶜ := by ext; rw [wlp'_sound]; rfl
 
 def wfp'.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp' O) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
@@ -328,122 +431,6 @@ def wlp.continuous_aux (C : pGCL ϖ) (h : ∀ X, wlp[O]⟦~C⟧ X = 1 - wfp[O.du
   ext
   simp [wfp_con, ENNReal.sub_iSup]
 
-attribute [- simp] Function.iterate_succ in
-theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) :
-    wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X) := by
-  induction C generalizing X with
-  | skip => ext σ; simp [wlp, wfp]
-  | assign => ext σ; simp [wlp, wfp]
-  | seq C₁ C₂ ih₁ ih₂ =>
-    ext σ
-    simp [wlp, wfp]
-    rw [ih₂ _, ih₁ _ ]
-    simp
-  | prob C₁ p C₂ ih₁ ih₂ =>
-    ext σ
-    simp [wlp, wfp]
-    simp [ih₁, ih₂]
-    simp [ProbExp.pick]
-    simp [ENNReal.mul_sub]
-    set f := wfp[O.dual]⟦~C₁⟧ (1 - X) σ
-    set g := wfp[O.dual]⟦~C₂⟧ (1 - X) σ
-    refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
-    · simp
-    · simp
-    · have hf : f ≤ 1 := by simp [f]
-      have hg : g ≤ 1 := by simp [g]
-      have hf' : f ≠ ⊤ := (hf.trans_lt ENNReal.one_lt_top).ne
-      have hg' : g ≠ ⊤ := (hg.trans_lt ENNReal.one_lt_top).ne
-      rw [ENNReal.toReal_add, ENNReal.toReal_sub_of_le, ENNReal.toReal_sub_of_le,
-          ENNReal.toReal_sub_of_le, ENNReal.toReal_sub_of_le, ENNReal.toReal_add]
-            <;> try simp [ENNReal.mul_ne_top, *]
-      · ring
-      · calc
-          p σ * f + (1 - p σ) * g ≤ p σ * 1 + (1 - p σ) * 1 := by gcongr
-          _ ≤ 1 := by simp
-      · calc (1 - p σ) * g ≤ (1 - p σ) * 1 := by gcongr
-          _ ≤ 1 - p σ := by simp
-      · calc p σ * f ≤ p σ * 1 := by gcongr
-          _ ≤ p σ := by simp
-  | nonDet C₁ C₂ ih₁ ih₂ =>
-    ext σ
-    simp [wfp, ih₁, ih₂]
-    cases O
-    · simp [Optimization.opt₂, Optimization.dual]
-      simp [Optimization.dual] at ih₁ ih₂
-      set f := wfp[𝒟]⟦~C₁⟧ (1 - X) σ
-      set g := wfp[𝒟]⟦~C₂⟧ (1 - X) σ
-      apply le_antisymm
-      · simp only [sup_le_iff]
-        constructor
-        · gcongr; exact min_le_left _ _
-        · gcongr; exact min_le_right _ _
-      · simp only [le_sup_iff]
-        if hfg : f ≤ g then
-          left
-          gcongr
-          simp [f, g] at hfg
-          apply le_min (by rfl) hfg
-        else
-          right
-          gcongr
-          apply le_min (le_of_not_ge hfg) (by rfl)
-    · simp [Optimization.opt₂, Optimization.dual]
-      simp [Optimization.dual] at ih₁ ih₂
-      set f := wfp[𝒜]⟦~C₁⟧ (1 - X) σ
-      set g := wfp[𝒜]⟦~C₂⟧ (1 - X) σ
-      apply le_antisymm
-      · simp only [inf_le_iff]
-        if hfg : f ≤ g then
-          right
-          gcongr
-          refine max_le hfg (by rfl)
-        else
-          left
-          gcongr
-          simp at hfg
-          refine max_le (by rfl) hfg.le
-      · simp only [le_inf_iff]
-        constructor
-        · gcongr; exact le_max_left f g
-        · gcongr; exact le_max_right f g
-  | loop b C' ih =>
-    simp [wlp, wfp]
-    set F : ProbExp ϖ →o ProbExp ϖ :=
-      ⟨fun X ↦ 1 - wfp[O.dual]⟦~C'⟧ (1 - X), fun _ _ _ ↦ by simp only; gcongr⟩
-    have ih' : wlp[O]⟦~C'⟧ = F := by
-      ext; simp [ih, F]
-    apply le_antisymm
-    · suffices lfp (pΦ[wfp[O.dual]⟦~C'⟧] b (1 - X)) ≤ 1 - gfp (pΦ[wlp[O]⟦~C'⟧] b X) by
-        suffices 1 - (1 - gfp (pΦ[wlp[O]⟦~C'⟧] b X)) ≤ 1 - lfp (pΦ[wfp[O.dual]⟦~C'⟧] b (1 - X)) by
-          simpa [ProbExp.one_sub_one_sub]
-        exact ProbExp.sub_le_sub _ _ _ _ (by rfl) this
-      apply lfp_le
-      nth_rw 2 [← map_gfp]
-      apply le_of_eq
-      set f := gfp (pΦ[wlp[_]⟦~C'⟧] _ _)
-      simp [pΦ, ProbExp.pickProb]
-      ext σ
-      simp only [ih, ProbExp.add_apply, ProbExp.mul_apply, BExpr.probOf_apply, ProbExp.sub_apply,
-        ProbExp.one_apply]
-      by_cases hb : b σ <;> simp [hb]
-    · apply le_gfp
-      nth_rw 1 [← map_lfp]
-      apply le_of_eq
-      set f := lfp (pΦ[wfp[_]⟦~C'⟧] _ _)
-      simp [pΦ, ProbExp.pickProb]
-      ext σ
-      simp only [ProbExp.sub_apply, ProbExp.one_apply, ProbExp.add_apply, ProbExp.mul_apply,
-        BExpr.probOf_apply, ih, ProbExp.one_sub_one_sub]
-      by_cases hb : b σ <;> simp [hb]
-  | tick => ext; simp [wlp, wfp]
-  | observe b =>
-    ext σ; simp [wlp, wfp, BExpr.probOf, ProbExp.pick]
-    if hb : b σ then
-      simp [hb]
-    else
-      simp [hb]
-
 def wlp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wlp O).dual :=
   continuous_aux C (wlp'_sound C)
 
@@ -506,6 +493,5 @@ theorem wlp''_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
     congr! 4
     · ext; simp [ProbExp.ofExp]
     · ext; simp [Iverson.iver, BExpr.probOf, compl]; split_ifs <;> simp
-
 
 end pGCL

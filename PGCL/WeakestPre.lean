@@ -287,17 +287,4 @@ theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]�
       simp_all
       apply hX
 
-omit [DecidableEq 𝒱] in
-@[simp]
-theorem ProbExp.one_sub_one_sub_apply {X : ProbExp ϖ} : 1 - (1 - X σ) = X σ := by
-  apply ENNReal.sub_sub_cancel <;> simp
-omit [DecidableEq 𝒱] in
-@[simp]
-theorem ProbExp.one_sub_one_sub {X : ProbExp ϖ} : 1 - (1 - X) = X := by
-  ext; simp
-omit [DecidableEq 𝒱] in
-@[simp]
-theorem ProbExp.one_sub_le {X : ProbExp ϖ} : 1 - X.val ≤ 1 := by
-  intro σ; simp
-
 end pGCL

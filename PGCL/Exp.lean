@@ -1,8 +1,9 @@
-import Mathlib.Data.ENNReal.Operations
 import Mathlib.Data.ENNReal.Inv
+import Mathlib.Data.ENNReal.Operations
+import Mathlib.Order.FixedPoints
 import Mathlib.Order.OmegaCompletePartialOrder
-import STDX.Subst
 import MDP.Optimization
+import STDX.Subst
 
 /-! # Custom operators -/
 
@@ -316,11 +317,34 @@ namespace ProbExp
 
 variable (p : ProbExp ϖ) (σ : States ϖ)
 
+@[ext]
+theorem ext {p q : ProbExp ϖ} (h : ∀ σ, p σ = q σ) : p = q := by
+  cases p; cases q; congr; apply funext h
+
+instance instLE : LE (ProbExp ϖ) where
+  le a b := ∀ x, a x ≤ b x
+
+@[grind =, simp] theorem coe_le {f g : 𝔼[ϖ, ENNReal]} {hf : f ≤ 1} {hg : g ≤ 1} :
+    instLE.le (⟨f, hf⟩) ⟨g, hg⟩ ↔ f ≤ g := by rfl
+
+instance : PartialOrder (ProbExp ϖ) where
+  le_refl a σ := by rfl
+  le_trans a b c hab hbc σ := by exact (hab σ).trans (hbc σ)
+  le_antisymm a b hab hba := by ext σ; exact (hab σ).antisymm (hba σ)
+
 @[grind =, simp] theorem add_one_apply : p σ + (1 - p σ) = 1 := add_tsub_cancel_of_le (p.prop σ)
 
-@[grind ., simp] theorem le_one : p σ ≤ 1 := p.prop σ
+instance instOfNat0 : OfNat (ProbExp ϖ) 0 := ⟨⟨fun _ ↦ 0, by intro; simp⟩⟩
+instance instOfNat1 : OfNat (ProbExp ϖ) 1 := ⟨⟨fun _ ↦ 1, by intro; simp⟩⟩
+
+@[grind =, simp] theorem zero_apply : instOfNat0.ofNat σ = 0 := rfl
+@[grind =, simp] theorem one_apply : instOfNat1.ofNat σ = 1 := rfl
+
+@[grind ., simp] theorem le_one : p ≤ 1 := p.prop
+@[grind ., simp] theorem zero_le : 0 ≤ p := by intro; simp
+@[grind ., simp] theorem le_one_apply : p σ ≤ 1 := p.prop σ
 @[grind ., simp] theorem val_le_one : p.val ≤ 1 := p.prop
-@[grind ., simp] theorem zero_le : 0 ≤ p σ := by simp
+@[grind ., simp] theorem zero_le_apply : 0 ≤ p σ := by simp
 @[grind ., simp] theorem zero_val_le : 0 ≤ p.val := by apply zero_le
 @[grind =, simp] theorem lt_one_iff : ¬p σ = 1 ↔ p σ < 1 := by simp
 @[grind ., simp] theorem sub_one_le_one : 1 - p σ ≤ 1 := by simp
@@ -370,16 +394,6 @@ noncomputable instance : HMul (𝔼[ϖ, ENNReal]) (ProbExp ϖ) (𝔼[ϖ, ENNReal
     (p * x) σ = p σ * x σ := rfl
 @[grind =, simp] theorem Exp_hMul_apply {p : ProbExp ϖ} {x : 𝔼[ϖ, ENNReal]} :
     (x * p) σ = x σ * p σ := rfl
-
-@[ext]
-theorem ext {p q : ProbExp ϖ} (h : ∀ σ, p σ = q σ) : p = q := by
-  cases p; cases q; congr; apply funext h
-
-instance instOfNat0 : OfNat (ProbExp ϖ) 0 := ⟨⟨fun _ ↦ 0, by intro; simp⟩⟩
-instance instOfNat1 : OfNat (ProbExp ϖ) 1 := ⟨⟨fun _ ↦ 1, by intro; simp⟩⟩
-
-@[grind =, simp] theorem zero_apply : instOfNat0.ofNat σ = 0 := rfl
-@[grind =, simp] theorem one_apply : instOfNat1.ofNat σ = 1 := rfl
 
 section
 
@@ -477,17 +491,6 @@ theorem pick_ωScottContinuous {ι : Type*} [CompleteLattice ι] {f g : ι →o 
     · intro _ _ _; simp only; intro _; simp only; gcongr; apply g.mono (c.mono ‹_›)
     · intro _ _ _ _; simp only; gcongr; apply f.mono (c.mono ‹_›)
 
-instance instLE : LE (ProbExp ϖ) where
-  le a b := ∀ x, a x ≤ b x
-
-@[grind =, simp] theorem coe_le {f g : 𝔼[ϖ, ENNReal]} {hf : f ≤ 1} {hg : g ≤ 1} :
-    instLE.le (⟨f, hf⟩) ⟨g, hg⟩ ↔ f ≤ g := by rfl
-
-instance : PartialOrder (ProbExp ϖ) where
-  le_refl a σ := by rfl
-  le_trans a b c hab hbc σ := by exact (hab σ).trans (hbc σ)
-  le_antisymm a b hab hba := by ext σ; exact (hab σ).antisymm (hba σ)
-
 /-- The expression `1/n` where is defined to be `1` if `n ≤ 1`. -/
 noncomputable def inv (n : 𝔼[ϖ, ENNReal]) : ProbExp ϖ :=
   ⟨fun σ ↦ if h : n σ ≤ 1 then 1 else (n σ)⁻¹, fun _ ↦ by
@@ -540,8 +543,8 @@ noncomputable instance : CompleteLattice (ProbExp ϖ) where
     · simp_all
     · simp_all
       apply ha
-  le_top := by simp; intro; apply le_one
-  bot_le := by simp; intro; apply zero_le
+  le_top := by simp
+  bot_le := by simp
 
 @[simp]
 theorem sSup_apply (S : Set (ProbExp ϖ)) : sSup S x = ⨆ s ∈ S, s x := by
@@ -640,6 +643,82 @@ variable [DecidableEq 𝒱]
 --       intro σ; simp; apply hp⟩ := by rfl
 @[grind =, simp] theorem inv_subst {X : 𝔼[ϖ, ENNReal]} {x : 𝒱} {e : 𝔼[ϖ, ϖ x]} :
     (inv X)[x ↦ e] = inv X[x ↦ e] := by rfl
+
+omit [DecidableEq 𝒱] in
+@[simp]
+theorem one_sub_one_sub_apply {X : ProbExp ϖ} : 1 - (1 - X σ) = X σ := by
+  apply ENNReal.sub_sub_cancel <;> simp
+omit [DecidableEq 𝒱] in
+@[simp]
+theorem one_sub_one_sub {X : ProbExp ϖ} : 1 - (1 - X) = X := by ext; simp
+omit [DecidableEq 𝒱] in
+@[simp]
+theorem one_sub_le {X : ProbExp ϖ} : 1 - X.val ≤ 1 := by intro σ; simp
+
+noncomputable instance : HImp (ProbExp ϖ) where
+  himp a b := ⟨fun σ ↦ if a σ ≤ b σ then 1 else b σ, by intro; simp; split_ifs <;> simp_all⟩
+
+omit [DecidableEq 𝒱] in
+@[grind =, simp]
+theorem one_le {p : ProbExp ϖ} : 1 ≤ p ↔ p = 1 := by
+  constructor
+  · intro h; ext σ; specialize h σ; simp_all
+  · grind
+omit [DecidableEq 𝒱] in
+@[gcongr]
+theorem himp_mono {l₁ l₂ r₁ r₂ : ProbExp ϖ} (hl : l₂ ≤ l₁) (hr : r₁ ≤ r₂) :
+    l₁ ⇨ r₁ ≤ l₂ ⇨ r₂ := by
+  intro σ
+  specialize hl σ
+  specialize hr σ
+  simp [himp]
+  split_ifs with h₁ h₂ <;> try grind
+omit [DecidableEq 𝒱] in
+@[grind =, simp]
+theorem himp_apply {l r : ProbExp ϖ} : (l ⇨ r) σ = if l σ ≤ r σ then 1 else r σ := rfl
+
+noncomputable instance : Compl (ProbExp ϖ) where
+  compl x := 1 - x
+
+noncomputable instance : DistribLattice (ProbExp ϖ) where
+  le_sup_inf x y z := by intro σ; simp; grind
+
+omit [DecidableEq 𝒱] in
+@[gcongr]
+theorem compl_mono {p r : ProbExp ϖ} (h : r ≤ p) : pᶜ ≤ rᶜ := by simp [compl]; gcongr
+omit [DecidableEq 𝒱] in
+@[grind =, simp]
+theorem compl_compl {p : ProbExp ϖ} : pᶜᶜ = p := by simp [compl]
+
+open OrderHom
+
+omit [DecidableEq 𝒱] in
+theorem gfp_eq_one_sub_lfp {f : ProbExp ϖ →o ProbExp ϖ} :
+    gfp f = 1 - lfp ⟨fun x ↦ 1 - f (1 - x), fun _ _ _ ↦ by simp; gcongr⟩ := by
+  apply le_antisymm
+  · suffices 1 - gfp f ≥ 1 - (1 - lfp ⟨fun x ↦ 1 - f (1 - x), _⟩) by
+      simp_all; grw [this]; simp
+    simp
+    apply lfp_le
+    simp
+  · apply le_gfp
+    nth_rw 1 [← map_lfp]
+    simp [-map_lfp]
+
+noncomputable instance : Compl (ProbExp ϖ →o ProbExp ϖ) where
+  compl f := ⟨fun x ↦ (f xᶜ)ᶜ, fun a b h ↦ by simp; gcongr⟩
+
+omit [DecidableEq 𝒱] in
+@[grind =, simp]
+theorem orderHom_compl_compl {f : ProbExp ϖ →o ProbExp ϖ} : fᶜᶜ = f := by simp [compl]; rfl
+
+omit [DecidableEq 𝒱] in
+theorem gfp_eq_lfp_compl {f : ProbExp ϖ →o ProbExp ϖ} :
+    gfp f = (lfp fᶜ)ᶜ := gfp_eq_one_sub_lfp
+
+omit [DecidableEq 𝒱] in
+theorem lfp_eq_gfp_compl {f : ProbExp ϖ →o ProbExp ϖ} :
+    lfp f = (gfp fᶜ)ᶜ := by simp [ProbExp.gfp_eq_lfp_compl]
 
 end ProbExp
 
