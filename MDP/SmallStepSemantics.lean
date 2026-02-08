@@ -104,6 +104,7 @@ noncomputable def mdp : MDP (Conf P S T) (Option A) :=
 
 def psucc (C : P) (σ : S) (α : A) : Set (ENNReal × (P ⊕ T) × S) := {s | 𝕊.r (C, σ) α s.fst s.snd}
 
+-- TODO: rename these
 theorem please₀ (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNReal) :
       ∑' (s : (psucc C σ α)), f s.val
     = ∑' (s : {s // ∃ p, 𝕊.r (C, σ) α p s}),
@@ -443,43 +444,35 @@ theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →
 theorem lfp_ς_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : lfp (𝕊.ς O) = 𝕊.op O :=
   (lfp_le_fixed _ 𝕊.ς_op_eq_op).antisymm (le_lfp _ 𝕊.op_isLeast)
 
+attribute [-simp] Φ_simp in
+theorem ς_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContinuous (𝕊.ς O) := by
+  simp only [ς, ← Φ_simp, coe_mk]
+  refine ωScottContinuous.of_apply₂ fun C ↦ ?_
+  refine ωScottContinuous.of_monotone_map_ωSup ?_
+  simp only [ωSup, OrderHom.ωSup_coe, Chain.map_coe, Pi.evalOrderHom_coe, apply_coe,
+    Function.comp_apply, Function.eval]
+  fapply Exists.intro
+  · intro a b hab X σ; simp only; apply (MDP.Φ _ _).mono; intro; simp; split <;> try gcongr
+    apply hab
+  · intro c
+    ext X σ
+    simp [ωSup]
+    have := ωScottContinuous_iff_map_ωSup_of_orderHom.mp (i.Φ_continuous (𝕊.cost X))
+    simp [ωSup] at this
+    have := congrFun (this ⟨fun i ↦ (fun s' ↦
+          match s' with
+          | Conf.prog C' σ' => (c i C') X σ'
+          | Conf.term t σ' => (cost_t P A) X (t, σ')
+          | Conf.bot => 0),
+        fun _ _ _ _ ↦ by simp; split <;> (try gcongr); apply c.mono ‹_›⟩) (Conf.prog C σ)
+    simp at this
+    convert this
+    simp only [DFunLike.coe]
+    simp
+    split <;> simp
+
 theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (𝕊.ς O)^[n] ⊥ := by
-  apply le_antisymm
-  · rw [op_eq_iSup_Φ]
-    gcongr with n
-    intro C X σ
-    simp
-    induction n generalizing C X σ with
-    | zero => simp
-    | succ n ih =>
-      simp only [Function.iterate_succ', Function.comp_apply]
-      nth_rw 1 [Φ_simp]
-      nth_rw 1 [ς_apply]
-      simp [cost]
-      gcongr with α
-      split <;> gcongr; split
-      · apply ih
-      · split_ifs <;> simp
-  · rw [op_eq_iSup_succ_Φ]
-    gcongr with n
-    intro C X σ
-    simp
-    induction n generalizing C X σ with
-    | zero => simp
-    | succ n ih =>
-      simp only [Function.iterate_succ', Function.comp_apply]
-      nth_rw 1 [Φ_simp]
-      nth_rw 1 [ς_apply]
-      simp [cost]
-      gcongr with α
-      split <;> gcongr; split
-      · apply ih
-      · rename_i t σ'
-        induction n with
-        | zero => simp [cost]
-        | succ n ih =>
-          simp only [Function.iterate_succ', Function.comp_apply]
-          simp [cost]
+  rw [← lfp_ς_eq_op, fixedPoints.lfp_eq_sSup_iterate _ ς_continuous]
 
 class ET {P S T A : Type*} [Nonempty A] (𝕊 : SmallStepSemantics P S T A)
     (O : Optimization) [O.ΦContinuous 𝕊.mdp] (et : P → 𝔼[S] →o 𝔼[S]) where
@@ -503,46 +496,49 @@ theorem op_le_seq
       𝕊.cost_t (𝕊.op O C' X) (t, σ) ≤ (𝕊.op O C' X) σ)
     (after_inj : ∀ x, Function.Injective (after x)) :
       𝕊.op O C ∘ 𝕊.op O C' ≤ 𝕊.op O (seq C C') := by
-  intro X σ
-  simp
-  nth_rw 1 [op_eq_iter]
-  simp
-  intro n
-  induction n generalizing C C' σ with
-  | zero => simp
-  | succ n ih =>
+  nth_rw 1 [← lfp_ς_eq_op]
+  apply lfp_induction (ς O) (p:=fun f ↦ ∀ C C', f C ∘ op O C' ≤ op O (seq C C'))
+  · simp only [ge_iff_le]
+    intro f h₁ h₂
     nth_rw 2 [← ς_op_eq_op]
-    rw [Function.iterate_succ', Function.comp_apply]
-    nth_rw 1 [ς_apply]
-    nth_rw 1 [ς_apply']
-    simp [h_cost_seq, cost, h_seq_act, Optimization.act]
+    intro C C' X σ
+    simp [ς, Optimization.act, h_seq_act]
     gcongr
-    rintro (_ | α)
-    · rfl
+    · exact ge_of_eq (h_cost_seq C C' σ)
+    intro a
     simp
-    apply Summable.tsum_le_tsum_of_inj (fun ⟨⟨p, a⟩, ha⟩ ↦ ⟨⟨p, after C' a⟩, h_succ ha⟩) <;> simp
-    · intro ⟨⟨_, c₁⟩, _⟩ ⟨⟨_, c₂⟩, _⟩ h
-      simp at h
-      have := @after_inj C' c₁ c₂ h.right
-      grind
-    · intro p
-      constructor
-      · intro C₁ σ₁ h
-        gcongr
-        simp [h_after_p]
-        apply ih
-      · intro t σ₁ h
-        gcongr
-        split
-        · rename_i C₀ σ₀ h
-          have := h_after_t h
-          simp at this
-          obtain ⟨⟨_⟩, ⟨_⟩⟩ := this
-          apply h_c h
-        · rename_i t₀ σ₀ h
-          have := h_after_t h
-          simp at this
-          obtain ⟨⟨⟨_⟩, ⟨_⟩⟩, h'⟩ := this
-          simp [h']
+    split
+    · apply Summable.tsum_le_tsum_of_inj (fun ⟨⟨p, a⟩, ha⟩ ↦ ⟨⟨p, after C' a⟩, h_succ ha⟩) <;> simp
+      · intro ⟨⟨_, c₁⟩, _⟩ ⟨⟨_, c₂⟩, _⟩ h
+        simp at h
+        have := @after_inj C' c₁ c₂ h.right
+        grind
+      · intro p
+        constructor
+        · intro C₁ σ₁ h
+          gcongr
+          simp [h_after_p]
+          apply h₁
+        · intro t σ₁ h
+          gcongr
+          split
+          · rename_i C₀ σ₀ h
+            have := h_after_t h
+            simp at this
+            obtain ⟨⟨_⟩, ⟨_⟩⟩ := this
+            apply h_c h
+          · rename_i t₀ σ₀ h
+            have := h_after_t h
+            simp at this
+            obtain ⟨⟨⟨_⟩, ⟨_⟩⟩, h'⟩ := this
+            simp [h']
+    · rfl
+  · simp
+    intro Z hZ C C' X
+    simp
+    intro f hfZ σ
+    have := hZ _ hfZ C C' X σ
+    simp at this
+    grw [this]
 
 end SmallStepSemantics

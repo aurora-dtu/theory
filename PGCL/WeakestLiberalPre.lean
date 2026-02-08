@@ -60,15 +60,15 @@ theorem pΦ.continuous' {g : ProbExp ϖ →o ProbExp ϖ} (hg : ωScottContinuous
 
 noncomputable def wfp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a h ↦ (a _)⟩
   | pgcl {~C₁; ~C₂} => (C₁.wfp O).comp (C₂.wfp O)
   | pgcl {{~C₁} [~p] {~C₂}} =>
     ⟨fun X ↦ p.pickProb (C₁.wfp O X) (C₂.wfp O X),
-     fun a b hab ↦ by apply ProbExp.pickProb_le <;> apply (wfp O _).mono hab⟩
+     fun a b hab ↦ by simp; gcongr⟩
   | pgcl {{~C₁} [] {~C₂}} => O.opt₂ (C₁.wfp O) (C₂.wfp O)
   | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (pΦ[wfp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp only; gcongr⟩
 
 syntax "wfp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -491,7 +491,6 @@ theorem wlp''_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
     simp [← ih]; clear ih
     simp [ProbExp.pick]
     congr! 4
-    · ext; simp [ProbExp.ofExp]
     · ext; simp [Iverson.iver, BExpr.probOf, compl]; split_ifs <;> simp
 
 end pGCL

@@ -4,7 +4,7 @@ import Mathlib.Order.FixedPoints
 
 variable {α : Type*} [CompleteLattice α]
 
-open OrderHom
+namespace OrderHom
 
 namespace k_induction
 
@@ -38,7 +38,8 @@ theorem park (Φ : α →o α) (f) (k) :
 end k_induction
 
 open k_induction in
-theorem k_induction {Φ : α →o α} {f} (k : ℕ) (h : Φ ((Ψ f Φ)^[k] f) ≤ f) :
+/-- k-induction -/
+theorem lfp_le_of_iter {Φ : α →o α} {f} (k : ℕ) (h : Φ ((Φ · ⊓ f)^[k] f) ≤ f) :
     lfp Φ ≤ f :=
   (lfp_le Φ ((park Φ f k).mp h)).trans (Ψ_iter_antitone f Φ (by omega : 0 ≤ k))
 
@@ -74,6 +75,9 @@ theorem park (Φ : α →o α) (f) (k) :
 end k_coinduction
 
 open k_coinduction in
-theorem k_coinduction {Φ : α →o α} {f} (k : ℕ) (h : f ≤ Φ ((Ψ f Φ)^[k] f)) :
+/-- k-coinduction -/
+theorem le_gfp_of_iter {Φ : α →o α} {f} (k : ℕ) (h : f ≤ Φ ((Φ · ⊔ f)^[k] f)) :
     f ≤ gfp Φ :=
   (Ψ_iter_monotone f Φ (by omega : 0 ≤ k)).trans (le_gfp Φ ((park Φ f k).mp h))
+
+end OrderHom

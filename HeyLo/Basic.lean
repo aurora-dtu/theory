@@ -1,7 +1,7 @@
 import HeyLo.pGCL'
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Nat.Lattice
-import PGCL.IdleInvariant
+import PGCL.IdleInduction
 
 attribute [grind =] Finset.empty_union
 

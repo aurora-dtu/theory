@@ -1,4 +1,6 @@
 import PGCL.WeakestLiberalPre
+import PGCL.KInduction
+import Mathlib.Logic.Function.DependsOn
 
 open Optimization.Notation
 
@@ -8,6 +10,14 @@ theorem OrderHom.le_gfp_prob {x : 𝔼[ϖ, ENNReal]} {f : pGCL.ProbExp ϖ →o p
     x ≤ OrderHom.gfp f := by
   suffices ⟨x, h₁⟩ ≤ OrderHom.gfp f by exact this
   apply OrderHom.le_gfp _ h₂
+
+theorem OrderHom.le_gfp_of_iter_prob {x : 𝔼[ϖ, ENNReal]} {f : pGCL.ProbExp ϖ →o pGCL.ProbExp ϖ}
+    (k : ℕ)
+    (h₁ : x ≤ 1)
+    (h₂ : x ≤ f ((f · ⊔ ⟨x, h₁⟩)^[k] ⟨x, h₁⟩)) :
+    x ≤ OrderHom.gfp f := by
+  suffices ⟨x, h₁⟩ ≤ OrderHom.gfp f by exact this
+  apply OrderHom.le_gfp_of_iter k h₂
 
 namespace pGCL
 
@@ -87,10 +97,6 @@ theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
 theorem Exp.zero_himp {a : 𝔼[ϖ, ENNReal]} :
     (0 ⇨ a) = ⊤ := by simp [himp]; rfl
 
-@[grind =, simp]
-theorem BExpr.subst_single_apply [DecidableEq 𝒱] {b : BExpr ϖ} :
-    b[x ↦ v] σ = b σ[x ↦ v σ] := by
-  rfl
 @[grind =]
 theorem States.subst_comm [DecidableEq 𝒱] {σ : States ϖ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :
     σ[x₁ ↦ v₁][x₂ ↦ v₂] = σ[x₂ ↦ v₂][x₁ ↦ v₁] := by ext; grind
@@ -187,18 +193,10 @@ theorem Exp.fix_compl_empty_eq (φ ψ : 𝔼[ϖ, α]) : Exp.fix φ ∅ᶜ = Exp.
 
 open scoped Classical in
 noncomputable
-def BExpr.fix (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : BExpr (ϖ · : ↑Sᶜ → _) :=
-  fun σ ↦ X (σ₀.cofix σ)
-
-open scoped Classical in
-@[grind =, simp]
-theorem BExpr.fix_apply (X : BExpr ϖ) (S : Set 𝒱) (σ₀ : States ϖ) (σ : States (ϖ · : ↑Sᶜ → _)) :
-    (X.fix S σ₀) σ = X (σ₀.cofix σ) := rfl
-
-open scoped Classical in
-noncomputable
 def ProbExp.fix (X : ProbExp ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : ProbExp (ϖ · : ↑Sᶜ → _) :=
-  ⟨fun σ ↦ X fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩, by intro σ; simp⟩
+  ⟨Exp.fix X S σ₀, by intro σ; simp [Exp.fix]⟩
+
+@[simp] theorem ProbExp.fix_apply {φ : ProbExp ϖ} : φ.fix S σ₀ σ = φ (σ₀.cofix σ) := rfl
 
 -- @[gcongr]
 -- theorem Exp.ennreal_coe_le (h : a ≤ b) :
@@ -227,9 +225,9 @@ noncomputable def fix (C : pGCL ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : pGCL (�
   | pgcl {{~C₁} [~p] {~C₂}} =>
     pgcl {{~(C₁.fix S σ₀)} [~(p.fix S σ₀)] {~(C₂.fix S σ₀)}}
   | pgcl {{~C₁} [] {~C₂}} => pgcl {{~(C₁.fix S σ₀)} [] {~(C₂.fix S σ₀)}}
-  | pgcl {while ~b {~C'}} => pgcl {while ~(BExpr.fix b S σ₀) {~(C'.fix S σ₀)}}
+  | pgcl {while ~b {~C'}} => pgcl {while ~(Exp.fix b S σ₀) {~(C'.fix S σ₀)}}
   | pgcl {tick(~ r)} => pgcl {tick(~(Exp.fix r S σ₀))}
-  | pgcl {observe(~ b)} => pgcl {observe(~(BExpr.fix b S σ₀))}
+  | pgcl {observe(~ b)} => pgcl {observe(~(Exp.fix b S σ₀))}
 
 @[simp] theorem Exp.fix_apply {φ : 𝔼[ϖ, α]} : Exp.fix φ S σ₀ σ = φ (σ₀.cofix σ) := rfl
 
@@ -280,6 +278,13 @@ theorem le_wlp''_of_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (X
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
+theorem le_wlp_of_fix (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (X : ProbExp ϖ) :
+    X.fix S σ₀ ≤ (wlp[O]⟦~C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp[O]⟦~C⟧ φ σ₀ := by
+  intro h
+  replace h := h fun x ↦ σ₀ x
+  simp_all
+  convert h <;> ext <;> simp [States.cofix]
+
 theorem wp_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
     Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ = wp[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
@@ -296,7 +301,7 @@ theorem wp_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mod
       nth_rw 1 [Φ]
       nth_rw 2 [Φ]
       simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-        BExpr.fix_apply, Pi.compl_apply, compl_iff_not, Exp.fix_apply]
+        Exp.fix_apply, Pi.compl_apply, compl_iff_not]
       congr! 2
       classical
       rw [← Exp.ext_iff] at ih'
@@ -323,7 +328,8 @@ theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.
     ext
     simp
     specialize ih₁ (wlp''[O]⟦~C₂⟧ φ ⊓ 1)
-    have : (Exp.fix (wlp''[O]⟦~C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦~C₂⟧ φ) S σ₀) ⊓ 1 := by ext; simp
+    have : (Exp.fix (wlp''[O]⟦~C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦~C₂⟧ φ) S σ₀) ⊓ 1 := by
+      ext; simp
     simp [this] at ih₁
     simp [ih₁]
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
@@ -339,7 +345,7 @@ theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.
       nth_rw 1 [Φ]
       nth_rw 2 [Φ]
       simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-        BExpr.fix_apply, Pi.compl_apply, compl_iff_not, Pi.inf_apply, Exp.fix_apply, Pi.one_apply]
+        Exp.fix_apply, Pi.compl_apply, compl_iff_not, Pi.inf_apply, Pi.one_apply]
       congr! 2
       classical
       rw [← Exp.ext_iff] at ih'
@@ -362,60 +368,96 @@ theorem wlp_fix_apply (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mod
     simp_all
     rfl
 
-/-- An _Idle invariant_ is _Park invariant_ that holds for states with a set of fixed variables. -/
-def IdleInvariant (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
-    (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
-  ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → Φ[g] b φ I σ ≤ I σ
+theorem wlp_fix_apply' (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (hφ : φ ≤ 1) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
+      Exp.fix (wlp[O]⟦~C⟧ ⟨φ, hφ⟩) S σ₀ σ
+    = wlp[O]⟦~(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp_fix_apply _ _ _ hS _
 
-/-- _Idle induction_ is _Park induction_, but the engine is running (i.e. an initial state is
-given), and as a consequence only states that vary over the modified variables need to be
-considered for the inductive invariant. -/
-theorem IdleInduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
-    {σ₀ : States ϖ} (h : IdleInvariant wp[O]⟦~C⟧ b φ I C.modsᶜ σ₀) :
-    wp[O]⟦while ~b { ~C }⟧ φ σ₀ ≤ I σ₀ := by
-  apply wp_le_of_fix (S:=C.modsᶜ)
-  rw [wp_fix _ _ _ (by simp; rfl)]
-  apply OrderHom.lfp_le
-  intro σ'
-  simp only [Φ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-    BExpr.fix_apply, Pi.compl_apply, compl_iff_not, Exp.fix_apply]
-  simp [IdleInvariant, Φ] at h
-  rw [← wp_fix _ _ _ (by simp)]
-  convert h (σ₀.cofix σ') ?_
-  simp +contextual
-
-/-- An _Idle coinvariant_ is _Park coinvariant_ that holds for states with a set of fixed variables.
--/
-def IdleCoinvariant (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
-    (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
-  ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → I σ ≤ Φ[g] b φ I σ
-
-theorem wlp_apply_eq_wlp''_apply {C : pGCL ϖ} :
-    wlp[O]⟦~C⟧ X σ = wlp''[O]⟦~C⟧ X σ := by
-  simp [wlp'']
-  congr; ext; simp
-
-/-- _Idle coinduction_ is _Park coinduction_, but the engine is running (i.e. an initial state is
-given), and as a consequence only states that vary over the modified variables need to be
-considered for the coinductive invariant. -/
-theorem IdleCoinduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
-    {σ₀ : States ϖ} (h : IdleCoinvariant wlp''[O]⟦~C⟧ b φ I C.modsᶜ σ₀) (hI : I ≤ 1) (hφ : φ ≤ 1) :
-    I σ₀ ≤ wlp''[O]⟦while ~b { ~C }⟧ φ σ₀ := by
-  apply le_wlp''_of_fix (S:=C.modsᶜ)
-  rw [wlp''_fix _ _ _ (by simp; rfl)]
-  simp [fix]
-  rw [wlp''_loop_eq_gfp]
-  fapply OrderHom.le_gfp_prob
-  · exact fun i ↦ hI (σ₀.cofix i)
-  intro σ'
-  simp only [Exp.fix_apply, pΦ, OrderHom.coe_mk, ProbExp.pickProb_apply, ProbExp.pick,
-    Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, BExpr.fix_apply, wlp_apply_eq_wlp''_apply,
-    ProbExp.mk_vcoe, Pi.sub_apply, Pi.one_apply, ProbExp.ofExp_apply]
-  simp [IdleCoinvariant, Φ] at h
-  rw [← wlp''_fix _ _ _ (by simp)]
-  convert h (σ₀.cofix σ') ?_
-  · simp [Iverson.iver]; split <;> simp
-  · simp; exact hφ _
-  · simp +contextual
+theorem wlp_fix (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
+    (wlp[O]⟦~C⟧ φ).fix S σ₀ = wlp[O]⟦~(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
+  ext σ
+  have := congrFun (C.wlp''_fix φ S hS (σ₀:=σ₀) (O:=O)) σ
+  simp [wlp''] at this
+  convert this
+  · ext; simp [ProbExp.ofExp_apply, Exp.fix_apply, ProbExp.le_one_apply, inf_of_le_left]
 
 end pGCL
+
+-- TODO: generic attempt, remove
+
+-- namespace OrderHom
+
+-- universe u v w
+
+-- variable {ι : Type u} {α : ι → Type v} {β : Type w} [CompleteLattice β]
+
+-- namespace States
+
+-- open scoped Classical in
+-- noncomputable
+-- def cofix (σ₀ : (i : ι) → α i) {S : Set ι} (σ : (i : ↑Sᶜ) → α i) : (i : ι) → α i :=
+--   fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
+
+-- -- @[grind =, simp]
+-- theorem cofix_apply_mem {S : Set ι} (h : v ∈ S) (σ₀ : (i : ι) → α i) (σ' : (i : ↑Sᶜ) → α i) :
+--     cofix σ₀ σ' v = σ₀ v := by simp [h, cofix]
+
+-- end States
+
+-- open scoped Classical in
+-- noncomputable
+-- def fix (X : ((i : ι) → α i) → β) (S : Set ι) (σ₀ : (i : ι) → α i) : ((i : ↑Sᶜ) → α i) → β :=
+--   fun σ ↦ X (States.cofix σ₀ σ)
+
+
+-- theorem lfp_le_apply
+--     {f : (((i : ι) → α i) → β) →o (((i : ι) → α i) → β)}
+--     (a : ((i : ι) → α i) → β)
+--     (σ₀ : (i : ι) → α i)
+--     (S : Set ι)
+--     (hS : ∀ i, DependsOn (f i) S)
+--     (h : ∀ σ', (∀ s ∈ S, σ₀ s = σ' s) → f a σ' ≤ a σ') :
+--     lfp f σ₀ ≤ a σ₀ := by
+--   have : ∀ (x y : ((i : ι) → α i) → β), fix x S σ₀ ≤ fix y S σ₀ → x σ₀ ≤ y σ₀ := by
+--     intro x y h
+--     unfold fix at h
+--     specialize h (fun v ↦ σ₀ v)
+--     simp at h
+--     convert h <;> (ext; simp [States.cofix])
+--   apply this
+--   -- let Z : Set ((i : ι) → α i) := sorry
+--   have : fix (lfp f) S σ₀ = lfp ⟨fun x σ ↦ f (fun σ' ↦ x fun y ↦ σ' y) (States.cofix σ₀ σ), sorry⟩ := by
+--     apply le_antisymm
+--     · intro σ
+--       simp [fix]
+--       sorry
+--     · apply lfp_le
+--       intro σ
+--       simp [fix]
+--       nth_rw 2 [← map_lfp]
+--       congr!
+--       ext
+--       simp_all [States.cofix]
+--       sorry
+--   rw [this]
+--   apply lfp_le
+--   simp
+--   intro σ
+--   simp
+--   simp [fix]
+--   specialize h (States.cofix σ₀ σ) (by simp_all [States.cofix])
+--   apply le_trans _ h; clear h
+
+--   apply le_trans (h _ _)
+--   have : f (fun (σ' : (i : ι) → α i) ↦ fix a S σ₀ fun y ↦ σ' y.val) = f a := by
+--     ext σ
+--     simp [fix]
+--     have := dependsOn_iff_factorsThrough.mp (hS a)
+--     simp [Function.FactorsThrough] at this
+--     ext
+--     simp [States.cofix]
+--     sorry
+--   simp [fix]
+--   apply le_trans (h _ _)
+--   sorry
+
+-- end OrderHom

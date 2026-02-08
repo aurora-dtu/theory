@@ -241,6 +241,10 @@ instance instFunLike : FunLike (ProbExp ϖ) (States ϖ) ENNReal where
   coe := Subtype.val
   coe_injective' := Subtype.val_injective
 
+@[ext]
+theorem ext {p q : ProbExp ϖ} (h : ∀ σ, p σ = q σ) : p = q := by
+  cases p; cases q; congr; apply funext h
+
 @[grind =, simp] theorem coe_apply {f : 𝔼[ϖ, ENNReal]} {h : f ≤ 1} :
     instFunLike.coe ⟨f, h⟩ σ = f σ := rfl
 @[grind ., simp] theorem mk_val {f : 𝔼[ϖ, ENNReal]} {h : f ≤ 1} :
@@ -250,6 +254,7 @@ instance instFunLike : FunLike (ProbExp ϖ) (States ϖ) ENNReal where
 
 def ofExp (x : 𝔼[ϖ, ENNReal]) : ProbExp ϖ := ⟨x ⊓ 1, by simp⟩
 @[grind =, simp] theorem ofExp_apply (x : 𝔼[ϖ, ENNReal]) : ofExp x σ = x σ ⊓ 1 := by simp [ofExp]
+@[simp] def ofExp_coe (x : ProbExp ϖ) : ofExp x = x := by ext; simp [ofExp]; apply x.prop
 
 end ProbExp
 
@@ -316,10 +321,6 @@ end BExpr
 namespace ProbExp
 
 variable (p : ProbExp ϖ) (σ : States ϖ)
-
-@[ext]
-theorem ext {p q : ProbExp ϖ} (h : ∀ σ, p σ = q σ) : p = q := by
-  cases p; cases q; congr; apply funext h
 
 instance instLE : LE (ProbExp ϖ) where
   le a b := ∀ x, a x ≤ b x

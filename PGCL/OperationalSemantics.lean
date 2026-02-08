@@ -215,7 +215,6 @@ theorem ς.seq' {C₁ C₂ : pGCL ϖ}
   · rintro p C' σ' (⟨C', h, ⟨_⟩⟩ | ⟨h, ⟨_⟩⟩) hp h₀ <;> simp_all
     · simp only [DFunLike.coe] at h₀; simp only [OrderHom.toFun_eq_coe] at h₀
       grind
-    -- · use .term, σ'; simp_all; exact h₀
 
 theorem ς.seq'' {C₁ C₂ : pGCL ϖ}
     (ih₁ : (𝕊 cost_t' cost_p').ς O (wfp' O) C₁ = C₁.wfp' O) :
@@ -242,8 +241,6 @@ theorem op_le_seq [(𝕊 cT cP).mdp.FiniteBranching]
     (ht' : ∀ X σ, cT X (Termination.fault, σ) = t_const σ) :
       (𝕊 cT cP).op O C ∘ (𝕊 cT cP).op O C'
     ≤ (𝕊 cT cP).op O pgcl {~C ; ~C'} := by
-  -- have ht₂ : ∀ (X : States ϖ → ENNReal) σ, cT X (Termination.term, σ) ≤ X σ := ht
-  -- have ht'₂ : ∀ (X : States ϖ → ENNReal) σ, cT X (Termination.fault, σ) = t_const σ := ht'
   apply (𝕊 cT cP).op_le_seq pGCL.seq pGCL.after t_const <;> try simp [hp, hp']
   · intros; apply hp
   · simp
