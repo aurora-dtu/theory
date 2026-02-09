@@ -34,10 +34,12 @@ noncomputable def Φ (O : Optimization) (c : M.Costs) : M.Costs →o M.Costs :=
     by intro _ _ _ _; simp; gcongr; intro α; simp only; gcongr⟩
 
 /-- The _demonic_ Bellman operator. -/
+@[deprecated "Φ 𝒟" (since := "2025-09-15")]
 noncomputable abbrev dΦ (c : M.Costs) : M.Costs →o M.Costs :=
   M.Φ 𝒟 c
 
 /-- The _angelic_ Bellman operator. -/
+@[deprecated "Φ 𝒜" (since := "2025-09-15")]
 noncomputable abbrev aΦ (c : M.Costs) : M.Costs →o M.Costs :=
   M.Φ 𝒜 c
 
@@ -47,16 +49,12 @@ noncomputable def Φℒ (ℒ : 𝔏[M]) (c : M.Costs) : M.Costs →o M.Costs :=
 
 @[mono]
 theorem Φ.monotone' : Monotone (M.Φ O) := fun _ _ h _ _ ↦ by simp [Φ]; gcongr; exact h _
-@[mono]
-theorem dΦ.monotone' : Monotone M.dΦ := Φ.monotone'
-@[mono]
-theorem aΦ.monotone' : Monotone M.aΦ := Φ.monotone'
 
-theorem dΦ_le_Φℒ : dΦ ≤ Φℒ ℒ := fun c f s ↦
+theorem dΦ_le_Φℒ : Φ 𝒟 ≤ Φℒ ℒ := fun c f s ↦
   add_le_add (by rfl) <| iInf_le_of_le (ℒ {s}) (iInf_le_of_le (ℒ.val.property {s}) (by rfl))
 
 @[deprecated "lfp (M.Φ O)" (since := "2025-09-15")]
-noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ M.dΦ
+noncomputable def lfp_Φ : M.Costs → M.Costs := lfp ∘ Φ 𝒟
 
 theorem iSup_succ_Φ_eq_iSup_Φ O c :
     ⨆ (n : ℕ), (M.Φ O c)^[n + 1] ⊥ = ⨆ (n : ℕ), (M.Φ O c)^[n] ⊥ := by

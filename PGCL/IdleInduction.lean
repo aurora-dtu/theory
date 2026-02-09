@@ -31,7 +31,7 @@ theorem IdleInduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I :
   simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Exp.fix_apply,
     Pi.compl_apply, compl_iff_not]
   simp [IdleInvariant, Φ] at h
-  rw [← wp_fix _ _ _ (by simp)]
+  rw [← C.wp_fix I C.modsᶜ (by simp)]
   convert h (σ₀.cofix σ') ?_
   simp +contextual
 
@@ -54,14 +54,14 @@ theorem IdleCoinduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I
   fapply le_gfp_prob
   · exact fun i ↦ hI (σ₀.cofix i)
   intro σ'
-  simp only [Exp.fix_apply, pΦ, coe_mk, ProbExp.pickProb_apply, ProbExp.pick, Pi.add_apply,
-    Pi.mul_apply, BExpr.probOf_apply, wlp_apply_eq_wlp''_apply, ProbExp.mk_vcoe, Pi.sub_apply,
-    Pi.one_apply, ProbExp.ofExp_apply]
+  simp only [Exp.fix_apply, pΦ, coe_mk]
   simp [IdleCoinvariant, Φ] at h
-  rw [← wlp''_fix _ _ _ (by simp)]
+  have := C.wlp_fix ⟨I, hI⟩ C.modsᶜ (by simp) (σ₀:=σ₀) (O:=O)
+  simp [ProbExp.fix] at this
+  rw [← this]
   convert h (σ₀.cofix σ') ?_
-  · simp [Iverson.iver]; split <;> simp
-  · simp; exact hφ _
+  · simp [Iverson.iver]; split <;> simp_all [wlp'', ProbExp.ofExp]
+    apply hφ
   · simp +contextual
 
 /-- A _Idle k-invariant_. -/
@@ -116,15 +116,15 @@ theorem IdleKCoinduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : ProbExp ϖ} {I : Pro
   fapply le_gfp_of_iter_prob k
   · intro; simp
   intro σ'
-  simp only [ProbExp.fix_apply, pΦ, coe_mk, ProbExp.pickProb_apply, ProbExp.pick, Pi.add_apply,
-    Pi.mul_apply, BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
+  simp [ProbExp.fix_apply, pΦ, coe_mk]
   simp [IdleKCoinvariant, pΦ] at h
   have : ((fun x ↦
-                p[Exp.fix b C.modsᶜ σ₀].pickProb (wlp[O]⟦~(C.fix C.modsᶜ σ₀)⟧ x) (φ.fix C.modsᶜ σ₀) ⊔
-                  ⟨⇑(I.fix C.modsᶜ σ₀), by intro; simp⟩)^[k]
+                (p[Exp.fix b C.modsᶜ σ₀] * (wlp[O]⟦~(C.fix C.modsᶜ σ₀)⟧ x)
+                  + (1 - p[Exp.fix b C.modsᶜ σ₀]) * (φ.fix C.modsᶜ σ₀))
+                ⊔ ⟨⇑(I.fix C.modsᶜ σ₀), by intro; simp⟩)^[k]
             ⟨⇑(I.fix C.modsᶜ σ₀), by intro; simp⟩)
         = ProbExp.fix ((fun x ↦
-                p[b].pickProb (wlp[O]⟦~C⟧ x) φ ⊔
+                (p[b] * (wlp[O]⟦~C⟧ x) + (1 - p[b]) * φ) ⊔
                   ⟨⇑I, by intro; simp⟩)^[k]
             ⟨⇑I, by intro; simp⟩) C.modsᶜ σ₀ := by
     clear h σ'
@@ -142,8 +142,8 @@ theorem IdleKCoinduction {b : BExpr ϖ} {C : pGCL ϖ} {φ : ProbExp ϖ} {I : Pro
   · simp +contextual
 
 /-- A _Idle k-coinvariant_. -/
-def IdleKCoinvariant'' (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal]) (k : ℕ)
-    (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
+def IdleKCoinvariant'' (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (b : BExpr ϖ) (φ : 𝔼[ϖ, ENNReal])
+    (k : ℕ) (I : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (σ₀ : States ϖ) : Prop :=
     ∀ σ, (∀ v ∈ S, σ v = σ₀ v) → I σ ≤ (Φ[g] b φ) ((Φ[g] b φ · ⊔ I)^[k] I) σ
 
 def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL ϖ}
@@ -154,7 +154,12 @@ def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL ϖ}
   specialize h σ hσ
   convert h
   ext
-  simp [pΦ, Φ, ProbExp.pick, wlp'']
+  simp [pΦ, Φ, wlp'']
+  rw [min_eq_left]
+  swap
+  · apply ProbExp.pick_le (p:=p[b])
+    · simp
+    · apply hφ
   congr! 4
   · clear h hσ σ
     induction k with
@@ -180,12 +185,14 @@ def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL ϖ}
       · congr
         simp [Iverson.iver]
         split_ifs <;> simp
+        apply hφ
   · simp [Iverson.iver]
     split_ifs <;> simp
 
 /-- _Idle k-coinduction_. -/
-theorem IdleKCoinduction'' {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]} (k : ℕ)
-    {σ₀ : States ϖ} (h : IdleKCoinvariant'' wlp''[O]⟦~C⟧ b φ k I C.modsᶜ σ₀) (hI : I ≤ 1) (hφ : φ ≤ 1) :
+theorem IdleKCoinduction'' {b : BExpr ϖ} {C : pGCL ϖ} {φ : 𝔼[ϖ, ENNReal]} {I : 𝔼[ϖ, ENNReal]}
+    (k : ℕ) {σ₀ : States ϖ} (h : IdleKCoinvariant'' wlp''[O]⟦~C⟧ b φ k I C.modsᶜ σ₀)
+    (hI : I ≤ 1) (hφ : φ ≤ 1) :
     I σ₀ ≤ wlp''[O]⟦while ~b { ~C }⟧ φ σ₀ := by
   convert IdleKCoinduction k (IdleKCoinvariant''.toIdleKCoinvariant h hI hφ)
   simp [wlp'']

@@ -34,9 +34,9 @@ inductive rr : Conf P S T → Option A → ENNReal → Conf P S T → Prop where
   | prog₀ : 𝕊.r (C, σ) α p (.inl C', σ') → rr (.prog C σ) α p (.prog C' σ')
   | prog₁ : 𝕊.r (C, σ) α p (.inr t, σ') → rr (.prog C σ) α p (.term t σ')
 
-@[simp, grind]
+@[simp, grind =]
 theorem rr.bot_to : 𝕊.rr .bot α p c' ↔ α = none ∧ p = 1 ∧ c' = .bot := by grind
-@[simp, grind]
+@[simp, grind =]
 theorem rr.term_to : 𝕊.rr (.term t σ) α p c' ↔ α = none ∧ p = 1 ∧ c' = .bot := by grind
 
 @[simp, grind]
@@ -49,15 +49,15 @@ abbrev conf_to_conf₂ : Conf P S T → Option ((P ⊕ T) × S)
   | .term t σ => some (.inr t, σ)
   | .bot => none
 
-@[simp, grind]
+@[simp, grind =]
 theorem rr_prog :
       𝕊.rr (.prog C σ) α p c'
     ↔ ∃ c'' α', 𝕊.r (C, σ) α' p c'' ∧ conf₂_to_conf c'' = c' ∧ some α' = α := by grind
 
-@[grind]
+@[grind .]
 theorem relation_p_pos' : ∀ {c α p c'}, 𝕊.rr c α p c' → ¬p = 0 := by
   intro C α p c'; rintro (_ | _) <;> (try simp_all) <;> try apply 𝕊.relation_p_pos ‹_›
-@[grind]
+@[grind .]
 theorem succs_tum_to_one' :
     ∀ {c α p₀ c'}, 𝕊.rr c α p₀ c' → ∑' (b) (p : { p // 𝕊.rr c α p b }), p.val = 1 := by
   intro C α p c'; rintro (_ | _)
@@ -122,8 +122,7 @@ theorem please₀ (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → E
     · rintro ⟨⟨p, (C | t), σ⟩, _⟩ <;> simp <;> grind
     · grind
   · clear this
-    intro ⟨p₀, s₀, hs₀⟩ _ ⟨p₁, s₁, hs₁⟩ _ h
-    intro Z hZ₁ hZ₂ ⟨p', s', σ'⟩ hZ
+    intro ⟨p₀, s₀, hs₀⟩ _ ⟨p₁, s₁, hs₁⟩ _ h Z hZ₁ hZ₂ ⟨p', s', σ'⟩ hZ
     specialize hZ₁ hZ
     specialize hZ₂ hZ
     simp_all only [ne_eq, Set.mem_setOf_eq]
@@ -269,11 +268,11 @@ theorem Φ_simp {C : Conf P S T} :
         rw [tsum_eq_single ⟨1, by simp⟩] <;> grind
       · simp +contextual
 
-@[simp, grind]
+@[simp, grind =]
 theorem succs_univ_term : 𝕊.mdp.succs_univ (.term t σ) = {.bot} := by simp [mdp]
-@[simp, grind]
+@[simp, grind =]
 theorem succs_univ_bot : 𝕊.mdp.succs_univ .bot = {.bot} := by simp [mdp]
-@[simp, grind]
+@[simp, grind =]
 theorem succs_univ_prog :
     𝕊.mdp.succs_univ (.prog C σ) = (conf₂_to_conf '' {c' | ∃ p α, 𝕊.r (C, σ) α p c'}) := by
   ext

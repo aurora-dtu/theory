@@ -80,25 +80,25 @@ noncomputable def Φ (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (φ : BExpr 
 
 notation "Φ[" g "]" => Φ g
 
-omit [DecidableEq 𝒱] in
-theorem Φ_eq_pick :
-    Φ[g] φ f = ⟨fun (X : 𝔼[ϖ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
-  ext X σ
-  simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
-    compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick,
-    BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
+-- omit [DecidableEq 𝒱] in
+-- theorem Φ_eq_pick :
+--     Φ[g] φ f = ⟨fun (X : 𝔼[ϖ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
+--   ext X σ
+--   simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
+--     compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick,
+--     BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
 
-omit [DecidableEq 𝒱] in
-theorem Φ_eq_pick_apply {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
-  simp [Φ_eq_pick]
+-- omit [DecidableEq 𝒱] in
+-- theorem Φ_eq_pick_apply {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
+--   simp [Φ_eq_pick]
 
 noncomputable def wp (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
   | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
   | pgcl {~C₁; ~C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
   | pgcl {{~C₁} [~p] {~C₂}} =>
-    ⟨fun X ↦ p.pick (C₁.wp O X) (C₂.wp O X),
-     fun a b hab ↦ by apply ProbExp.pick_le <;> apply (wp O _).mono hab⟩
+    ⟨fun X ↦ p * C₁.wp O X + (1 - p) * C₂.wp O X,
+     fun a b hab ↦ by simp only; gcongr⟩
   | pgcl {{~C₁}[]{~C₂}} =>
     ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
   | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (Φ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
@@ -136,7 +136,7 @@ variable {X : 𝔼[ϖ, ENNReal]}
     wp[O]⟦~x := ~A⟧ X = X[x ↦ A] := rfl
 @[simp] theorem wp.seq_apply : wp[O]⟦~C₁ ; ~C₂⟧ X = wp[O]⟦~C₁⟧ (wp[O]⟦~C₂⟧ X) := rfl
 @[simp] theorem wp.prob_apply :
-    wp[O]⟦{~C₁}[~p]{~C₂}⟧ X = p.pick (C₁.wp O X) (C₂.wp O X)
+    wp[O]⟦{~C₁}[~p]{~C₂}⟧ X = p * C₁.wp O X + (1 - p) * C₂.wp O X
 := rfl
 @[simp] theorem wp.nonDet_apply : wp[O]⟦{~C₁}[]{~C₂}⟧ X = O.opt₂ (C₁.wp O X) (C₂.wp O X) := by
   ext; simp [wp]
@@ -241,7 +241,16 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
   | assign => exact ωScottContinuous_iff_map_ωSup_of_orderHom.mpr (congrFun rfl)
   | seq C₁ C₂ ih₁ ih₂ => simp only [wp, coe_mk]; exact ωScottContinuous.comp ih₁ ih₂
   | nonDet C₁ C₂ ih₁ ih₂ => exact O.opt₂_ωScottContinuous ih₁ ih₂
-  | prob C₁ p C₂ ih₁ ih₂ => exact p.pick_ωScottContinuous ih₁ ih₂
+  | prob C₁ p C₂ ih₁ ih₂ =>
+    replace ih₁ := ωScottContinuous.map_ωSup_of_orderHom ih₁
+    replace ih₂ := ωScottContinuous.map_ωSup_of_orderHom ih₂
+    refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
+    simp [ωSup] at ih₁ ih₂ ⊢
+    intro; ext
+    simp [ih₁, ih₂, ENNReal.mul_iSup, ENNReal.add_iSup, ENNReal.iSup_add]
+    apply iSup_iSup_eq_iSup
+    · intro _ _ _ _; simp; gcongr
+    · intro _ _ _ _; simp; gcongr
   | loop b C' ih => apply OrderHom.lfp_ωScottContinuous Φ.continuous' (fun _ ↦ Φ.continuous ih)
   | tick => simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, funext_iff, ENNReal.add_iSup]
   | observe => simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, funext_iff, ENNReal.mul_iSup]
@@ -262,10 +271,9 @@ theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]�
   | seq C₁ C₂ ih₁ ih₂ => apply ih₁ _ (ih₂ _ hX)
   | prob C₁ p C₂ ih₁ ih₂ =>
     simp [st]
-    calc
-      p.pick (wp[O]⟦~C₁.st⟧ X) (wp[O]⟦~C₂.st⟧ X) ≤ p.pick 1 1 := by
-          gcongr <;> apply_assumption <;> exact hX
-      _ ≤ 1 := by simp
+    grw [ih₁ _ hX, ih₂ _ hX]
+    intro σ
+    simp
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [st]
     cases O

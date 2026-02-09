@@ -921,9 +921,9 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
     simp only [pGCL, pGCL.ite, wp.prob_apply, HeyVL, HeyVL.if_vp_sem, Ty.expr, sem_not_apply]
     simp only [fv, Finset.union_assoc] at hG
     grw [← ih₁, ← ih₂]
-    · intro σ; simp only [Ty.lit, ProbExp.pick, Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply,
-      Pi.sub_apply, Pi.ofNat_apply, hnot_eq_compl, Pi.iver_apply, Pi.compl_apply, compl_iff_not,
-      Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, le_refl]
+    · intro σ; simp only [Ty.lit, Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, Pi.sub_apply,
+      Pi.ofNat_apply, hnot_eq_compl, Pi.iver_apply, Pi.compl_apply, compl_iff_not, Iverson.iver_neg,
+      ENNReal.natCast_sub, Nat.cast_one, le_refl]
     · grind
     · grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
@@ -1059,7 +1059,7 @@ theorem pGCL'.vp_le_wlp''_aux.loop
     grw [this]; clear this; clear this; clear ih
     grind
 
-set_option maxHeartbeats 500000 in
+set_option maxHeartbeats 700000 in
 theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1)
     (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
     ((C.HeyVL O .Upper G).2.vp φ).sem ≤ wlp'' O C.pGCL φ.sem := by
@@ -1089,7 +1089,7 @@ theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆
     grw [ih₁ _ hφ, ih₂ _ hφ]
     · intro; simp only [Ty.lit, hnot_eq_compl, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
       Pi.compl_apply, compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one,
-      ProbExp.pick, BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply, le_refl]
+      BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply, le_refl]
     all_goals grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp only [Ty.expr, HeyVL, pGCL, wlp''.nonDet_apply, Optimization.opt₂]
@@ -1103,9 +1103,16 @@ theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆
   | prob C₁ p C₂ ih₁ ih₂ =>
     simp only [Ty.lit, pGCL'.prob_vp hG, Ty.expr]
     grw [ih₁ _ hφ, ih₂ _ hφ]
-    · conv => right; simp only [wlp'', pGCL, Ty.lit, wlp, OrderHom.coe_mk,
-      ProbExp.pickProb_DFunLike_coe]
-      rfl
+    · intro σ
+      simp only [Ty.lit, wlp'', ProbExp.ofExp, OrderHom.coe_mk, Pi.add_apply, Pi.mul_apply,
+        Pi.inf_apply, Pi.one_apply, Pi.sub_apply, pGCL, wlp.prob_apply, OrderHom.mk_apply,
+        ProbExp.add_apply, ProbExp.mul_apply, ProbExp.coe_apply, ProbExp.sub_apply,
+        ProbExp.one_apply, le_inf_iff, le_refl, true_and]
+      have := ProbExp.pick_le (p:=ProbExp.ofExp p.sem) (x:=1)
+                (l:=wlp[O]⟦~C₁.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+                (r:=wlp[O]⟦~C₂.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+      simp only [Ty.lit, ProbExp.le_one_apply, ProbExp.ofExp_apply, forall_const] at this
+      apply this
     · grind
     · grind
     · grind
@@ -1128,12 +1135,13 @@ theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆
       Pi.mul_apply, Pi.iver_apply, Pi.top_apply, pGCL, wlp''.observe_apply, inf_le_iff]
     if r.sem σ then
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
-        Iverson.iver_True, Nat.cast_one, one_mul, inf_of_le_left, ProbExp.pick_true, top_le_iff,
-        le_refl, or_true]
+        Iverson.iver_True, Nat.cast_one, one_mul, BExpr.probOf_apply, Pi.one_apply, le_inf_iff,
+        top_le_iff, ENNReal.one_ne_top, and_false, le_refl, true_and, false_or]
+      apply hφ
     else
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
-        Iverson.iver_False, CharP.cast_eq_zero, zero_mul, inf_of_le_left, not_false_eq_true,
-        ProbExp.pick_false, Pi.zero_apply, le_refl, nonpos_iff_eq_zero, true_or]
+        Iverson.iver_False, CharP.cast_eq_zero, zero_mul, BExpr.probOf_apply, Pi.one_apply, le_refl,
+        nonpos_iff_eq_zero, true_or]
 
 theorem pGCL'.vp_le_wlp'' {C : pGCL'} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
     (C.vp O .Upper φ).sem ≤ wlp''[O]⟦~C.pGCL⟧ φ.sem := vp_le_wlp''_aux (by rfl) hφ hI

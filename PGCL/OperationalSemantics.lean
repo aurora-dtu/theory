@@ -5,6 +5,11 @@ namespace pGCL
 
 variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
 
+omit [DecidableEq 𝒱] in
+@[grind =, simp]
+theorem ProbExp.pick_same {p : ProbExp ϖ} : p σ * x + (1 - p σ) * x = x := by
+  simp [← add_mul]
+
 @[simp]
 noncomputable def cost_t : 𝔼[ϖ, ENNReal] →o Termination × States ϖ → ENNReal :=
   ⟨fun X c ↦ match c with
@@ -135,26 +140,23 @@ omit [DecidableEq 𝒱] in
     = cP' cP (.prob C₁ p C₂) + p.pick' (f C₁) (f C₂) := by
   ext (X : 𝔼[ϖ, ENNReal]) σ
   simp [ς, psucc, r, Optimization.act]
-  simp only [DFunLike.coe]
-  simp
   if h₁₂ : C₁ = C₂ then
     subst_eqs
-    simp
     rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp⟩] <;> simp
   else if hp₀ : p σ = 0 then
     have h₂₁ : ¬C₂ = C₁ := by grind
-    rw [tsum_eq_single ⟨(1, conf₁[~C₂, σ]), by simp [h₁₂, h₂₁, hp₀]⟩] <;> simp_all [ProbExp.pick]
+    rw [tsum_eq_single ⟨(1, conf₁[~C₂, σ]), by simp [h₁₂, h₂₁, hp₀]⟩] <;> simp_all
     grind
   else if hp₁ : p σ = 1 then
     have h₂₁ : ¬C₂ = C₁ := by grind
-    rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp [hp₁, h₁₂]⟩] <;> simp_all [ProbExp.pick]
+    rw [tsum_eq_single ⟨(1, conf₁[~C₁, σ]), by simp [hp₁, h₁₂]⟩] <;> simp_all
     grind
   else
     simp_all only [ProbExp.not_zero_off, ProbExp.lt_one_iff]
     rw [ENNReal.tsum_eq_add_tsum_ite ⟨(p σ, conf₁[~C₁, σ]), by simp [h₁₂, hp₀]⟩]
     simp_all only
     rw [tsum_eq_single ⟨(1 - p σ, conf₁[~C₂, σ]), by simp [h₁₂, hp₁]⟩] <;> simp
-    · simp [ProbExp.pick]; grind
+    · grind
     · grind
 open scoped Classical in
 @[simp] theorem ς.nonDet :
@@ -357,7 +359,6 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       rw [← ς_op_eq_op]; simp [wfp']
       gcongr <;> apply_assumption
     | loop b C' ih => apply wfp'_le_op.loop ih
-    | observe b => rw [← ς_op_eq_op, wfp']; intro _ _; simp [BExpr.probOf, ProbExp.pick]
   et_prefixed_point := by
     apply le_of_eq
     funext C; induction C with try simp_all [ς.seq'']; (try rfl) <;> try ext; simp [wfp']; done
@@ -369,10 +370,6 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (ϖ:=ϖ)) w
       simp
       nth_rw 2 [← wfp'_fp]
       simp [Φ]
-    | observe b =>
-      ext X σ
-      simp [wfp']
-      if hb : b σ then simp [hb] else simp [hb]
 
 /-- info: 'pGCL.instET'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

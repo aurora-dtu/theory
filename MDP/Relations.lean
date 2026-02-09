@@ -10,8 +10,8 @@ example : relations
     [⨅ 𝒮 : 𝔖[M], ⨆ n, M.EC c 𝒮 n] =ᶠ [⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n]
 := by
   split_ands <;> intros <;>
-  simp_all [iInf_iSup_EC_eq_iInf_iSup_ECℒ, implies_true, iSup_iInf_EC_eq_iInf_iSup_EC,
-    iSup_iInf_ECℒ_eq_iInf_iSup_ECℒ, and_self]
+  simp_all only [iSup_iInf_EC_eq_iInf_iSup_EC, iInf_iSup_EC_eq_iInf_iSup_ECℒ,
+    iSup_iInf_ECℒ_eq_iInf_iSup_ECℒ]
 
 example : relations
     [⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 n] ≤ [⨆ n, ⨅ ℒ : 𝔏[M], EC c ℒ n]

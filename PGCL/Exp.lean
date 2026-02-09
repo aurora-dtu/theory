@@ -424,46 +424,44 @@ variable [DecidableEq 𝒱] {x : 𝒱} {A : 𝔼[ϖ, ϖ x]}
 
 end
 
-noncomputable def pick (x y : 𝔼[ϖ, ENNReal]) : 𝔼[ϖ, ENNReal] := p * x + (1 - p) * y
 noncomputable def pick' (x y : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
   ⟨fun X ↦ p * x X + (1 - p) * y X, by intro a b hab; simp_all; gcongr⟩
-noncomputable def pickProb (x y : ProbExp ϖ) : ProbExp ϖ := p * x + (1 - p) * y
 
-@[grind =, simp] theorem pick'_apply : p.pick' x y X = p.pick (x X) (y X) := rfl
-@[grind =, simp] theorem pick'_apply2 : p.pick' x y X σ = p.pick (x X) (y X) σ := rfl
+@[grind =, simp] theorem pick'_apply : p.pick' x y X = p * x X + (1 - p) * y X := rfl
+@[grind =, simp] theorem pick'_apply2 : p.pick' x y X σ = p σ * x X σ + (1 - p σ) * y X σ := rfl
 
-@[grind =, simp]
-theorem pick_true {x y : 𝔼[ϖ, ENNReal]} (h : b σ) : p[b].pick x y σ = x σ := by
-  simp [h, pick, BExpr.probOf]
-@[grind =, simp]
-theorem pick_false {x y : 𝔼[ϖ, ENNReal]} (h : ¬b σ) : p[b].pick x y σ = y σ := by
-  simp [h, pick, BExpr.probOf]
+-- @[grind =, simp]
+-- theorem pick_true {x y : 𝔼[ϖ, ENNReal]} (h : b σ) : p[b].pick x y σ = x σ := by
+--   simp [h, pick, BExpr.probOf]
+-- @[grind =, simp]
+-- theorem pick_false {x y : 𝔼[ϖ, ENNReal]} (h : ¬b σ) : p[b].pick x y σ = y σ := by
+--   simp [h, pick, BExpr.probOf]
 
-@[simp, gcongr]
-theorem pick_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y ≤ p.pick z w := by
-  intro; simp [pick]; gcongr <;> apply_assumption
-@[grind ., simp]
-theorem pick_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y σ ≤ p.pick z w σ := p.pick_le h₁ h₂ σ
+-- @[simp, gcongr]
+-- theorem pick_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y ≤ p.pick z w := by
+--   intro; simp [pick]; gcongr <;> apply_assumption
+-- @[grind ., simp]
+-- theorem pick_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pick x y σ ≤ p.pick z w σ := p.pick_le h₁ h₂ σ
 
-@[grind =, simp]
-theorem pickProb_coe : exp_coe (p.pickProb x y) = p.pick x y := by
-  ext σ; simp [pickProb, pick]
-  have := p.pick_le x.prop y.prop σ
-  simp [pick] at this
-  exact this
+-- @[grind =, simp]
+-- theorem pickProb_coe : exp_coe (p.pickProb x y) = p.pick x y := by
+--   ext σ; simp [pickProb, pick]
+--   have := p.pick_le x.prop y.prop σ
+--   simp [pick] at this
+--   exact this
 
-@[grind =, simp]
-theorem pickProb_DFunLike_coe : DFunLike.coe (p.pickProb x y) = p.pick x y := by
-  rw [← pickProb_coe]; rfl
+-- @[grind =, simp]
+-- theorem pickProb_DFunLike_coe : DFunLike.coe (p.pickProb x y) = p.pick x y := by
+--   rw [← pickProb_coe]; rfl
 
-@[grind =, simp]
-theorem pickProb_apply : (p.pickProb x y) σ = p.pick x y σ := by
-  simp [pickProb, pick]
-  have := p.pick_le x.prop y.prop σ
-  simp [pick] at this
-  exact this
+-- @[grind =, simp]
+-- theorem pickProb_apply : (p.pickProb x y) σ = p.pick x y σ := by
+--   simp [pickProb, pick]
+--   have := p.pick_le x.prop y.prop σ
+--   simp [pick] at this
+--   exact this
 
-@[grind =, simp] theorem pick_same : p.pick x x = x := by ext σ; simp [pick, ← add_mul]
+-- @[grind =, simp] theorem pick_same : p.pick x x = x := by ext σ; simp [pick, ← add_mul]
 
 
 open OmegaCompletePartialOrder in
@@ -473,24 +471,24 @@ def _root_.OmegaCompletePartialOrder.ωScottContinuous.apply_iSup
     f (⨆ i, c i) = ⨆ i, f (c i) := hf.map_ωSup_of_orderHom (c:=c)
 
 
-open OmegaCompletePartialOrder in
-theorem pick_ωScottContinuous {ι : Type*} [CompleteLattice ι] {f g : ι →o 𝔼[ϖ, ENNReal]}
-    (hf : ωScottContinuous f) (hg : ωScottContinuous g) :
-    ωScottContinuous (fun X ↦ p.pick (f X) (g X)) := by
-  simp [pick]
-  refine ωScottContinuous.of_apply₂ fun σ ↦ ?_
-  simp
-  refine ωScottContinuous.of_monotone_map_ωSup ?_
-  simp [ωSup]
-  constructor
-  · intro _ _ _; simp; gcongr
-    · apply f.mono ‹_›
-    · apply g.mono ‹_›
-  · simp [hf.apply_iSup, hg.apply_iSup, ENNReal.mul_iSup, ENNReal.add_iSup, ENNReal.iSup_add]
-    intro c
-    refine iSup_iSup_eq_iSup (fun i j ↦ p σ * f (c j) σ + (1 - p σ) * g (c i) σ) ?_ ?_
-    · intro _ _ _; simp only; intro _; simp only; gcongr; apply g.mono (c.mono ‹_›)
-    · intro _ _ _ _; simp only; gcongr; apply f.mono (c.mono ‹_›)
+-- open OmegaCompletePartialOrder in
+-- theorem pick_ωScottContinuous {ι : Type*} [CompleteLattice ι] {f g : ι →o 𝔼[ϖ, ENNReal]}
+--     (hf : ωScottContinuous f) (hg : ωScottContinuous g) :
+--     ωScottContinuous (fun X ↦ p.pick (f X) (g X)) := by
+--   simp [pick]
+--   refine ωScottContinuous.of_apply₂ fun σ ↦ ?_
+--   simp
+--   refine ωScottContinuous.of_monotone_map_ωSup ?_
+--   simp [ωSup]
+--   constructor
+--   · intro _ _ _; simp; gcongr
+--     · apply f.mono ‹_›
+--     · apply g.mono ‹_›
+--   · simp [hf.apply_iSup, hg.apply_iSup, ENNReal.mul_iSup, ENNReal.add_iSup, ENNReal.iSup_add]
+--     intro c
+--     refine iSup_iSup_eq_iSup (fun i j ↦ p σ * f (c j) σ + (1 - p σ) * g (c i) σ) ?_ ?_
+--     · intro _ _ _; simp only; intro _; simp only; gcongr; apply g.mono (c.mono ‹_›)
+--     · intro _ _ _ _; simp only; gcongr; apply f.mono (c.mono ‹_›)
 
 /-- The expression `1/n` where is defined to be `1` if `n ≤ 1`. -/
 noncomputable def inv (n : 𝔼[ϖ, ENNReal]) : ProbExp ϖ :=
@@ -612,18 +610,11 @@ theorem add_le_add (a b c d : ProbExp ϖ) (hac : a ≤ c) (hbd : b ≤ d) : a + 
 theorem sub_le_sub (a b c d : ProbExp ϖ) (hac : a ≤ c) (hdb : d ≤ b) : a - b ≤ c - d := by
   intro; simp only [sub_apply]; gcongr <;> apply_assumption
 
-@[simp, gcongr]
-theorem pickProb_le (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pickProb x y ≤ p.pickProb z w := by
-  intro; simp only [pickProb, add_apply, mul_apply, sub_apply, one_apply]
-  gcongr <;> apply_assumption
-@[grind ., simp]
-theorem pickProb_le' (h₁ : x ≤ z) (h₂ : y ≤ w) : p.pickProb x y σ ≤ p.pickProb z w σ :=
-  p.pickProb_le h₁ h₂ σ
-
-@[grind ., simp]
-theorem pick_of_prob_le_one {x y : ProbExp ϖ} : p.pick x y σ ≤ 1 := by
-  have hx : x ≤ 1 := x.prop; have hy : y ≤ 1 := y.prop
-  have := p.pickProb_le hx hy σ; simpa
+@[simp]
+theorem pick_le {p : ProbExp ϖ} (hl : l ≤ x) (hr : r ≤ x) :
+    p σ * l + (1 - p σ) * r ≤ x := by
+  grw [hl, hr]
+  simp [← right_distrib]
 
 @[grind =, simp] theorem coe_inv {X : 𝔼[ϖ, ENNReal]} :
     exp_coe (inv X) = X⁻¹ ⊓ 1 := by

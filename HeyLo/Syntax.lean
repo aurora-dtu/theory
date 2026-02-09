@@ -167,22 +167,13 @@ macro_rules
 | `(heyvl { covalidate }) => `(HeyVL.Covalidate)
 -- Sugar
 | `(heyvl { skip }) => `(HeyVL.Skip)
-| `(heyvl { if ($b:cheylo) {$S₁:cheyvl} else {$S₂}}) => `(HeyVL.If heylo {$b} heyvl {$S₁} heyvl {$S₂})
+| `(heyvl { if ($b:cheylo) {$S₁:cheyvl} else {$S₂}}) =>
+    `(HeyVL.If heylo {$b} heyvl {$S₁} heyvl {$S₂})
 | `(heyvl { if ($b:cheylo) {$S₁:cheyvl} }) => `(HeyVL.If heylo {$b} heyvl {$S₁} heyvl {skip})
 
 abbrev y : Ident := ⟨"y", .ENNReal⟩
 abbrev z : Ident := ⟨"z", .Nat⟩
-
-#check (heylo { nlog₂ (nfloor y) } : HeyLo .Nat)
-#check (pgcl' { z := nlog₂ (nfloor y) } : pGCL').pGCL
-#check (heylo { y ≤ y } : HeyLo .Bool)
-
-#check heylo { ~(.Unary .NatToENNReal (.Var z.name z.type)) + [0 < z] * (↑(z + nlog₂ z)) }
-#check (heylo { ↑z + [0 < z] * ↑(z + nlog₂ z) } : HeyLo .ENNReal)
-
 abbrev n : Ident := ⟨"n", .Nat⟩
-
-#check pgcl' { while n < 10 inv([n ≤ 10]) { {n := n + 2} [1/2] {n := n + 1} } }
 
 set_option linter.style.setOption false
 set_option pp.mvars false
@@ -196,6 +187,8 @@ def VarUnexpander : Unexpander
   | _ => throw ()
 | _ => throw ()
 
+/-- info: heylo {y} : HeyLo y.type -/
+#guard_msgs in
 #check heylo { y }
 
 partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
@@ -220,6 +213,15 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
     `(cheylo|$name:ident)
   else
     throw ()
+| `(true) => do
+  let name := mkIdent <| Name.mkSimple "true"
+  `(cheylo|$name:ident)
+| `(false) => do
+  let name := mkIdent <| Name.mkSimple "false"
+  `(cheylo|$name:ident)
+| `(i[$a]) => do
+  let a ← unexpandAexp a
+  `(cheylo|[$a])
 | `($a + $b) => do
   let a ← unexpandAexp a; let b ← unexpandAexp b
   `(cheylo|$a + $b)
@@ -267,6 +269,8 @@ def BinaryUnexpander : Unexpander
   | _ => throw ()
 | _ => throw ()
 
+/-- info: heylo {1 < y} : 𝔼b -/
+#guard_msgs in
 #check heylo { 1 < y }
 
 @[app_unexpander HeyLo.Lit]
@@ -277,13 +281,20 @@ def LitUnexpander : Unexpander
   | _ => `(idk)
 | _ => throw ()
 
-/-- info: heylo {~true ∧ ~true} : 𝔼b -/
+/-- info: heylo {true ∧ true} : 𝔼b -/
 #guard_msgs in
 #check (heylo { true ∧ true } : HeyLo .Bool)
 
-/-- info: heylo {1 + 2 = 2 ∧ ~true} : 𝔼b -/
+/-- info: heylo {1 + 2 = 2 ∧ true} : 𝔼b -/
 #guard_msgs in
 #check (heylo { ((1 + 2) = 2) ∧ true } : HeyLo .Bool)
+
+/-- info: Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})) : HeyLo Ty.Nat -/
+#guard_msgs in
+#check (heylo { nlog₂ (nfloor y) } : HeyLo .Nat)
+/-- info: heylo {y ≤ y} : 𝔼b -/
+#guard_msgs in
+#check (heylo { y ≤ y } : HeyLo .Bool)
 
 @[app_unexpander pGCL'.skip]
 def skipUnexpander : Unexpander
@@ -360,14 +371,13 @@ def nonDetUnexpander : Unexpander
 @[app_unexpander pGCL'.loop]
 def loopUnexpander : Unexpander
 | `($(_) $b $i $C) => do
-  -- let b ← match b with | `(heylo {$b}) => pure b | _ => `(cheylo| ~ $b)
   let b ← unexpandAexp b
   let i ← unexpandAexp i
   let C ← match C with | `(pgcl' {$C}) => pure C | _ => `(cpgcl'| ~ $C)
   `(pgcl' { while $b inv($i) {$C} })
 | _ => throw ()
 
-/-- info: pgcl' {while x = 1 inv(~i[true]) { skip }} : pGCL' -/
+/-- info: pgcl' {while x = 1 inv([true]) { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { while x = 1 inv([true]) { skip } }
 
@@ -393,7 +403,7 @@ def observeUnexpander : Unexpander
   `(pgcl' { observe($r) })
 | _ => throw ()
 
-/-- info: pgcl' {observe(~false) ; observe(~true)} : pGCL' -/
+/-- info: pgcl' {observe(false) ; observe(true)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { observe(false) ; observe(true) }
 
@@ -406,9 +416,21 @@ def iteUnexpander : Unexpander
   `(pgcl' { if $b then $l else $r end })
 | _ => throw ()
 
-/-- info: pgcl' {if ~false then skip else tick(1) end} : pGCL' -/
+/-- info: pgcl' {if false then skip else tick(1) end} : pGCL' -/
 #guard_msgs in
 #check pgcl' { if false then skip else tick(1) end }
+
+/--
+info: pgcl' {~z := ~(Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
+-/
+#guard_msgs in
+#check (pgcl' { z := nlog₂ (nfloor y) } : pGCL').pGCL
+
+/--
+info: pgcl' {while n < 10 inv([n ≤ 10]) { { ~n := ~(heylo {n} + 2) } [1 / 2] { ~n := ~(heylo {n} + 1) } }} : pGCL'
+-/
+#guard_msgs in
+#check pgcl' { while n < 10 inv([n ≤ 10]) { {n := n + 2} [1/2] {n := n + 1} } }
 
 @[app_unexpander HeyVL.Skip]
 def HeyVL.skipUnexpander : Unexpander
@@ -428,6 +450,8 @@ def ifUnexpander : Unexpander
     `(heyvl { if ($b) { $S₁ } else { $S₂ } })
 | _ => throw ()
 
+/-- info: heyvl {if (true) {skip}} : HeyVL -/
+#guard_msgs in
 #check heyvl { if (true) {skip} else {skip} }
 
 @[app_unexpander HeyVL.Reward]
@@ -527,11 +551,11 @@ def covalidateUnexpander : Unexpander
 #guard_msgs in
 #check heyvl { validate }
 
-/-- info: heyvl {assert(~i[heylo {y ≤ 10}])} : HeyVL -/
+/-- info: heyvl {assert([y ≤ 10])} : HeyVL -/
 #guard_msgs in
 #check heyvl { assert([y ≤ 10]) }
 
-/-- info: heyvl {assume(~i[heylo {0 < y}])} : HeyVL -/
+/-- info: heyvl {assume([0 < y])} : HeyVL -/
 #guard_msgs in
 #check heyvl { assume([0 < y]) }
 
@@ -539,11 +563,11 @@ def covalidateUnexpander : Unexpander
 #guard_msgs in
 #check heyvl { covalidate }
 
-/-- info: heyvl {coassert(~i[heylo {y ≤ 100}])} : HeyVL -/
+/-- info: heyvl {coassert([y ≤ 100])} : HeyVL -/
 #guard_msgs in
 #check heyvl { coassert([y ≤ 100]) }
 
-/-- info: heyvl {coassume(~i[heylo {y ≠ 0}])} : HeyVL -/
+/-- info: heyvl {coassume([y ≠ 0])} : HeyVL -/
 #guard_msgs in
 #check heyvl { coassume([y ≠ 0]) }
 
@@ -551,7 +575,7 @@ def covalidateUnexpander : Unexpander
 #guard_msgs in
 #check heyvl { reward(1) ; validate }
 
-/-- info: heyvl {assert(~i[heylo {y ≤ 10}]) ; reward(y)} : HeyVL -/
+/-- info: heyvl {assert([y ≤ 10]) ; reward(y)} : HeyVL -/
 #guard_msgs in
 #check heyvl { assert([y ≤ 10]) ; reward(y) }
 
@@ -559,7 +583,7 @@ def covalidateUnexpander : Unexpander
 #guard_msgs in
 #check heyvl { if (⊓) { reward(1) } else { reward(2) } }
 
-/-- info: heyvl {if (⊔) {assert(~i[heylo {0 < y}])} else {assume(~i[heylo {y ≤ 0}])}} : HeyVL -/
+/-- info: heyvl {if (⊔) {assert([0 < y])} else {assume([y ≤ 0])}} : HeyVL -/
 #guard_msgs in
 #check heyvl { if (⊔) { assert([0 < y]) } else { assume([y ≤ 0]) } }
 

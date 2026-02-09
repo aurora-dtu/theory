@@ -188,7 +188,7 @@ theorem coe_sup : ∀ {a b : PReal}, coe (a ⊔ b) = coe a ⊔ coe b := by
   rw [SemilatticeSup.sup]
   simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
 @[simp]
-theorem coe_iInf {ι : Type*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i) = ⨅ i, coe (f i) := by
+theorem coe_iInf {ι : Sort*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i) = ⨅ i, coe (f i) := by
   simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
   apply le_antisymm
   · simp only [le_iInf_iff, Subtype.coe_le_coe]
@@ -208,7 +208,7 @@ theorem coe_iInf {ι : Type*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i
     left
     apply iInf_le_of_le i; rfl
 @[simp]
-theorem coe_iSup {ι : Type*} (f : ι → PReal) : coe (⨆ i, f i) = ⨆ i, coe (f i) := by
+theorem coe_iSup {ι : Sort*} (f : ι → PReal) : coe (⨆ i, f i) = ⨆ i, coe (f i) := by
   simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
   apply le_antisymm
   · suffices ⨆ i, f i ≤ ofENNReal (⨆ i, ↑(f i)) by
