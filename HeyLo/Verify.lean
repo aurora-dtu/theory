@@ -126,7 +126,7 @@ macro_rules
       invs_prop := by decide +native
       encoding := C'
       prop := by decide +native
-    } : Conditions  wpDirection[$D])
+    } : Conditions wpDirection[$D])
   )
 
 def Conditions.sound (C : Conditions D) : Prop :=
@@ -176,7 +176,7 @@ def NatLog :=
   vc[𝒟, wp]
     { ↑c + [0 < y] * ↑(y + nlog₂ y) }
       while 0 < y
-        inv ↑c + [0 < y] * ↑(y + nlog₂ y)
+        inv(↑c + [0 < y] * ↑(y + nlog₂ y))
       {
         { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
       }
@@ -217,7 +217,7 @@ def NatLog' :=
   vc[𝒜, wlp]
     { 1 }
       while 0 < y
-        inv 1
+        inv(1)
       {
         { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
       }

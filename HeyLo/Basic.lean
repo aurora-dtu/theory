@@ -1,4 +1,5 @@
 import HeyLo.pGCL'
+import HeyLo.Syntax
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Nat.Lattice
 import PGCL.IdleInduction
@@ -10,11 +11,6 @@ open Optimization.Notation
 open pGCL
 
 open HeyLo
-
-def HeyLo.not (x : 𝔼b) : 𝔼b := .Unary .Not x
-def HeyLo.iver (x : 𝔼b) : 𝔼r := .Unary .Iverson x
-def HeyLo.embed (x : 𝔼b) : 𝔼r := .Unary .Embed x
-def HeyLo.coembed (x : 𝔼b) : 𝔼r := .Unary .Embed x.not
 
 section
 variable {A B : HeyLo α}
@@ -101,22 +97,6 @@ theorem HeyLo.substs_inf {A B : 𝔼r} : (A ⊓ B).sem[..xs] = A.sem[..xs] ⊓ B
   Substitution.substs_of_binary (m:=A.sem) fun _ _ ↦ congrFun rfl
 
 end
-
-infixr:50 " ;; " => HeyVL.Seq
-
-def HeyVL.Skip : HeyVL := .Reward 0
-def HeyVL.If (b : 𝔼b) (S₁ S₂ : HeyVL) : HeyVL :=
-  .IfInf (.Assume b.embed ;; S₁) (.Assume b.not.embed ;; S₂)
-def HeyVL.Havocs (xs : List Ident) : HeyVL :=
-  match xs with
-  | [] => .Skip
-  | [x] => .Havoc x
-  | x::xs => .Havoc x ;; .Havocs xs
-def HeyVL.Cohavocs (xs : List Ident) : HeyVL :=
-  match xs with
-  | [] => .Skip
-  | [x] => .Cohavoc x
-  | x::xs => .Cohavoc x ;; .Cohavocs xs
 
 abbrev Globals := Finset Ident
 def Globals.fresh (G : Globals) (α : Ty) : Globals × Ident :=
@@ -290,10 +270,6 @@ theorem Distribution.toExpr_fv {μ : Distribution .ENNReal} : μ.toExpr.fv = μ.
   | cons x xs ih =>
     simp only [List.map_cons, List.sum_cons, HeyLo.fv]
     grind [List.toFinset_cons, Finset.biUnion_insert]
-@[grind =, simp]
-theorem pGCL'.fv_seq {C₁ C₂ : pGCL'} : (C₁.seq C₂).fv = C₁.fv ∪ C₂.fv := rfl
-@[grind =, simp]
-theorem pGCL'.fv_prob {C₁ C₂ : pGCL'} : (C₁.prob p C₂).fv = C₁.fv ∪ p.fv ∪ C₂.fv := by grind [fv]
 
 @[grind =, simp]
 theorem HeyVL.fv_vp {P : HeyVL} : (P.vp φ).fv = P.fv ∪ φ.fv := by
@@ -312,16 +288,12 @@ theorem HeyVL.fv_vp {P : HeyVL} : (P.vp φ).fv = P.fv ∪ φ.fv := by
 theorem HeyLo.fv_inf {X Y : 𝔼r} : (X ⊓ Y).fv = X.fv ∪ Y.fv := rfl
 
 theorem HeyVL.havoc_alt {φ : 𝔼r} :
-    ((HeyVL.Havoc x).vp φ).sem = ⨅ (v : x.type.lit), φ.sem[x ↦ fun _ ↦ v] := by
-  ext σ
-  simp [vp]
+    ((HeyVL.Havoc x).vp φ).sem = ⨅ (v : x.type.lit), φ.sem[x ↦ fun _ ↦ v] := rfl
 theorem HeyVL.cohavoc_alt {φ : 𝔼r} :
-    ((HeyVL.Cohavoc x).vp φ).sem = ⨆ (v : x.type.lit), φ.sem[x ↦ fun _ ↦ v] := by
-  ext σ
-  simp [vp]
+    ((HeyVL.Cohavoc x).vp φ).sem = ⨆ (v : x.type.lit), φ.sem[x ↦ fun _ ↦ v] := rfl
 
 theorem HeyVL.havoc_comm {φ : 𝔼r} :
-    ((.Havoc x ;; .Havoc y).vp φ).sem = ((.Havoc y ;; .Havoc x).vp φ).sem := by
+    (vp⟦havoc(~x) ; havoc(~y)⟧ φ).sem = (vp⟦havoc(~y) ; havoc(~x)⟧ φ).sem := by
   wlog h : x ≠ y
   · grind
   rw [vp, vp]
@@ -454,7 +426,7 @@ theorem HeyVL.Subs.subst_help'_apply (S : Subs xs hn) (σ : States fun (x : Iden
 
 @[simp]
 theorem HeyVL.vp_havocs (h : xs.Nodup) :
-    ((HeyVL.Havocs xs).vp φ).sem = ⨅ (vs : Subs xs hn), φ.sem[..vs.help] := by
+    (vp⟦havocs(~xs)⟧ φ).sem = ⨅ (vs : Subs xs hn), φ.sem[..vs.help] := by
   rcases xs with _ | ⟨x, xs⟩
   · ext σ; simp [Havocs, Skip, vp, Subs.help]
   induction xs generalizing x φ with
@@ -702,68 +674,57 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     Globals × HeyVL :=
   match C with
   | skip => (G, .Skip)
-  | assign x e => (G, .Assign x (.pure e))
+  | assign x e => (G, heyvl {~x :≈ ~(.pure e)})
   | seq C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
-    (G, C₁ ;; C₂)
+    (G, heyvl{~C₁ ; ~C₂})
   | prob C₁ p C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     let (G, choice) := fresh G .Nat
-    (G,
-      .Assign ⟨choice.name, .Nat⟩ (.bin 0 p 1) ;;
-      .If (.Binary .Eq (.Var choice.name .Nat) 0) C₁ C₂)
+    -- (G,
+    --   .Assign ⟨choice.name, .Nat⟩ (.bin 0 p 1) ;;
+    --   .If (.Binary .Eq (.Var choice.name .Nat) 0) C₁ C₂)
+    (G, heyvl {
+      ~⟨choice.name, .Nat⟩ :≈ ~(.bin 0 p 1); if (~(.Var choice.name .Nat) = 0) {~C₁} else {~C₂}})
   | nonDet C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     match O with
-    | 𝒜 => (G, .IfSup C₁ C₂)
-    | 𝒟 => (G, .IfInf C₁ C₂)
+    | 𝒜 => (G, heyvl {if (⊔) {~C₁} else {~C₂}})
+    | 𝒟 => (G, heyvl {if (⊓) {~C₁} else {~C₂}})
   | ite b C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
-    (G, _root_.HeyVL.If b C₁ C₂)
+    (G, heyvl {if (~b) {~C₁} else {~C₂}})
   | loop b I C =>
     let (G, C) := C.HeyVL O D G ;
     match D with
     -- NOTE: wp encoding
-    | .Lower =>
-      (G,
-        .Coassert I ;;
-        .Cohavocs C.mods.sort ;;
-        .Covalidate ;;
-        .Coassume I ;;
-        .If b (
-          C ;;
-          .Coassert I ;;
-          .Coassume ⊤
-        ) (
-          .Skip
-        ))
+    | .Lower => (G, heyvl {
+        coassert(~I) ;
+        cohavocs(~C.mods.sort) ;
+        covalidate ;
+        coassume(~I) ;
+        if (~b) { ~C ; coassert(~I); coassume(~⊤) }
+      })
     -- NOTE: wlp encoding
-    | .Upper =>
-      (G,
-        .Assert I ;;
-        .Havocs C.mods.sort ;;
-        .Validate ;;
-        .Assume I ;;
-        .If b (
-          C ;;
-          .Assert I ;;
-          .Assume 0
-        ) (
-          .Skip
-        ))
+    | .Upper => (G, heyvl {
+        assert(~I) ;
+        havocs(~C.mods.sort) ;
+        validate ;
+        assume(~I) ;
+        if (~b) { ~C ; assert(~I); assume(~0) }
+      })
   | tick r =>
     match D with
     -- NOTE: wp encoding
-    | .Lower => (G, .Reward r)
+    | .Lower => (G, heyvl { reward(~ r) })
     -- NOTE: wlp encoding
-    | .Upper =>
-      -- HACK: we include `r` as a subexpression such that `fv` is the same in both cases
-      (G, .Reward (0 * r))
-  | observe r => (G, .Assert r.embed)
+    -- HACK: we include `r` as a subexpression such that `fv` is the same in both cases
+    | .Upper => (G, heyvl { reward(0 * ~ r) })
+  | observe r => (G, heyvl { assert(~ r.embed) })
 
 @[grind ., grind! ., simp]
 theorem pGCL'.HeyVL_G_mono {C : pGCL'} : G ⊆ (C.HeyVL O D G).1 := by
@@ -912,12 +873,12 @@ theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂)
       (((C₁.prob p C₂).HeyVL O D G).2.vp φ).sem
     =   (p.sem ⊓ 1) * ((C₁.HeyVL O D (C₂.HeyVL O D G).1).2.vp φ).sem
       + (1 - p.sem ⊓ 1) * ((C₂.HeyVL O D G).2.vp φ).sem := by
-  simp_all only [fv_prob, Finset.union_assoc, Ty.expr, Ty.lit, HeyVL, fresh_update, ofNat_ident,
-    HeyVL.If, HeyVL.vp, Distribution.bin_map, Distribution.bin_toExpr, sem_add_apply, sem_mul_apply,
-    sem_inf_apply, sem_one, sem_subst, sem_himp_apply, sem_embed, sem_binop, sem_not_apply,
-    hnot_eq_compl, Exp.min_subst, Exp.himp_subst, Exp.mul_subst, Pi.iver_subst, BinOp.sem_subst,
-    HeyLo.fv, Finset.notMem_empty, not_false_eq_true, sem_indep, Substitution.indep_pair,
-    Exp.top_subst, Exp.not_subst, sem_sub_apply, sem_zero, add_zero]
+  simp_all only [Ty.expr, Ty.lit, HeyVL, fresh_update, ofNat_ident, HeyVL.If, HeyVL.vp,
+    Distribution.bin_map, Distribution.bin_toExpr, sem_add_apply, sem_mul_apply, sem_inf_apply,
+    sem_one, sem_subst, sem_himp_apply, sem_embed, sem_binop, sem_not_apply, hnot_eq_compl,
+    Exp.min_subst, Exp.himp_subst, Exp.mul_subst, Pi.iver_subst, BinOp.sem_subst, HeyLo.fv,
+    Finset.notMem_empty, not_false_eq_true, sem_indep, Substitution.indep_pair, Exp.top_subst,
+    Exp.not_subst, sem_sub_apply, sem_zero, add_zero]
   simp [BinOp.sem]
   have : i[fun (σ : States Ty.ϖ) ↦ True] = 1 := by ext; simp
   have : i[(fun (σ : States Ty.ϖ) ↦ True)ᶜ] = 0 := by ext; simp
@@ -952,7 +913,6 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
   | assign x e => simp [pGCL'.HeyVL, HeyVL.vp, pGCL'.pGCL]
   | seq C₁ C₂ ih₁ ih₂ =>
     simp only [pGCL'.HeyVL, HeyVL.vp, pGCL'.pGCL, wp.seq_apply]
-    simp_all only [fv_seq, Finset.union_assoc]
     grw [← ih₁, ← ih₂]
     · grind
     · simp
@@ -1158,10 +1118,9 @@ theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆
       forall_eq_or_imp]
     exact vp_le_wlp''_aux.loop ih hG hφ hI
   | tick r =>
-    simp only [Ty.expr, Ty.lit, HeyVL, HeyVL.vp, sem_add_apply, sem_sub_apply, pGCL,
-      wlp''.tick_apply]
+    simp only [Ty.expr, Ty.lit, HeyVL, HeyVL.vp, sem_add_apply, pGCL, wlp''.tick_apply]
     intro σ
-    simp [Pi.add_apply, Ty.lit, Pi.sub_apply, tsub_self, add_zero, le_refl]
+    simp [Pi.add_apply, Ty.lit, add_zero, le_refl]
     apply hφ
   | observe r =>
     intro σ
