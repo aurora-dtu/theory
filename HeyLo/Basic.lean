@@ -762,7 +762,7 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     -- NOTE: wlp encoding
     | .Upper =>
       -- HACK: we include `r` as a subexpression such that `fv` is the same in both cases
-      (G, .Reward (r - r))
+      (G, .Reward (0 * r))
   | observe r => (G, .Assert r.embed)
 
 @[grind ., grind! ., simp]
