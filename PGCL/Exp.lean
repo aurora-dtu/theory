@@ -7,12 +7,6 @@ import STDX.Subst
 
 /-! # Custom operators -/
 
-/-- Syntax typeclass for Heyting co-implication `↜`. -/
-@[notation_class]
-class HCoImp (α : Type*) where
-  /-- Heyting co-implication `↜` -/
-  hcoimp : α → α → α
-
 @[notation_class]
 class Validate (α : Type*) where
   /-- Validate `▵` -/
@@ -23,27 +17,26 @@ class Covalidate (α : Type*) where
   /-- Co-validate `▿` -/
   covalidate : α → α
 
-export HCoImp (hcoimp)
 export Validate (validate)
 export Covalidate (covalidate)
 
-@[inherit_doc] infixr:60 " ↜ " => hcoimp
+/-- Heyting co-implication `↜` -/
+notation:60 x:61 " ↜ " y:60 => y \ x
 @[inherit_doc] prefix:72 "~ " => compl
 @[inherit_doc] prefix:72 "▵ " => validate
 @[inherit_doc] prefix:72 "▿ " => covalidate
 
-
 instance {α : Type*} [HNot α] : Validate α := ⟨fun x ↦ ￢￢x⟩
 instance {α : Type*} [Compl α] : Covalidate α := ⟨fun x ↦ xᶜᶜ⟩
 
-noncomputable instance {α β : Type*} [HCoImp β] : HCoImp (α → β) := ⟨fun φ ψ σ ↦ φ σ ↜ ψ σ⟩
-noncomputable instance {α β : Type*} [Compl β] : Compl (α → β) := ⟨fun φ σ ↦ (φ σ)ᶜ⟩
+noncomputable instance {α β : Type*} [SDiff β] : SDiff (α → β) := inferInstance
 
-noncomputable instance : HCoImp ENNReal := ⟨fun φ ψ ↦ if φ ≥ ψ then 0 else ψ⟩
+noncomputable instance : SDiff ENNReal := inferInstance
 example {φ : ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
 example {φ : ι → ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
-example {φ : ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot, hcoimp]
-example {φ : ι → ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot, hcoimp]
+example {φ : ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot]
+example {φ : ι → ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot]
+example {φ : ENNReal} : ψ \ φ = φ ↜ ψ := by simp [sdiff]
 
 @[notation_class]
 class Iverson (α : Type*) (β : outParam Type*) where
@@ -160,17 +153,10 @@ variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[ϖ, α]}
     (a ⊓ b)[..xs] = a[..xs] ⊓ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
 @[simp] theorem himp_subst [HImp α] :
     (a ⇨ b)[..xs] = a[..xs] ⇨ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
-@[simp] theorem hcoimp_subst [HCoImp α] :
+@[simp] theorem sdiff_subst [SDiff α] :
     (a ↜ b)[..xs] = a[..xs] ↜ b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
 
 omit [DecidableEq 𝒱]
-
-theorem himp_apply [HImp α] {φ ψ : 𝔼[ϖ, α]} :
-    (φ ⇨ ψ) σ = φ σ ⇨ ψ σ := rfl
-@[grind =, simp] theorem hcoimp_apply [HCoImp α] {φ ψ : 𝔼[ϖ, α]} :
-    (φ ↜ ψ) σ = φ σ ↜ ψ σ := rfl
-@[grind =, simp] theorem compl_apply [Compl α] {φ : 𝔼[ϖ, α]} :
-    φᶜ σ = (φ σ)ᶜ := rfl
 
 @[grind =, simp] theorem validate_apply [HNot α] {φ : 𝔼[ϖ, α]} :
     (▵ φ) σ = ▵ φ σ := rfl

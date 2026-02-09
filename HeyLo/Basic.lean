@@ -59,7 +59,7 @@ theorem HeyLo.sem_compl : (Aᶜ).sem = A.semᶜ := rfl
 @[grind =, simp]
 theorem HeyLo.sem_himp_apply : (A ⇨ B).sem = A.sem ⇨ B.sem := rfl
 @[grind =, simp]
-theorem HeyLo.sem_hcoimp_apply : (A ↜ B).sem = A.sem ↜ B.sem := rfl
+theorem HeyLo.sem_sdiff_apply : (A \ B).sem = A.sem \ B.sem := rfl
 
 open Substitution in
 @[grind =, simp]
@@ -898,9 +898,9 @@ theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂)
   · apply HeyLo.sem_indep
     grind
 
-theorem ENNReal.covalidate_hcoimp {a b : ENNReal} : ▿ (a ↜ b) = if b ≤ a then 0 else ⊤ := by
-  simp [covalidate, compl, hcoimp]
-  grind [zero_ne_top, _root_.not_lt_zero]
+theorem ENNReal.covalidate_sdiff {a b : ENNReal} : ▿ (a \ b) = if a ≤ b then 0 else ⊤ := by
+  simp [covalidate, compl, sdiff]
+  split_ifs <;> grind [zero_ne_top, _root_.not_lt_zero]
 
 set_option maxHeartbeats 500000 in
 theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
@@ -945,8 +945,7 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
         _ ⊆ (C₂.HeyVL O .Lower G).1 := by grind
   | loop b I C ih =>
     simp only [Ty.lit, pGCL, HeyVL, HeyVL.vp, sem_sup_apply, Ty.expr, Finset.sort_nodup,
-      HeyVL.vp_cohavocs, sem_covalidate, sem_hcoimp_apply, HeyVL.if_vp_sem, sem_not_apply,
-      hnot_eq_compl, Exp.covalidate_subst, Exp.hcoimp_subst, Exp.add_subst, Exp.mul_subst]
+      HeyVL.vp_cohavocs, sem_covalidate, Exp.covalidate_subst]
     intro σ
     if inv : IdleInvariant wp[O]⟦~C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
@@ -964,20 +963,19 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
         intro h
         specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
         simp_all only
-      simp_all only [Ty.lit, Exp.iver_subst, Exp.not_subst, Pi.sup_apply, iSup_apply,
-        Exp.covalidate_apply, Exp.hcoimp_apply, Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply,
-        Pi.iver_apply, Pi.compl_apply, compl_iff_not, le_sup_iff]
+      simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.covalidate_apply, Exp.substs_help_apply,
+        le_sup_iff]
       right
       apply le_iSup_of_le Ξ
       simp [HeyVL.vp, HeyVL.Skip]
-      simp [ENNReal.covalidate_hcoimp]
+      simp [ENNReal.covalidate_sdiff]
       specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
       simp [σ_eq_σ']
       have :
             wp[O]⟦~C.pGCL⟧ I.sem σ'
           ≤ ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' := by
         grw [← ih]
-        have : (I.sem ⊔ ((⊤ : 𝔼r).sem ↜ φ.sem)) = I.sem := by ext; simp [sem, hcoimp]
+        have : (I.sem ⊔ ((⊤ : 𝔼r).sem ↜ φ.sem)) = I.sem := by ext; simp [sem]
         simp [this]
       simp only at this
       simp only [ge_iff_le]

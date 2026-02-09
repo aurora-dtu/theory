@@ -238,7 +238,7 @@ instance HeyLo.instDiv (h : α.Arith := by exact default) : Div (HeyLo α) := �
 instance : Min 𝔼r := ⟨.Binary .Inf⟩
 instance : Max 𝔼r := ⟨.Binary .Sup⟩
 instance : HImp 𝔼r := ⟨.Binary .Impl⟩
-instance : HCoImp 𝔼r := ⟨.Binary .CoImpl⟩
+instance : SDiff 𝔼r := ⟨fun a b ↦ .Binary .CoImpl b a⟩
 instance : HNot (HeyLo α) := ⟨.Unary .Not⟩
 instance : Compl 𝔼r := ⟨.Unary .Non⟩
 instance : Iverson 𝔼b 𝔼r := ⟨.Unary .Iverson⟩

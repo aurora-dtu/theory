@@ -54,14 +54,14 @@ theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := b
   rw [himp_zero_le]
   simp
 @[grind =, simp]
-theorem ENNReal.hcoimp_zero_eq_zero (x y : ENNReal) : x ↜ y = 0 ↔ y ≤ x := by
-  simp [hcoimp]
+theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
+  simp [sdiff, sdiff]
   constructor
-  · if x < y then simp_all else simp_all
+  · if y < x then simp_all else simp_all
   · simp_all
 
 @[simp]
-theorem ENNReal.hcoimp_zero_eq_zero' (x y z : ENNReal) (hz : z ≠ ⊤) :
+theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
     (i[x = 0] : ENNReal) * (⊤ : ENNReal) ⇨ y ≤ z ↔ x = 0 ∧ y ≤ z := by
   simp [himp]
   if x = 0 then
@@ -71,7 +71,7 @@ theorem ENNReal.hcoimp_zero_eq_zero' (x y z : ENNReal) (hz : z ≠ ⊤) :
     simp_all
 
 @[grind =, simp]
-theorem ENNReal.max_hcoimp (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [hcoimp]
+theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [sdiff]
 @[grind =, simp]
 theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < y → x < z) := by
   simp_all [himp]

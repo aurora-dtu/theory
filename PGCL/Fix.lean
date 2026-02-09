@@ -30,15 +30,6 @@ def Exp.substs_mono [DecidableEq 𝒱] {X₁ X₂ : 𝔼[ϖ, ENNReal]} {xs : Lis
   | nil => simp [h]
   | cons x xs ih => apply fun σ ↦ ih h _
 
-@[gcongr]
-theorem Exp.hcoimp_mono {a₁ a₂ b₁ b₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
-    a₁ ↜ b₁ ≤ a₂ ↜ b₂ := by
-  intro σ
-  specialize ha σ
-  specialize hb σ
-  simp [Exp.hcoimp_apply, instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
 
 @[gcongr]
 theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
@@ -73,12 +64,6 @@ theorem Exp.covalidate_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₁ ≤ a₂)
   gcongr
 
 @[gcongr]
-theorem ENNReal.hcoimp_mono {a₁ a₂ b₁ b₂ : ENNReal} (ha : a₂ ≤ a₁) (hb : b₁ ≤ b₂) :
-    a₁ ↜ b₁ ≤ a₂ ↜ b₂ := by
-  simp [instHCoImpENNReal]
-  split_ifs <;> try grind
-  simp_all
-@[gcongr]
 theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
     ￢ a₁ ≤ ￢ a₂ := by
   simp [hnot]
@@ -87,10 +72,7 @@ theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
 theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
     ▿ a₁ ≤ ▿ a₂ := by
   show ~~ a₁ ≤ ~~ a₂
-  simp [compl, himp]
-  split_ifs <;> try grind
-  · simp
-  · simp_all
+  gcongr
 
 @[grind =, simp]
 theorem Exp.zero_himp {a : 𝔼[ϖ, ENNReal]} :
