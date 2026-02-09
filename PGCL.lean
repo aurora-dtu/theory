@@ -40,7 +40,7 @@ theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
   classical
-  rw [← MDP.iSup_iInf_EC_eq_lfp_dΦ, MDP.iSup_iInf_EC_eq_iInf_iSup_EC]
+  rw [← MDP.iSup_iInf_EC_eq_lfp_Φ𝒟, MDP.iSup_iInf_EC_eq_iInf_iSup_EC]
   simp only [iInf_apply, iSup_apply]
 
 /-- info: 'pGCL.iSup_iSup_EC_eq_wfp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
