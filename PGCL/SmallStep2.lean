@@ -319,82 +319,49 @@ theorem succs_univ_fin'_eq_r (c : Conf₀ ϖ) :
         use .fault
         simp_all only [after_fault, Prod.mk.injEq, true_and, exists_eq_right]
 
--- open scoped Classical in
--- theorem succs_eq_succs_fin : succs (ϖ:=ϖ) c α = (succs_fin c α).toSet := by
---   ext ⟨c', σ'⟩
---   obtain ⟨c, σ⟩ := c
---   simp [succs]
---   simp [← succs_univ_fin'_eq_r]
---   constructor
---   · simp
---     intro p h
---     cases c <;> simp_all [succs_fin, succs_univ_fin']
---     · grind
---   sorry
-  -- simp [← succs_univ_fin'_eq_r]
-
---   sorry
---   -- constructor
---   -- · simp
---   --   intro p h
---   --   induction h with try simp_all [succs_fin]
---   --   | seq_R => unfold succs_fin; split <;> simp_all
---   --   | seq_F =>
---   --     unfold succs_fin; split <;> simp_all
---   --     simp [after]
---   --     grind
---   --   | prob_L | prob_R => split_ifs <;> simp_all
---   -- · intro h
---   --   induction c, α using succs_fin.induct generalizing s'
---   --     with (simp [succs_fin] at h ⊢; try subst_eqs) <;> try grind
---   --   | case9 | case10 => simp_all; (use 1); simp
---   --   | case11 => aesop
---   --   | case17 _ _ _ _ _ ih =>
---   --     obtain ⟨((_ | _) | ⟨c', σ'⟩), h, _, _⟩ := h <;> obtain ⟨_, _⟩ := ih _ h <;> simp_all
---   --     · grind
---   --     · grind
-
 set_option maxHeartbeats 500000 in
 open scoped Classical in
 theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
     (∑' (c' : Conf₁ ϖ) (p : {p // c ⤳[α,p] c'}), p.val) = 1 := by
-  induction h₀ with simp_all [ite_and]
+  induction h₀ with
+    simp_all only [↓reduceIte, assign_iff, false_and, false_or, ite_and, loop_iff, nonDet_iff,
+      observe_iff, or_false, prob_iff, reduceCtorEq, seq_iff, skip_iff, tick_iff, true_and,
+      tsum_ite_eq, tsum_p]
   | seq_L =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq
-    · simp
+    apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
+    · clear h; grind only [tsum_zero]
     · grind
-    · simp
-      rintro C' σ p (⟨C'', h⟩ | h) hp
-      · simp_all
-        use p
-        grind
-      · simp_all
-        use p
-        grind
+    · simp only [ENNReal.tsum_eq_zero]
+      grind
     · grind
     · grind
-    · simp
+    · simp only [ENNReal.tsum_eq_zero, ite_eq_right_iff, not_forall, Prod.mk.injEq, Sum.inl.injEq,
+      seq.injEq, and_true, exists_eq_right_right', exists_eq_right', seq_ne_right, false_and,
+      and_false, exists_false, reduceCtorEq, or_self, or_false, implies_true]
   | seq_R =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq
-    · simp
-    · grind
-    · simp
+    apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
+    · clear h; grind [tsum_zero]
+    · simp only [ENNReal.tsum_eq_zero]
+      grind
+    · clear h
+      simp
       rintro C' σ p (⟨C'', h⟩ | h) hp
-      on_goal 1 => left; use C'', σ
-      on_goal 2 => right; use .term, σ
-      all_goals simp_all; use p; grind
+      · left; use C'', σ
+        simp only [after_eq_seq_iff, and_true, h]; use p; grind
+      · right; use .term, σ
+        simp only [after_term, h, and_true]; use p; grind
     · simp
-    · grind
+    · clear h; grind
     · grind
   | seq_F =>
     rename_i C₂ h ih
     rw [← ih]
-    apply C₂.tsum_after_eq
-    · simp
+    apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
+    · clear h; grind [tsum_zero]
     · grind
     · simp
       rintro C' σ p (⟨C'', h⟩ | h) hp

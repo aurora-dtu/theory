@@ -1,7 +1,8 @@
 import MDP.OptimalCost
 import MDP.SupSup
 import PGCL.OperationalSemantics
--- import PGCL.ProofRules
+import PGCL.ProofRules
+import PGCL.IdleInduction
 
 /-!
 # _probabilistic Guarded Command Language_ (pGCL)
