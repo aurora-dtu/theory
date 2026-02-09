@@ -49,8 +49,8 @@ instance : PartialOrder (ProbExp ϖ) where
 instance instOfNat0 : OfNat (ProbExp ϖ) 0 := ⟨⟨fun _ ↦ 0, by intro; simp⟩⟩
 instance instOfNat1 : OfNat (ProbExp ϖ) 1 := ⟨⟨fun _ ↦ 1, by intro; simp⟩⟩
 
-@[grind =, simp] theorem zero_apply : instOfNat0.ofNat σ = 0 := rfl
-@[grind =, simp] theorem one_apply : instOfNat1.ofNat σ = 1 := rfl
+@[grind =, simp] theorem zero_apply : (ofNat(0) : ProbExp ϖ) σ = 0 := rfl
+@[grind =, simp] theorem one_apply : (ofNat(1) : ProbExp ϖ) σ = 1 := rfl
 
 @[grind ., simp] theorem le_one : p ≤ 1 := p.prop
 @[grind ., simp] theorem zero_le : 0 ≤ p := by intro; simp

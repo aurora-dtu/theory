@@ -859,10 +859,10 @@ def pGCL'.vp (C : pGCL') (O : Optimization) (D : Direction) (φ : 𝔼r) :=
 
 @[simp]
 theorem HeyLo.ofNat_ident (n : String) :
-      @OfNat.ofNat (HeyLo ({ name := n, type := Ty.Nat } : Ident).type) 0 instOfNatHeyLoNat
+      (ofNat(0) : HeyLo ({ name := n, type := Ty.Nat } : Ident).type)
     = (0 : HeyLo .Nat) := by simp
-@[grind =, simp]
-theorem HeyLo.ofNat_sem (n : ℕ) : sem (@OfNat.ofNat (HeyLo .Nat) n instOfNatHeyLoNat) σ = n := by
+@[simp]
+theorem HeyLo.ofNat_sem (n : ℕ) : sem (ofNat(n) : HeyLo .Nat) σ = n := by
   simp [sem]
 @[grind =, simp]
 theorem HeyLo.nat_zero_sem : sem (0 : HeyLo .Nat) = 0 := by simp [sem] @[grind =, simp]
@@ -925,7 +925,7 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
       Pi.ofNat_apply, hnot_eq_compl, Pi.iver_apply, Pi.compl_apply, compl_iff_not, Iverson.iver_neg,
       ENNReal.natCast_sub, Nat.cast_one, le_refl]
     · grind
-    · grind
+    · clear ih₁; grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [pGCL'.fv] at hG
     simp only [pGCL, wp.nonDet_apply, Optimization.opt₂, HeyVL]

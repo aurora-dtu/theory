@@ -258,13 +258,13 @@ instance instAdd : Add (α →o β) where
 
 instance [OfNat β n] : OfNat (α →o β) n := ⟨fun _ ↦ OfNat.ofNat n, by intro; simp⟩
 omit [Add β] [AddLeftMono β] [AddRightMono β] in
-@[grind =, simp]
-theorem ofNat_apply [OfNat β n] : (OfNat.ofNat n : α →o β) a = OfNat.ofNat n := by rfl
+@[simp]
+theorem ofNat_apply [OfNat β n] : (ofNat(n) : α →o β) a = ofNat(n) := by rfl
 
 instance {β : Type*} [Preorder β] [AddZeroClass β] [AddLeftMono β] [AddRightMono β] :
     AddZeroClass (α →o β) where
-  zero_add f := by ext; simp; rw [ofNat_apply]; simp
-  add_zero f := by ext; simp; rw [ofNat_apply]; simp
+  zero_add f := by ext; simp
+  add_zero f := by ext; simp
 
 instance {α β : Type*} [Preorder β] [Add β] [i : AddRightMono β] : AddRightMono (α → β) where
   elim a b c h i := by simp [Function.swap]; gcongr; apply h
