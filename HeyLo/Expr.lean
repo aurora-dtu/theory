@@ -30,9 +30,6 @@ def Ty.toNat : Ty → ℕ
 | .ENNReal => 2
 
 instance Ty.instLinearOrder : LinearOrder Ty := LinearOrder.lift' Ty.toNat (by intro; grind [toNat])
-instance Ty.instTotalOrder : IsTotal Ty LE.le := inferInstance
-instance {α β : Type} [LinearOrder α] [LinearOrder β] : IsTotal (Lex (α × β)) LE.le := inferInstance
-
 
 abbrev Ty.lit : Ty → Type
   | .Bool => Prop
@@ -243,11 +240,7 @@ instance : Max 𝔼r := ⟨.Binary .Sup⟩
 instance : HImp 𝔼r := ⟨.Binary .Impl⟩
 instance : HCoImp 𝔼r := ⟨.Binary .CoImpl⟩
 instance : HNot (HeyLo α) := ⟨.Unary .Not⟩
--- noncomputable instance {α : Ty} : HNot (α.expr) :=
---   match α with
---   | .Bool => inferInstance
---   | .ENNReal => inferInstance
-instance : HCoNot 𝔼r := ⟨.Unary .Non⟩
+instance : Compl 𝔼r := ⟨.Unary .Non⟩
 instance : Iverson 𝔼b 𝔼r := ⟨.Unary .Iverson⟩
 
 @[reducible] instance : OfNat (HeyLo .ENNReal) n := HeyLo.instOfNat

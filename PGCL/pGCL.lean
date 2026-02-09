@@ -1,5 +1,5 @@
 import Lean.PrettyPrinter.Delaborator
-import PGCL.Exp
+import PGCL.ProbExp
 
 open pGCL
 

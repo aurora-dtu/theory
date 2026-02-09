@@ -55,7 +55,7 @@ theorem HeyLo.sem_covalidate : (▿ A).sem = ▿ A.sem := rfl
 @[grind =, simp]
 theorem HeyLo.sem_hnot_apply : (￢A).sem = ￢A.sem := rfl
 @[grind =, simp]
-theorem HeyLo.sem_hconot : (~A).sem = ~A.sem := rfl
+theorem HeyLo.sem_compl : (Aᶜ).sem = A.semᶜ := rfl
 @[grind =, simp]
 theorem HeyLo.sem_himp_apply : (A ⇨ B).sem = A.sem ⇨ B.sem := rfl
 @[grind =, simp]
@@ -899,7 +899,7 @@ theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂)
     grind
 
 theorem ENNReal.covalidate_hcoimp {a b : ENNReal} : ▿ (a ↜ b) = if b ≤ a then 0 else ⊤ := by
-  simp [covalidate, himp, hconot, hcoimp]
+  simp [covalidate, compl, hcoimp]
   grind [zero_ne_top, _root_.not_lt_zero]
 
 set_option maxHeartbeats 500000 in

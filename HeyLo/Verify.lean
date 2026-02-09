@@ -188,7 +188,7 @@ theorem NatLog.soundess : NatLog.sound := by
   simp [BinOp.sem, UnOp.sem, sem, Fun.sem]
   set c : ℕ := σ c; set y : ℕ := σ y
   intro c' y'
-  have : ∀ {a b : ENNReal}, (~~a ≤ b ↔ a = 0 ∨ b = ⊤) := by simp +contextual [hconot]; grind
+  have : ∀ {a b : ENNReal}, (~~a ≤ b ↔ a = 0 ∨ b = ⊤) := by simp [compl]; grind [zero_le]
   simp [this]; left
   rcases y' with _ | y' <;> simp
   grw [Nat.log2_div_2, (by gcongr; omega : Nat.log2 y' ≤ Nat.log2 (y' + 1))]

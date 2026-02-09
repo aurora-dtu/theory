@@ -58,10 +58,9 @@ theorem Exp.hnot_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) :
   simp [hnot]
   split_ifs <;> simp_all
 @[gcongr]
-theorem Exp.hconot_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) :
-    ~ a₁ ≤ ~ a₂ := by
-  show a₁ ⇨ 0 ≤ a₂ ⇨ 0
-  gcongr
+theorem Exp.compl_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₂ ≤ a₁) :
+    a₁ᶜ ≤ a₂ᶜ := by
+  apply compl_le_compl ha
 @[gcongr]
 theorem Exp.validate_mono {a₁ a₂ : 𝔼[ϖ, ENNReal]} (ha : a₁ ≤ a₂) :
     ▵ a₁ ≤ ▵ a₂ := by
@@ -88,7 +87,7 @@ theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
 theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
     ▿ a₁ ≤ ▿ a₂ := by
   show ~~ a₁ ≤ ~~ a₂
-  simp [hconot, himp]
+  simp [compl, himp]
   split_ifs <;> try grind
   · simp
   · simp_all
@@ -304,7 +303,7 @@ theorem wp_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mod
         Exp.fix_apply, Pi.compl_apply, compl_iff_not]
       congr! 2
       classical
-      rw [← Exp.ext_iff] at ih'
+      rw [← funext_iff] at ih'
       rw [ih']
       exact congrFun (ih ((Φ[_] b φ)^[i] 0)) σ
 
@@ -348,7 +347,7 @@ theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.
         Exp.fix_apply, Pi.compl_apply, compl_iff_not, Pi.inf_apply, Pi.one_apply]
       congr! 2
       classical
-      rw [← Exp.ext_iff] at ih'
+      rw [← funext_iff] at ih'
       rw [ih']
       exact congrFun (ih ((Φ[_] b (φ ⊓ 1))^[i] 1)) σ
 
