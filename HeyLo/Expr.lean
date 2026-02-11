@@ -494,6 +494,8 @@ def Distribution.unif (vs : Array (HeyLo α)) (h : vs ≠ #[]) : Distribution α
     simp [sem, BinOp.sem, Array.map_const', h, ENNReal.mul_inv_cancel]⟩
 def Distribution.bin (a : HeyLo α) (p : 𝔼r) (b : HeyLo α) : Distribution α :=
   ⟨#[(p ⊓ 1, a), (1 - (p ⊓ 1), b)], by intro σ; simp [sem, BinOp.sem]⟩
+def Distribution.flip (p : 𝔼r) : Distribution .Bool :=
+  bin (HeyLo.Lit (.Bool true)) p (HeyLo.Lit (.Bool false))
 
 @[grind =, simp]
 theorem Distribution.pure_map {e : HeyLo α} :
@@ -566,21 +568,3 @@ def HeyVL.Cohavocs (xs : List Ident) : HeyVL :=
   | [] => .Skip
   | [x] => .Cohavoc x
   | x::xs => .Cohavoc x ;; .Cohavocs xs
-
-def HeyVL.vp (C : HeyVL) : 𝔼r → 𝔼r := fun φ ↦
-  match C with
-  | .Assign x μ => μ.map (φ[x ↦ ·]) |>.toExpr
-  | .Reward a => φ + a
-  | .Seq S₁ S₂ => S₁.vp (S₂.vp φ)
-  --
-  | IfInf S₁ S₂ => S₁.vp φ ⊓ S₂.vp φ
-  | Assert ψ => ψ ⊓ φ
-  | Assume ψ => ψ ⇨ φ
-  | Havoc x => .Quant .Inf x φ
-  | Validate => ▵ φ
-  --
-  | IfSup S₁ S₂ => S₁.vp φ ⊔ S₂.vp φ
-  | Coassert ψ => ψ ⊔ φ
-  | Coassume ψ => ψ ↜ φ
-  | Cohavoc x => .Quant .Sup x φ
-  | Covalidate => ▿ φ

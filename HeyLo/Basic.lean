@@ -1,5 +1,6 @@
 import HeyLo.pGCL'
 import HeyLo.Syntax
+import HeyLo.vp
 import Mathlib.Data.Finset.Sort
 import Mathlib.Data.Nat.Lattice
 import PGCL.IdleInduction
@@ -89,14 +90,24 @@ theorem HeyLo.sem_embed : P.embed.sem = i[P.sem] * ⊤ := rfl
 theorem HeyLo.sem_not_apply : P.not.sem = ￢P.sem := rfl
 
 @[grind =, simp]
-theorem HeyLo.sem_subt_var {v : Ty.expr x.type} : (HeyLo.Var x.name x.type).sem[x ↦ v] = v := by
-  simp [sem, Substitution.substs, Substitution.subst]
-
-@[grind =, simp]
 theorem HeyLo.substs_inf {A B : 𝔼r} : (A ⊓ B).sem[..xs] = A.sem[..xs] ⊓ B.sem[..xs] :=
   Substitution.substs_of_binary (m:=A.sem) fun _ _ ↦ congrFun rfl
 
 end
+
+@[grind =, simp]
+theorem HeyLo.Var_sem_subst :
+      (HeyLo.Var n t).sem[x ↦ v]
+    = if h : x = ⟨n, t⟩ then cast (by obtain ⟨x, t'⟩ := x; grind) v else (· ⟨n, t⟩) := by
+  obtain ⟨x, t'⟩ := x
+  split_ifs with h
+  · simp only [Ident.mk.injEq] at h
+    rcases h with ⟨⟨_⟩, ⟨_⟩⟩
+    simp [sem, Substitution.subst_singleton, Substitution.subst]
+  · simp at h
+    ext σ
+    simp [sem, Substitution.subst_singleton, Substitution.subst]
+    grind
 
 abbrev Globals := Finset Ident
 def Globals.fresh (G : Globals) (α : Ty) : Globals × Ident :=
@@ -673,21 +684,30 @@ inductive Direction where
 def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     Globals × HeyVL :=
   match C with
-  | skip => (G, .Skip)
+  | prob C₁ p C₂ =>
+    let (G, C₂) := C₂.HeyVL O D G; let (G, C₁) := C₁.HeyVL O D G
+    let (G, choice) := fresh G .Bool; let choice : Ident := ⟨choice.name, .Bool⟩
+    (G, heyvl {
+      ~choice :≈ ~(.flip p); if (choice) {~C₁} else {~C₂}})
+  | loop b I C =>
+    let (G, C) := C.HeyVL O D G ;
+    match D with
+    -- NOTE: wp encoding
+    | .Lower => (G, heyvl {
+        coassert(~I) ; cohavocs(~C.mods.sort) ; covalidate ; coassume(~I) ;
+        if (~b) { ~C ; coassert(~I); coassume(~⊤) }
+      })
+    -- NOTE: wlp encoding
+    | .Upper => (G, heyvl {
+        assert(~I) ; havocs(~C.mods.sort) ; validate ; assume(~I) ;
+        if (~b) { ~C ; assert(~I); assume(~0) }
+      })
+  | skip => (G, heyvl {skip})
   | assign x e => (G, heyvl {~x :≈ ~(.pure e)})
   | seq C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     (G, heyvl{~C₁ ; ~C₂})
-  | prob C₁ p C₂ =>
-    let (G, C₂) := C₂.HeyVL O D G
-    let (G, C₁) := C₁.HeyVL O D G
-    let (G, choice) := fresh G .Nat
-    -- (G,
-    --   .Assign ⟨choice.name, .Nat⟩ (.bin 0 p 1) ;;
-    --   .If (.Binary .Eq (.Var choice.name .Nat) 0) C₁ C₂)
-    (G, heyvl {
-      ~⟨choice.name, .Nat⟩ :≈ ~(.bin 0 p 1); if (~(.Var choice.name .Nat) = 0) {~C₁} else {~C₂}})
   | nonDet C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
@@ -698,25 +718,6 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     (G, heyvl {if (~b) {~C₁} else {~C₂}})
-  | loop b I C =>
-    let (G, C) := C.HeyVL O D G ;
-    match D with
-    -- NOTE: wp encoding
-    | .Lower => (G, heyvl {
-        coassert(~I) ;
-        cohavocs(~C.mods.sort) ;
-        covalidate ;
-        coassume(~I) ;
-        if (~b) { ~C ; coassert(~I); coassume(~⊤) }
-      })
-    -- NOTE: wlp encoding
-    | .Upper => (G, heyvl {
-        assert(~I) ;
-        havocs(~C.mods.sort) ;
-        validate ;
-        assume(~I) ;
-        if (~b) { ~C ; assert(~I); assume(~0) }
-      })
   | tick r =>
     match D with
     -- NOTE: wp encoding
@@ -728,15 +729,7 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
 
 @[grind ., grind! ., simp]
 theorem pGCL'.HeyVL_G_mono {C : pGCL'} : G ⊆ (C.HeyVL O D G).1 := by
-  fun_induction HeyVL <;> try simp_all
-  next => trans <;> assumption
-  next ih₁ ih₂ =>
-    apply trans ih₁
-    apply trans ih₂
-    grind
-  next => trans <;> assumption
-  next => trans <;> assumption
-  next => trans <;> assumption
+  fun_induction HeyVL <;> grind
 @[grind =, simp]
 theorem pGCL'.fv_HeyVL_subset {C : pGCL'} :
     (C.HeyVL O D G).2.fv = C.fv ∪ ((C.HeyVL O D G).1 \ G) := by
@@ -748,14 +741,14 @@ theorem pGCL'.fv_HeyVL_subset {C : pGCL'} :
   | nonDet C₁ C₂ ih₁ ih₂ => grind
   | ite b C₁ C₂ ih₁ ih₂ => grind
   | prob C₁ p C₂ ih₁ ih₂ =>
-    simp only [Distribution.fv, Distribution.bin, List.map_cons, HeyLo.fv, Finset.union_empty,
-      Finset.empty_union, List.map_nil, List.toFinset_cons, List.toFinset_nil, insert_empty_eq,
-      Finset.mem_singleton, Finset.insert_eq_of_mem, Finset.singleton_biUnion]
+    simp only [Distribution.fv, Distribution.flip, Distribution.bin, List.map_cons, HeyLo.fv,
+      Finset.union_empty, Finset.empty_union, List.map_nil, List.toFinset_cons, List.toFinset_nil,
+      insert_empty_eq, Finset.mem_singleton, Finset.insert_eq_of_mem, Finset.singleton_biUnion]
     ext a
     simp_all only [Finset.mem_insert, Finset.mem_union, Finset.mem_sdiff]
     have :
-        a = { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2.name, type := Ty.Nat }
-        ↔ a = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2 := by
+        a = { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Bool).2.name, type := Ty.Bool }
+        ↔ a = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Bool).2 := by
       refine Eq.congr_right ?_
       congr
       grind
@@ -868,26 +861,20 @@ theorem HeyLo.ofNat_sem (n : ℕ) : sem (ofNat(n) : HeyLo .Nat) σ = n := by
 theorem HeyLo.nat_zero_sem : sem (0 : HeyLo .Nat) = 0 := by simp [sem] @[grind =, simp]
 theorem HeyLo.nat_one_sem : sem (1 : HeyLo .Nat) = 1 := by simp [sem]
 
-
 theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂).fv ∪ φ.fv ⊆ G) :
       (((C₁.prob p C₂).HeyVL O D G).2.vp φ).sem
     =   (p.sem ⊓ 1) * ((C₁.HeyVL O D (C₂.HeyVL O D G).1).2.vp φ).sem
       + (1 - p.sem ⊓ 1) * ((C₂.HeyVL O D G).2.vp φ).sem := by
-  simp_all only [Ty.expr, Ty.lit, HeyVL, fresh_update, ofNat_ident, HeyVL.If, HeyVL.vp,
-    Distribution.bin_map, Distribution.bin_toExpr, sem_add_apply, sem_mul_apply, sem_inf_apply,
-    sem_one, sem_subst, sem_himp_apply, sem_embed, sem_binop, sem_not_apply, hnot_eq_compl,
-    Exp.min_subst, Exp.himp_subst, Exp.mul_subst, Pi.iver_subst, BinOp.sem_subst, HeyLo.fv,
-    Finset.notMem_empty, not_false_eq_true, sem_indep, Substitution.indep_pair, Exp.top_subst,
-    Exp.not_subst, sem_sub_apply, sem_zero, add_zero]
-  simp [BinOp.sem]
+  simp [HeyVL, HeyVL.vp, HeyVL.If]
+  simp [Distribution.flip]
   have : i[fun (σ : States Ty.ϖ) ↦ True] = 1 := by ext; simp
   have : i[(fun (σ : States Ty.ϖ) ↦ True)ᶜ] = 0 := by ext; simp
   have : i[fun (σ : States Ty.ϖ) ↦ False] = 0 := by ext; simp
   have : i[(fun (σ : States Ty.ϖ) ↦ False)ᶜ] = 1 := by ext; simp
   simp [*]
   have :
-      { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2.name, type := Ty.Nat }
-    = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Nat).2 := by
+      { name := ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Bool).2.name, type := Ty.Bool }
+    = ((C₁.HeyVL O D (C₂.HeyVL O D G).1).1.fresh Ty.Bool).2 := by
     ext
     · rfl
     · simp

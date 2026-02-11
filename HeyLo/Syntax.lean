@@ -595,18 +595,6 @@ def covalidateUnexpander : Unexpander
 #guard_msgs in
 #check heyvl { if (1 = 2) {skip} else {skip} }
 
-syntax "vp⟦" cheyvl "⟧" : term
-
-macro_rules
-| `(vp⟦ $p ⟧) => `(HeyVL.vp heyvl {$p})
-
-@[app_unexpander HeyVL.vp]
-def vpUnexpander : Lean.PrettyPrinter.Unexpander
-| `($(_) $c) => do
-    let c ← match c with | `(heyvl {$c}) => pure c | _ => `(cheyvl| ~ $c)
-    `(vp⟦$c⟧)
-| _ => throw ()
-
 end Syntax
 
 end HeyLo
