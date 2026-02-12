@@ -847,7 +847,7 @@ theorem NNRat.toENNReal_sub (a b : ℚ≥0) : (((a - b) : ℚ≥0) : ENNReal) = 
 @[simp] theorem Iverson.iver_bool_eq_false {b : Bool} : i[b = false] = i[¬b] := by
   simp [Iverson.iver]
 
-def pGCL'.vp (C : pGCL') (O : Optimization) (D : Direction) (φ : 𝔼r) :=
+def pGCL'.vp (C : pGCL') (O : Optimization) (D : Direction) (φ : 𝔼r) : 𝔼r :=
   (C.HeyVL O D (C.fv ∪ φ.fv)).2.vp φ
 
 @[simp]
@@ -889,8 +889,16 @@ theorem ENNReal.covalidate_sdiff {a b : ENNReal} : ▿ (a \ b) = if a ≤ b then
   simp [covalidate, compl, sdiff]
   split_ifs <;> grind [zero_ne_top, _root_.not_lt_zero]
 
+theorem ENNReal.le_covalidate_sdiff {a b : ENNReal} : x ≤ ▿ (a \ b) ↔ a ≤ b → x = 0 := by
+  simp [ENNReal.covalidate_sdiff]
+  split_ifs <;> simp_all
+theorem ENNReal.le_covalidate_sdiff_of_lt {a b : ENNReal} (h : b < a) : x ≤ ▿ (a \ b) := by
+  simp [ENNReal.le_covalidate_sdiff, h]
+theorem ENNReal.validate_himp_le_of_lt {a b : ENNReal} (h : b < a) : ▵ (a ⇨ b) ≤ x := by
+  simp [validate, hnot, h]
+
 set_option maxHeartbeats 500000 in
-theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
+private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
     wp[O]⟦~C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower G).2.vp φ).sem := by
   induction C generalizing G φ with
   | skip =>
@@ -954,25 +962,16 @@ theorem pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
         le_sup_iff]
       right
       apply le_iSup_of_le Ξ
-      simp [HeyVL.vp, HeyVL.Skip]
-      simp [ENNReal.covalidate_sdiff]
-      specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
       simp [σ_eq_σ']
-      have :
+      apply ENNReal.le_covalidate_sdiff_of_lt
+      simp [HeyVL.vp, HeyVL.Skip]
+      replace ih :
             wp[O]⟦~C.pGCL⟧ I.sem σ'
           ≤ ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' := by
-        grw [← ih]
-        have : (I.sem ⊔ ((⊤ : 𝔼r).sem ↜ φ.sem)) = I.sem := by ext; simp [sem]
-        simp [this]
-      simp only at this
-      simp only [ge_iff_le]
-      suffices
-            ¬i[b.sem σ'] * ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' +
-              i[¬b.sem σ'] * φ.sem σ'
-          ≤ I.sem (σ') by simp [this]
-      grw [← this]; clear this; clear ih
-      simp
-      grind
+        specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
+        grw [← ih]; gcongr; intro; simp
+      grw [← ih]
+      exact h₂
   | tick r =>
     grind [pGCL'.HeyVL, HeyVL.vp, add_comm, pGCL'.pGCL, wp.tick_apply, le_refl]
   | observe r =>
@@ -993,7 +992,7 @@ theorem pGCL'.wp_le_vp {C : pGCL'} :
 theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {ϖ : Γ[𝒱]} {C : pGCL ϖ} {φ} : wlp''[O]⟦~C⟧ φ ≤ 1 := by
   intro; simp [wlp'']
 
-theorem pGCL'.vp_le_wlp''_aux.loop
+private lemma pGCL'.vp_le_wlp''_aux.loop
     (ih : ∀ {φ : 𝔼r} {G : Globals}, C.fv ∪ φ.fv ⊆ G →
       φ.sem ≤ 1 → ((C.HeyVL O Direction.Upper G).2.vp φ).sem ≤ wlp''[O]⟦~C.pGCL⟧ φ.sem)
     (hG : (loop b I C).fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1) (hI : I.sem ≤ 1 ∧ ∀ a ∈ C.invs, a.sem ≤ 1) :
@@ -1023,30 +1022,19 @@ theorem pGCL'.vp_le_wlp''_aux.loop
       specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
       simp_all
     apply iInf_le_of_le Ξ
-    simp [HeyVL.vp, HeyVL.Skip]
-    have : ∀ {a b : ENNReal}, ▵ (a ⇨ b) = if a ≤ b then ⊤ else 0 := by
-      intro a b
-      simp [validate, himp, hnot, himp]
-      grind [LT.lt.ne_top]
-    simp [this, σ_eq_σ']
-    specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) (by simp; grind) σ'
-    have :
+    apply ENNReal.validate_himp_le_of_lt
+    simp [HeyVL.vp, HeyVL.Skip, σ_eq_σ']
+    replace ih :
           ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
         ≤ wlp''[O]⟦~C.pGCL⟧ I.sem σ' := by
-      grw [ih]
-      simp
-    simp only at this
-    simp only [ge_iff_le]
-    suffices ¬I.sem (σ')
-        ≤ i[b.sem σ'] * ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem (σ')
-          + i[¬b.sem σ'] * φ.sem (σ')
-      by simp [this]
-    grw [this]; clear this; clear this; clear ih
-    grind
+      specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) (by simp; grind) σ'
+      grw [ih]; simp
+    grw [ih]
+    exact h₂
 
 set_option maxHeartbeats 700000 in
-theorem pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1)
-    (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
+private lemma  pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
+    (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
     ((C.HeyVL O .Upper G).2.vp φ).sem ≤ wlp'' O C.pGCL φ.sem := by
   induction C generalizing G φ with
   | skip =>
