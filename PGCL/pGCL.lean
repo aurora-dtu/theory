@@ -38,17 +38,17 @@ syntax "pgcl_pexp " "{" cpgcl_pexp "}" : term
 declare_syntax_cat cpgcl_prog
 syntax "pgcl" ppHardSpace "{" cpgcl_prog "}" : term
 
-syntax:max "~" term:max : cpgcl_var
-syntax:max "~" term:max : cpgcl_bexp
-syntax:max "~" term:max : cpgcl_aexp
-syntax:max "~" term:max : cpgcl_pexp
-syntax:max "~" term:max : cpgcl_prog
+syntax:max "@" term:max : cpgcl_var
+syntax:max "@" term:max : cpgcl_bexp
+syntax:max "@" term:max : cpgcl_aexp
+syntax:max "@" term:max : cpgcl_pexp
+syntax:max "@" term:max : cpgcl_prog
 macro_rules
-| `(pgcl_var { ~$c }) => `($c)
-| `(pgcl_bexp { ~$c }) => `($c)
-| `(pgcl_aexp { ~$c }) => `($c)
-| `(pgcl_pexp { ~$c }) => `($c)
-| `(pgcl { ~$c }) => `($c)
+| `(pgcl_var { @$c }) => `($c)
+| `(pgcl_bexp { @$c }) => `($c)
+| `(pgcl_aexp { @$c }) => `($c)
+| `(pgcl_pexp { @$c }) => `($c)
+| `(pgcl { @$c }) => `($c)
 
 syntax ident : cpgcl_var
 
@@ -157,7 +157,7 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cpgcl_aexp)
 | `($a / $b) => do
   let a ← unexpandAexp a; let b ← unexpandAexp b
   `(cpgcl_aexp|$a / $b)
-| c => `(cpgcl_aexp|~ $c)
+| c => `(cpgcl_aexp|@ $c)
 
 def unexpandBExp : TSyntax `term → UnexpandM (TSyntax `cpgcl_bexp)
 | `(pgcl_bexp { $c }) => pure c
@@ -191,7 +191,7 @@ def unexpandBExp : TSyntax `term → UnexpandM (TSyntax `cpgcl_bexp)
     `(cpgcl_bexp|$a:cpgcl_aexp = $b)
   else
     throw ()
-| c => `(cpgcl_bexp|~ $c)
+| c => `(cpgcl_bexp|@ $c)
 
 @[app_unexpander pGCL.BExpr.eq]
 def BExpr.eqUnexpander : Unexpander
@@ -232,8 +232,8 @@ def assignUnexpander : Unexpander
   let e ← unexpandAexp e
   `(pgcl { $name:ident := $e })
 | `($(_) $name $e) => do
-  let e ← match e with | `(pgcl_aexp {$e}) => pure e | _ => `(cpgcl_aexp| ~ $e)
-  `(pgcl { ~$name := $e })
+  let e ← match e with | `(pgcl_aexp {$e}) => pure e | _ => `(cpgcl_aexp| @ $e)
+  `(pgcl { @$name := $e })
 | _ => throw ()
 
 /-- info: pgcl {x := x} : pGCL ?_ -/
@@ -251,8 +251,8 @@ def assignUnexpander : Unexpander
 @[app_unexpander pGCL.seq]
 def seqUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| ~ $l)
-  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| ~ $r)
+  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| @ $l)
+  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| @ $r)
   `(pgcl { $l ; $r })
 | _ => throw ()
 
@@ -263,9 +263,9 @@ def seqUnexpander : Unexpander
 @[app_unexpander pGCL.prob]
 def probUnexpander : Unexpander
 | `($(_) $l $p $r) => do
-  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| ~ $l)
-  let p ← match p with | `(pgcl_pexp {$p}) => pure p | _ => `(cpgcl_pexp| ~ $p)
-  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| ~ $r)
+  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| @ $l)
+  let p ← match p with | `(pgcl_pexp {$p}) => pure p | _ => `(cpgcl_pexp| @ $p)
+  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| @ $r)
   `(pgcl { { $l } [$p] {$r} })
 | _ => throw ()
 
@@ -276,8 +276,8 @@ def probUnexpander : Unexpander
 @[app_unexpander pGCL.nonDet]
 def nonDetUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| ~ $l)
-  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| ~ $r)
+  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| @ $l)
+  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| @ $r)
   `(pgcl { { $l } [] {$r} })
 | _ => throw ()
 
@@ -288,9 +288,9 @@ def nonDetUnexpander : Unexpander
 @[app_unexpander pGCL.loop]
 def loopUnexpander : Unexpander
 | `($(_) $b $C) => do
-  -- let b ← match b with | `(pgcl_bexp {$b}) => pure b | _ => `(cpgcl_bexp| ~ $b)
+  -- let b ← match b with | `(pgcl_bexp {$b}) => pure b | _ => `(cpgcl_bexp| @ $b)
   let b ← unexpandBExp b
-  let C ← match C with | `(pgcl {$C}) => pure C | _ => `(cpgcl_prog| ~ $C)
+  let C ← match C with | `(pgcl {$C}) => pure C | _ => `(cpgcl_prog| @ $C)
   `(pgcl { while $b {$C} })
 | _ => throw ()
 
@@ -309,9 +309,9 @@ def tickUnexpander : Unexpander
 #guard_msgs in
 #check pgcl { tick(1) }
 
-/-- info: fun r ↦ pgcl {tick(~r)} : (States ?_ → ENNReal) → pGCL ?_ -/
+/-- info: fun r ↦ pgcl {tick(@r)} : (States ?_ → ENNReal) → pGCL ?_ -/
 #guard_msgs in
-#check fun r ↦ pgcl { tick(~r) }
+#check fun r ↦ pgcl { tick(@r) }
 
 @[app_unexpander pGCL.observe]
 def observeUnexpander : Unexpander
@@ -328,8 +328,8 @@ def observeUnexpander : Unexpander
 def iteUnexpander : Unexpander
 | `($(_) $b $l $r) => do
   let b ← unexpandBExp b
-  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| ~ $l)
-  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| ~ $r)
+  let l ← match l with | `(pgcl {$l}) => pure l | _ => `(cpgcl_prog| @ $l)
+  let r ← match r with | `(pgcl {$r}) => pure r | _ => `(cpgcl_prog| @ $r)
   `(pgcl { if $b then $l else $r end })
 | _ => throw ()
 

@@ -304,7 +304,7 @@ theorem HeyVL.cohavoc_alt {φ : 𝔼r} :
     ((HeyVL.Cohavoc x).vp φ).sem = ⨆ (v : x.type.lit), φ.sem[x ↦ fun _ ↦ v] := rfl
 
 theorem HeyVL.havoc_comm {φ : 𝔼r} :
-    (vp⟦havoc(~x) ; havoc(~y)⟧ φ).sem = (vp⟦havoc(~y) ; havoc(~x)⟧ φ).sem := by
+    (vp⟦havoc(@x) ; havoc(@y)⟧ φ).sem = (vp⟦havoc(@y) ; havoc(@x)⟧ φ).sem := by
   wlog h : x ≠ y
   · grind
   rw [vp, vp]
@@ -437,7 +437,7 @@ theorem HeyVL.Subs.subst_help'_apply (S : Subs xs hn) (σ : States fun (x : Iden
 
 @[simp]
 theorem HeyVL.vp_havocs (h : xs.Nodup) :
-    (vp⟦havocs(~xs)⟧ φ).sem = ⨅ (vs : Subs xs hn), φ.sem[..vs.help] := by
+    (vp⟦havocs(@xs)⟧ φ).sem = ⨅ (vs : Subs xs hn), φ.sem[..vs.help] := by
   rcases xs with _ | ⟨x, xs⟩
   · ext σ; simp [Havocs, Skip, vp, Subs.help]
   induction xs generalizing x φ with
@@ -688,44 +688,44 @@ def pGCL'.HeyVL (C : pGCL') (O : Optimization) (D : Direction) (G : Globals) :
     let (G, C₂) := C₂.HeyVL O D G; let (G, C₁) := C₁.HeyVL O D G
     let (G, choice) := fresh G .Bool; let choice : Ident := ⟨choice.name, .Bool⟩
     (G, heyvl {
-      ~choice :≈ ~(.flip p); if (choice) {~C₁} else {~C₂}})
+      @choice :≈ @(.flip p); if (choice) {@C₁} else {@C₂}})
   | loop b I C =>
     let (G, C) := C.HeyVL O D G ;
     match D with
     -- NOTE: wp encoding
     | .Lower => (G, heyvl {
-        coassert(~I) ; cohavocs(~C.mods.sort) ; covalidate ; coassume(~I) ;
-        if (~b) { ~C ; coassert(~I); coassume(~⊤) }
+        coassert(@I) ; cohavocs(@C.mods.sort) ; covalidate ; coassume(@I) ;
+        if (@b) { @C ; coassert(@I); coassume(@⊤) }
       })
     -- NOTE: wlp encoding
     | .Upper => (G, heyvl {
-        assert(~I) ; havocs(~C.mods.sort) ; validate ; assume(~I) ;
-        if (~b) { ~C ; assert(~I); assume(~0) }
+        assert(@I) ; havocs(@C.mods.sort) ; validate ; assume(@I) ;
+        if (@b) { @C ; assert(@I); assume(@0) }
       })
   | skip => (G, heyvl {skip})
-  | assign x e => (G, heyvl {~x :≈ ~(.pure e)})
+  | assign x e => (G, heyvl {@x :≈ @(.pure e)})
   | seq C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
-    (G, heyvl{~C₁ ; ~C₂})
+    (G, heyvl{@C₁ ; @C₂})
   | nonDet C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
     match O with
-    | 𝒜 => (G, heyvl {if (⊔) {~C₁} else {~C₂}})
-    | 𝒟 => (G, heyvl {if (⊓) {~C₁} else {~C₂}})
+    | 𝒜 => (G, heyvl {if (⊔) {@C₁} else {@C₂}})
+    | 𝒟 => (G, heyvl {if (⊓) {@C₁} else {@C₂}})
   | ite b C₁ C₂ =>
     let (G, C₂) := C₂.HeyVL O D G
     let (G, C₁) := C₁.HeyVL O D G
-    (G, heyvl {if (~b) {~C₁} else {~C₂}})
+    (G, heyvl {if (@b) {@C₁} else {@C₂}})
   | tick r =>
     match D with
     -- NOTE: wp encoding
-    | .Lower => (G, heyvl { reward(~ r) })
+    | .Lower => (G, heyvl { reward(@r) })
     -- NOTE: wlp encoding
     -- HACK: we include `r` as a subexpression such that `fv` is the same in both cases
-    | .Upper => (G, heyvl { reward(0 * ~ r) })
-  | observe r => (G, heyvl { assert(~ r.embed) })
+    | .Upper => (G, heyvl { reward(0 * @r) })
+  | observe r => (G, heyvl { assert(@r.embed) })
 
 @[grind ., grind! ., simp]
 theorem pGCL'.HeyVL_G_mono {C : pGCL'} : G ⊆ (C.HeyVL O D G).1 := by
@@ -899,7 +899,7 @@ theorem ENNReal.validate_himp_le_of_lt {a b : ENNReal} (h : b < a) : ▵ (a ⇨ 
 
 set_option maxHeartbeats 500000 in
 private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G) :
-    wp[O]⟦~C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower G).2.vp φ).sem := by
+    wp[O]⟦@C.pGCL⟧ φ.sem ≤ ((C.HeyVL O .Lower G).2.vp φ).sem := by
   induction C generalizing G φ with
   | skip =>
     intro σ
@@ -942,7 +942,7 @@ private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv 
     simp only [Ty.lit, pGCL, HeyVL, HeyVL.vp, sem_sup_apply, Ty.expr, Finset.sort_nodup,
       HeyVL.vp_cohavocs, sem_covalidate, Exp.covalidate_subst]
     intro σ
-    if inv : IdleInvariant wp[O]⟦~C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
+    if inv : IdleInvariant wp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
       left
       apply IdleInduction
@@ -966,7 +966,7 @@ private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv 
       apply ENNReal.le_covalidate_sdiff_of_lt
       simp [HeyVL.vp, HeyVL.Skip]
       replace ih :
-            wp[O]⟦~C.pGCL⟧ I.sem σ'
+            wp[O]⟦@C.pGCL⟧ I.sem σ'
           ≤ ((C.HeyVL O .Lower G).2.vp (I ⊔ (⊤ ↜ φ))).sem σ' := by
         specialize ih (φ:=I ⊔ (⊤ ↜ φ)) (G:=G) (by simp [HeyLo.fv]; grind) σ'
         grw [← ih]; gcongr; intro; simp
@@ -982,26 +982,26 @@ private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv 
     if r.sem σ then simp_all [Iverson.iver] else simp_all
 
 theorem pGCL'.wp_le_vp {C : pGCL'} :
-    wp[O]⟦~C.pGCL⟧ φ.sem ≤ (C.vp O .Lower φ).sem := wp_le_vp_aux (by rfl)
+    wp[O]⟦@C.pGCL⟧ φ.sem ≤ (C.vp O .Lower φ).sem := wp_le_vp_aux (by rfl)
 
 /-- info: 'pGCL'.wp_le_vp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms pGCL'.wp_le_vp
 
 @[grind ., simp]
-theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {ϖ : Γ[𝒱]} {C : pGCL ϖ} {φ} : wlp''[O]⟦~C⟧ φ ≤ 1 := by
+theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {ϖ : Γ[𝒱]} {C : pGCL ϖ} {φ} : wlp''[O]⟦@C⟧ φ ≤ 1 := by
   intro; simp [wlp'']
 
 private lemma pGCL'.vp_le_wlp''_aux.loop
     (ih : ∀ {φ : 𝔼r} {G : Globals}, C.fv ∪ φ.fv ⊆ G →
-      φ.sem ≤ 1 → ((C.HeyVL O Direction.Upper G).2.vp φ).sem ≤ wlp''[O]⟦~C.pGCL⟧ φ.sem)
+      φ.sem ≤ 1 → ((C.HeyVL O Direction.Upper G).2.vp φ).sem ≤ wlp''[O]⟦@C.pGCL⟧ φ.sem)
     (hG : (loop b I C).fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1) (hI : I.sem ≤ 1 ∧ ∀ a ∈ C.invs, a.sem ≤ 1) :
-    (((loop b I C).HeyVL O Direction.Upper G).2.vp φ).sem ≤ wlp''[O]⟦~(loop b I C).pGCL⟧ φ.sem := by
+    (((loop b I C).HeyVL O Direction.Upper G).2.vp φ).sem ≤ wlp''[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
   simp only [Ty.expr, HeyVL, HeyVL.vp, sem_inf_apply, Finset.sort_nodup, HeyVL.vp_havocs,
     sem_validate, sem_himp_apply, HeyVL.if_vp_sem, sem_not_apply, Exp.validate_subst,
     Exp.himp_subst, Exp.add_subst, Exp.mul_subst, Exp.iver_subst, pGCL]
   intro σ
-  if inv : IdleCoinvariant wlp''[O]⟦~C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
+  if inv : IdleCoinvariant wlp''[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
     simp
     left
     apply IdleCoinduction <;> grind
@@ -1026,7 +1026,7 @@ private lemma pGCL'.vp_le_wlp''_aux.loop
     simp [HeyVL.vp, HeyVL.Skip, σ_eq_σ']
     replace ih :
           ((C.HeyVL O .Upper G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
-        ≤ wlp''[O]⟦~C.pGCL⟧ I.sem σ' := by
+        ≤ wlp''[O]⟦@C.pGCL⟧ I.sem σ' := by
       specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) (by simp; grind) σ'
       grw [ih]; simp
     grw [ih]
@@ -1082,8 +1082,8 @@ private lemma  pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ
         ProbExp.add_apply, ProbExp.mul_apply, ProbExp.coe_apply, ProbExp.sub_apply,
         ProbExp.one_apply, le_inf_iff, le_refl, true_and]
       have := ProbExp.pick_le (p:=ProbExp.ofExp p.sem) (x:=1)
-                (l:=wlp[O]⟦~C₁.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
-                (r:=wlp[O]⟦~C₂.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+                (l:=wlp[O]⟦@C₁.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+                (r:=wlp[O]⟦@C₂.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
       simp only [Ty.lit, ProbExp.le_one_apply, ProbExp.ofExp_apply, forall_const] at this
       apply this
     · grind
@@ -1117,7 +1117,7 @@ private lemma  pGCL'.vp_le_wlp''_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ
         nonpos_iff_eq_zero, true_or]
 
 theorem pGCL'.vp_le_wlp'' {C : pGCL'} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
-    (C.vp O .Upper φ).sem ≤ wlp''[O]⟦~C.pGCL⟧ φ.sem := vp_le_wlp''_aux (by rfl) hφ hI
+    (C.vp O .Upper φ).sem ≤ wlp''[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp''_aux (by rfl) hφ hI
 
 /-- info: 'pGCL'.vp_le_wlp''' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

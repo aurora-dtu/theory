@@ -63,15 +63,15 @@ theorem pΦ.continuous' {g : ProbExp ϖ →o ProbExp ϖ} (hg : ωScottContinuous
 
 noncomputable def wfp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a h ↦ (a _)⟩
-  | pgcl {~C₁; ~C₂} => (C₁.wfp O).comp (C₂.wfp O)
-  | pgcl {{~C₁} [~p] {~C₂}} =>
+  | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a h ↦ (a _)⟩
+  | pgcl {@C₁; @C₂} => (C₁.wfp O).comp (C₂.wfp O)
+  | pgcl {{@C₁} [@p] {@C₂}} =>
     ⟨fun X ↦ p * C₁.wfp O X + (1 - p) * C₂.wfp O X,
      fun a b hab ↦ by simp; gcongr⟩
-  | pgcl {{~C₁} [] {~C₂}} => O.opt₂ (C₁.wfp O) (C₂.wfp O)
-  | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (pΦ[wfp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
-  | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp only; gcongr⟩
+  | pgcl {{@C₁} [] {@C₂}} => O.opt₂ (C₁.wfp O) (C₂.wfp O)
+  | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (pΦ[wfp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
+  | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(@b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp only; gcongr⟩
 
 syntax "wfp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -81,22 +81,22 @@ macro_rules
 @[app_unexpander pGCL.wfp]
 def wfpUnexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $o $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(wfp[$o]⟦$c⟧)
 | _ => throw ()
 
 noncomputable def wfp' (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ by exact a _⟩
-  | pgcl {~C₁; ~C₂} => (C₁.wfp' O).comp (C₂.wfp' O)
-  | pgcl {{~C₁} [~p] {~C₂}} =>
+  | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ by exact a _⟩
+  | pgcl {@C₁; @C₂} => (C₁.wfp' O).comp (C₂.wfp' O)
+  | pgcl {{@C₁} [@p] {@C₂}} =>
     ⟨fun X ↦ p * C₁.wfp' O X + (1 - p) * C₂.wfp' O X,
      fun a b hab ↦ by simp only; gcongr⟩
-  | pgcl {{~C₁}[]{~C₂}} =>
+  | pgcl {{@C₁}[]{@C₂}} =>
     ⟨O.opt₂ (C₁.wfp' O) (C₂.wfp' O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
-  | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (Φ[wfp' O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
-  | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] * X + (1 - p[b]), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Φ[wfp' O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
+  | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(@b)} => ⟨fun X ↦ p[b] * X + (1 - p[b]), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wfp'[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -106,11 +106,11 @@ macro_rules
 @[app_unexpander pGCL.wfp']
 def wfp'Unexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $o $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(wfp'[$o]⟦$c⟧)
 | _ => throw ()
 
-theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
+theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦@C⟧ X = wfp'[O]⟦@C⟧ X := by
   induction C generalizing X with try simp [wfp, wfp', *]; (try rfl); done
   | prob C₁ p C₂ ih₁ ih₂ => ext; simp [wfp, wfp', ← ih₁, ← ih₂]
   | observe b => ext σ; simp [wfp, wfp', himp]; if h : b σ then simp [h, eq_comm] else simp [h]
@@ -120,7 +120,7 @@ theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
   | loop b C' ih =>
     simp [wfp, wfp']
     apply le_antisymm
-    · suffices lfp ((pΦ[wfp[O]⟦~C'⟧] b) X) ≤ ⟨lfp ((Φ[wfp'[O]⟦~C'⟧] b) ⇑X), by
+    · suffices lfp ((pΦ[wfp[O]⟦@C'⟧] b) X) ≤ ⟨lfp ((Φ[wfp'[O]⟦@C'⟧] b) ⇑X), by
           apply lfp_le
           intro σ
           replace ih := congrFun (@ih ⟨1, by simp⟩) σ
@@ -132,36 +132,36 @@ theorem wfp_eq_wfp' {C : pGCL ϖ} : wfp[O]⟦~C⟧ X = wfp'[O]⟦~C⟧ X := by
       intro σ
       simp
       nth_rw 2 [← map_lfp]
-      rw [pΦ_eq_Φ (g':=wfp'[O]⟦~C'⟧)]
+      rw [pΦ_eq_Φ (g':=wfp'[O]⟦@C'⟧)]
       · rfl
       · simp [ih]
     · apply lfp_le
       nth_rw 2 [← map_lfp]
-      rw [pΦ_eq_Φ (g':=wfp'[O]⟦~C'⟧)]
+      rw [pΦ_eq_Φ (g':=wfp'[O]⟦@C'⟧)]
       simp [ih]
 
 theorem wfp'_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wfp'[O]⟦while ~φ {~C'}⟧ f = lfp (Φ[wfp'[O]⟦~C'⟧] φ f) := rfl
+    wfp'[O]⟦while @φ {@C'}⟧ f = lfp (Φ[wfp'[O]⟦@C'⟧] φ f) := rfl
 
 theorem wfp'_fp (φ : BExpr ϖ) (C' : pGCL ϖ) :
-    (Φ[wfp'[O]⟦~C'⟧] φ f) (wfp'[O]⟦while ~φ {~C'}⟧ f) = wfp'[O]⟦while ~φ {~C'}⟧ f := by
+    (Φ[wfp'[O]⟦@C'⟧] φ f) (wfp'[O]⟦while @φ {@C'}⟧ f) = wfp'[O]⟦while @φ {@C'}⟧ f := by
   simp [wfp'_loop]
 
 theorem wfp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wfp[O]⟦while ~φ {~C'}⟧ f = lfp (Φ[wfp'[O]⟦~C'⟧] φ f) := by simp [wfp_eq_wfp', wfp'_loop]
+    wfp[O]⟦while @φ {@C'}⟧ f = lfp (Φ[wfp'[O]⟦@C'⟧] φ f) := by simp [wfp_eq_wfp', wfp'_loop]
 
 noncomputable def wlp (O : Optimization) : pGCL ϖ → ProbExp ϖ →o ProbExp ϖ
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
-  | pgcl {~C₁; ~C₂} => (C₁.wlp O).comp (C₂.wlp O)
-  | pgcl {{~C₁} [~p] {~C₂}} =>
+  | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a i ↦ a _⟩
+  | pgcl {@C₁; @C₂} => (C₁.wlp O).comp (C₂.wlp O)
+  | pgcl {{@C₁} [@p] {@C₂}} =>
     ⟨fun X ↦ p * C₁.wlp O X + (1 - p) * C₂.wlp O X,
      fun a b hab ↦ by simp only; gcongr⟩
-  | pgcl {{~C₁}[]{~C₂}} =>
+  | pgcl {{@C₁}[]{@C₂}} =>
     ⟨O.opt₂ (C₁.wlp O) (C₂.wlp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
-  | pgcl {while ~b {~C'}} => ⟨fun X ↦ gfp (pΦ[wlp O C'] b X), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {tick(~e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨fun X ↦ p[b] * X, fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {while @b {@C'}} => ⟨fun X ↦ gfp (pΦ[wlp O C'] b X), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(@b)} => ⟨fun X ↦ p[b] * X, fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wlp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -171,7 +171,7 @@ macro_rules
 @[app_unexpander pGCL.wlp]
 def wlpUnexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $o $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(wlp[$o]⟦$c⟧)
 | _ => throw ()
 
@@ -184,25 +184,25 @@ section
 variable {X : ProbExp ϖ}
 
 theorem wlp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wlp[O]⟦while ~φ {~C'}⟧ f = gfp (lΦ O φ C' f) := rfl
+    wlp[O]⟦while @φ {@C'}⟧ f = gfp (lΦ O φ C' f) := rfl
 
 @[simp] theorem wlp.skip_apply : wlp[O]⟦skip⟧ X = X := rfl
 @[simp] theorem wlp.assign_apply :
-    wlp[O]⟦~x := ~A⟧ X = X[x ↦ A] := rfl
-@[simp] theorem wlp.seq_apply : wlp[O]⟦~C₁ ; ~C₂⟧ X = wlp[O]⟦~C₁⟧ (wlp[O]⟦~C₂⟧ X) := rfl
+    wlp[O]⟦@x := @A⟧ X = X[x ↦ A] := rfl
+@[simp] theorem wlp.seq_apply : wlp[O]⟦@C₁ ; @C₂⟧ X = wlp[O]⟦@C₁⟧ (wlp[O]⟦@C₂⟧ X) := rfl
 @[simp] theorem wlp.prob_apply :
-    wlp[O]⟦{~C₁}[~p]{~C₂}⟧ X = p * C₁.wlp O X + (1 - p) * C₂.wlp O X
+    wlp[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wlp O X + (1 - p) * C₂.wlp O X
 := rfl
-@[simp] theorem wlp.nonDet_apply : wlp[O]⟦{~C₁}[]{~C₂}⟧ X = O.opt₂ (C₁.wlp O X) (C₂.wlp O X) := by
+@[simp] theorem wlp.nonDet_apply : wlp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wlp O X) (C₂.wlp O X) := by
   ext; simp [wlp]
-@[simp] theorem wlp.tick_apply : wlp[O]⟦tick(~e)⟧ X = X := rfl
+@[simp] theorem wlp.tick_apply : wlp[O]⟦tick(@e)⟧ X = X := rfl
 @[simp] theorem wlp.observe_apply :
-    wlp[O]⟦observe(~b)⟧ X = p[b] * X := rfl
+    wlp[O]⟦observe(@b)⟧ X = p[b] * X := rfl
 
 end
 
 noncomputable def wlp'' (O : Optimization) (C : pGCL ϖ) : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
-  ⟨fun X ↦ wlp[O]⟦~C⟧ (ProbExp.ofExp X),
+  ⟨fun X ↦ wlp[O]⟦@C⟧ (ProbExp.ofExp X),
     by intro a b hab σ; simp [ProbExp.ofExp]; apply (wlp _ _).mono; gcongr⟩
 
 syntax "wlp''[" term "]⟦" cpgcl_prog "⟧" : term
@@ -213,7 +213,7 @@ macro_rules
 @[app_unexpander pGCL.wlp'']
 def wlp''Unexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $o $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(wlp''[$o]⟦$c⟧)
 | _ => throw ()
 
@@ -223,26 +223,26 @@ variable {X : 𝔼[ϖ, ENNReal]}
 
 @[simp] theorem wlp''.skip_apply : wlp''[O]⟦skip⟧ X = X ⊓ 1 := rfl
 @[simp] theorem wlp''.assign_apply :
-    wlp''[O]⟦~x := ~A⟧ X = (X ⊓ 1)[x ↦ A] := rfl
-@[simp] theorem wlp''.seq_apply : wlp''[O]⟦~C₁ ; ~C₂⟧ X = wlp''[O]⟦~C₁⟧ (wlp''[O]⟦~C₂⟧ X ⊓ 1) := by
+    wlp''[O]⟦@x := @A⟧ X = (X ⊓ 1)[x ↦ A] := rfl
+@[simp] theorem wlp''.seq_apply : wlp''[O]⟦@C₁ ; @C₂⟧ X = wlp''[O]⟦@C₁⟧ (wlp''[O]⟦@C₂⟧ X ⊓ 1) := by
   simp [wlp'', ProbExp.ofExp]; congr! 1; ext; simp
 @[simp] theorem wlp''.prob_apply :
-    wlp''[O]⟦{~C₁}[~p]{~C₂}⟧ X = p * C₁.wlp'' O X + (1 - p) * C₂.wlp'' O X := by
+    wlp''[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wlp'' O X + (1 - p) * C₂.wlp'' O X := by
   ext; simp [wlp'']
 @[simp] theorem wlp''.nonDet_apply :
-    wlp''[O]⟦{~C₁}[]{~C₂}⟧ X = O.opt₂ (C₁.wlp'' O X) (C₂.wlp'' O X) := by
+    wlp''[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wlp'' O X) (C₂.wlp'' O X) := by
   ext; simp [wlp'']; cases O <;> simp [Optimization.opt₂]
-@[simp] theorem wlp''.tick_apply : wlp''[O]⟦tick(~e)⟧ X = X ⊓ 1 := by
+@[simp] theorem wlp''.tick_apply : wlp''[O]⟦tick(@e)⟧ X = X ⊓ 1 := by
   simp [wlp'']; rfl
 @[simp] theorem wlp''.observe_apply :
-    wlp''[O]⟦observe(~b)⟧ X = p[b] * (X ⊓ 1) := by
+    wlp''[O]⟦observe(@b)⟧ X = p[b] * (X ⊓ 1) := by
   ext σ
   simp [wlp'', ProbExp.ofExp]
 
 end
 
 attribute [- simp] Function.iterate_succ in
-theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X) := by
+theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦@C⟧ X = 1 - wfp[O.dual]⟦@C⟧ (1 - X) := by
   induction C generalizing X with
   | skip => ext σ; simp [wlp, wfp]
   | assign => ext σ; simp [wlp, wfp]
@@ -256,8 +256,8 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O
     simp [wlp, wfp]
     simp [ih₁, ih₂]
     simp [ENNReal.mul_sub]
-    set f := wfp[O.dual]⟦~C₁⟧ (1 - X) σ
-    set g := wfp[O.dual]⟦~C₂⟧ (1 - X) σ
+    set f := wfp[O.dual]⟦@C₁⟧ (1 - X) σ
+    set g := wfp[O.dual]⟦@C₂⟧ (1 - X) σ
     refine (ENNReal.toReal_eq_toReal_iff' ?_ ?_).mp ?_
     · simp
     · simp
@@ -277,8 +277,8 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O
     cases O
     · simp [Optimization.opt₂, Optimization.dual]
       simp [Optimization.dual] at ih₁ ih₂
-      set f := wfp[𝒟]⟦~C₁⟧ (1 - X) σ
-      set g := wfp[𝒟]⟦~C₂⟧ (1 - X) σ
+      set f := wfp[𝒟]⟦@C₁⟧ (1 - X) σ
+      set g := wfp[𝒟]⟦@C₂⟧ (1 - X) σ
       apply le_antisymm
       · simp only [sup_le_iff]
         constructor
@@ -296,8 +296,8 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O
           apply le_min (le_of_not_ge hfg) (by rfl)
     · simp [Optimization.opt₂, Optimization.dual]
       simp [Optimization.dual] at ih₁ ih₂
-      set f := wfp[𝒜]⟦~C₁⟧ (1 - X) σ
-      set g := wfp[𝒜]⟦~C₂⟧ (1 - X) σ
+      set f := wfp[𝒜]⟦@C₁⟧ (1 - X) σ
+      set g := wfp[𝒜]⟦@C₂⟧ (1 - X) σ
       apply le_antisymm
       · simp only [inf_le_iff]
         if hfg : f ≤ g then
@@ -341,7 +341,7 @@ theorem wlp'_sound (C : pGCL ϖ) (X : ProbExp ϖ) : wlp[O]⟦~C⟧ X = 1 - wfp[O
       simp [hb]
 
 attribute [- simp] Function.iterate_succ in
-theorem wlp'_sound' (C : pGCL ϖ) : wlp[O]⟦~C⟧ = wfp[O.dual]⟦~C⟧ᶜ := by ext; rw [wlp'_sound]; rfl
+theorem wlp'_sound' (C : pGCL ϖ) : wlp[O]⟦@C⟧ = wfp[O.dual]⟦@C⟧ᶜ := by ext; rw [wlp'_sound]; rfl
 
 def wfp'.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp' O) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
@@ -353,7 +353,7 @@ def wfp'.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp' O) := by
     simp [wfp']
     simp_all
     intro c
-    specialize ih₁ ⟨fun i a ↦ wfp'[O]⟦~C₂⟧ (c i) a,
+    specialize ih₁ ⟨fun i a ↦ wfp'[O]⟦@C₂⟧ (c i) a,
                     fun _ _ h _ ↦ by simp; apply (wfp' _ _).mono; apply c.mono h⟩
     simp at ih₁
     simp [ih₁]
@@ -382,7 +382,7 @@ def wfp'.continuous (C : pGCL ϖ) : ωScottContinuous (C.wfp' O) := by
     simp_all [wfp']
     intro c
     simp [Φ_iSup']
-    have := OrderHom.lfp_iSup (f:=⟨fun i ↦ (Φ[wfp'[O]⟦~C'⟧] b) (c i), fun _ _ _ ↦ by simp; gcongr⟩)
+    have := OrderHom.lfp_iSup (f:=⟨fun i ↦ (Φ[wfp'[O]⟦@C'⟧] b) (c i), fun _ _ _ ↦ by simp; gcongr⟩)
     simp at this
     rw [this (fun _ ↦ Φ.continuous (ωScottContinuous_iff_map_ωSup_of_orderHom.mpr ih))]
     ext; simp
@@ -411,12 +411,12 @@ theorem ωScottContinuous_dual_prob_iff {f : ProbExp ϖ →o ProbExp ϖ} :
   · intro h c hc; exact h ⟨c, hc⟩
   · intro h c; exact h c c.mono
 
-def wlp.continuous_aux (C : pGCL ϖ) (h : ∀ X, wlp[O]⟦~C⟧ X = 1 - wfp[O.dual]⟦~C⟧ (1 - X)) :
+def wlp.continuous_aux (C : pGCL ϖ) (h : ∀ X, wlp[O]⟦@C⟧ X = 1 - wfp[O.dual]⟦@C⟧ (1 - X)) :
     ωScottContinuous (C.wlp O).dual := by
   simp [ωScottContinuous_dual_prob_iff]
   have :
-        wlp[O]⟦~C⟧
-      = ⟨fun X ↦ 1 - wfp[O.dual]⟦~C⟧ (1 - X), fun _ _ _ ↦ by simp; gcongr⟩ := by
+        wlp[O]⟦@C⟧
+      = ⟨fun X ↦ 1 - wfp[O.dual]⟦@C⟧ (1 - X), fun _ _ _ ↦ by simp; gcongr⟩ := by
     ext; simp [h]
   simp [this]; clear this
   have wfp_con := wfp.continuous C (O:=O.dual)
@@ -453,14 +453,14 @@ def wlp''.continuous (C : pGCL ϖ) : ωScottContinuous (C.wlp'' O).dual := by
   simp
 
 @[simp]
-def Φ.wlp''_continuous {C' : pGCL ϖ} : ωScottContinuous (Φ[wlp''[O]⟦~C'⟧] φ f).dual :=
+def Φ.wlp''_continuous {C' : pGCL ϖ} : ωScottContinuous (Φ[wlp''[O]⟦@C'⟧] φ f).dual :=
   cocontinuous (wlp''.continuous C')
 
 theorem wlp''_loop_eq_gfp (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wlp''[O]⟦while ~φ {~C'}⟧ f = gfp (pΦ[wlp[O]⟦~C'⟧] φ (ProbExp.ofExp f)) := by
+    wlp''[O]⟦while @φ {@C'}⟧ f = gfp (pΦ[wlp[O]⟦@C'⟧] φ (ProbExp.ofExp f)) := by
   simp [wlp'', wlp]
 theorem wlp''_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wlp''[O]⟦while ~φ {~C'}⟧ f = ⨅ n, (Φ[wlp''[O]⟦~C'⟧] φ (f ⊓ 1))^[n] 1 := by
+    wlp''[O]⟦while @φ {@C'}⟧ f = ⨅ n, (Φ[wlp''[O]⟦@C'⟧] φ (f ⊓ 1))^[n] 1 := by
   rw [wlp''_loop_eq_gfp]
   simp [wlp'']
   rw [fixedPoints.gfp_eq_sInf_iterate _ (pΦ.continuous (wlp.continuous C'))]

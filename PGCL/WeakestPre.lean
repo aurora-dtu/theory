@@ -94,16 +94,16 @@ notation "Φ[" g "]" => Φ g
 
 noncomputable def wp (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
-  | pgcl {~x := ~A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
-  | pgcl {~C₁; ~C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
-  | pgcl {{~C₁} [~p] {~C₂}} =>
+  | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
+  | pgcl {@C₁; @C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
+  | pgcl {{@C₁} [@p] {@C₂}} =>
     ⟨fun X ↦ p * C₁.wp O X + (1 - p) * C₂.wp O X,
      fun a b hab ↦ by simp only; gcongr⟩
-  | pgcl {{~C₁}[]{~C₂}} =>
+  | pgcl {{@C₁}[]{@C₂}} =>
     ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
-  | pgcl {while ~b {~C'}} => ⟨fun X ↦ lfp (Φ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
-  | pgcl {tick(~e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
-  | pgcl {observe(~b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Φ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
+  | pgcl {tick(@e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
+  | pgcl {observe(@b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
 
 syntax "wp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -113,17 +113,17 @@ macro_rules
 @[app_unexpander pGCL.wp]
 def wpUnexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $o $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(wp[$o]⟦$c⟧)
 | _ => throw ()
 
 variable {O : Optimization}
 
 theorem wp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wp[O]⟦while ~φ{~C'}⟧ f = lfp (Φ[wp[O]⟦~C'⟧] φ f) := rfl
+    wp[O]⟦while @φ{@C'}⟧ f = lfp (Φ[wp[O]⟦@C'⟧] φ f) := rfl
 
 theorem wp_fp (φ : BExpr ϖ) (C' : pGCL ϖ) :
-    (Φ[wp[O]⟦~C'⟧] φ f) (wp[O]⟦while ~φ{~C'}⟧ f) = wp[O]⟦while ~φ{~C'}⟧ f := by simp [wp_loop]
+    (Φ[wp[O]⟦@C'⟧] φ f) (wp[O]⟦while @φ{@C'}⟧ f) = wp[O]⟦while @φ{@C'}⟧ f := by simp [wp_loop]
 
 variable {x : 𝒱} {e : 𝔼[ϖ, ENNReal]} {b : BExpr ϖ} {C₁ : pGCL ϖ}
 
@@ -133,21 +133,21 @@ variable {X : 𝔼[ϖ, ENNReal]}
 
 @[simp] theorem wp.skip_apply : wp[O]⟦skip⟧ X = X := rfl
 @[simp] theorem wp.assign_apply :
-    wp[O]⟦~x := ~A⟧ X = X[x ↦ A] := rfl
-@[simp] theorem wp.seq_apply : wp[O]⟦~C₁ ; ~C₂⟧ X = wp[O]⟦~C₁⟧ (wp[O]⟦~C₂⟧ X) := rfl
+    wp[O]⟦@x := @A⟧ X = X[x ↦ A] := rfl
+@[simp] theorem wp.seq_apply : wp[O]⟦@C₁ ; @C₂⟧ X = wp[O]⟦@C₁⟧ (wp[O]⟦@C₂⟧ X) := rfl
 @[simp] theorem wp.prob_apply :
-    wp[O]⟦{~C₁}[~p]{~C₂}⟧ X = p * C₁.wp O X + (1 - p) * C₂.wp O X
+    wp[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wp O X + (1 - p) * C₂.wp O X
 := rfl
-@[simp] theorem wp.nonDet_apply : wp[O]⟦{~C₁}[]{~C₂}⟧ X = O.opt₂ (C₁.wp O X) (C₂.wp O X) := by
+@[simp] theorem wp.nonDet_apply : wp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wp O X) (C₂.wp O X) := by
   ext; simp [wp]
-@[simp] theorem wp.tick_apply : wp[O]⟦tick(~e)⟧ X = e + X := rfl
+@[simp] theorem wp.tick_apply : wp[O]⟦tick(@e)⟧ X = e + X := rfl
 @[simp] theorem wp.observe_apply :
-    wp[O]⟦observe(~b)⟧ X = i[b] * X := rfl
+    wp[O]⟦observe(@b)⟧ X = i[b] * X := rfl
 
 end
 
 @[gcongr]
-theorem wp_le_wp {C : pGCL ϖ} {a b : 𝔼[ϖ, ENNReal]} (h : a ≤ b) : wp[O]⟦~C⟧ a σ ≤ wp[O]⟦~C⟧ b σ :=
+theorem wp_le_wp {C : pGCL ϖ} {a b : 𝔼[ϖ, ENNReal]} (h : a ≤ b) : wp[O]⟦@C⟧ a σ ≤ wp[O]⟦@C⟧ b σ :=
   (wp _ _).mono h σ
 
 noncomputable abbrev dwp : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] := wp 𝒟
@@ -163,27 +163,27 @@ macro_rules
 @[app_unexpander pGCL.dwp]
 def dwpUnexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(dwp⟦$c⟧)
 | _ => throw ()
 
 @[app_unexpander pGCL.awp]
 def awpUnexpander : Lean.PrettyPrinter.Unexpander
 | `($(_) $c) => do
-    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| ~ $c)
+    let c ← match c with | `(pgcl {$c}) => pure c | _ => `(cpgcl_prog| @ $c)
     `(awp⟦$c⟧)
 | _ => throw ()
 
 /-- Strip all `tick`s from a program. -/
 def st : pGCL ϖ → pGCL ϖ
   | pgcl {skip} => pgcl {skip}
-  | pgcl {~x := ~A} => pgcl {~x := ~A}
-  | pgcl {~C₁ ; ~C₂} => pgcl {~C₁.st ; ~C₂.st}
-  | pgcl {{~C₁} [~p] {~C₂}} => pgcl {{~C₁.st} [~p] {~C₂.st}}
-  | pgcl {{~C₁} [] {~C₂}} => pgcl {{~C₁.st} [] {~C₂.st}}
-  | pgcl {while ~b {~C'}} => pgcl {while ~b {~C'.st}}
-  | pgcl {tick(~ _)} => pgcl {skip}
-  | pgcl {observe(~ b)} => pgcl {observe(~b)}
+  | pgcl {@x := @A} => pgcl {@x := @A}
+  | pgcl {@C₁ ; @C₂} => pgcl {@C₁.st ; @C₂.st}
+  | pgcl {{@C₁} [@p] {@C₂}} => pgcl {{@C₁.st} [@p] {@C₂.st}}
+  | pgcl {{@C₁} [] {@C₂}} => pgcl {{@C₁.st} [] {@C₂.st}}
+  | pgcl {while @b {@C'}} => pgcl {while @b {@C'.st}}
+  | pgcl {tick(@ _)} => pgcl {skip}
+  | pgcl {observe(@ b)} => pgcl {observe(@b)}
 
 def Φ.continuous {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (ih : ωScottContinuous g) :
     ωScottContinuous ⇑(Φ[g] b X) := by
@@ -256,15 +256,15 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
   | observe => simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, funext_iff, ENNReal.mul_iSup]
 
 @[simp]
-def Φ.wp_continuous {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ[wp[O]⟦~C'⟧] b X) :=
+def Φ.wp_continuous {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ[wp[O]⟦@C'⟧] b X) :=
   continuous (wp.continuous C')
 
 theorem wp_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wp[O]⟦while ~φ{~C'}⟧ f = ⨆ n, (Φ[wp[O]⟦~C'⟧] φ f)^[n] 0 := by
+    wp[O]⟦while @φ{@C'}⟧ f = ⨆ n, (Φ[wp[O]⟦@C'⟧] φ f)^[n] 0 := by
   rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Φ.wp_continuous]
   rfl
 
-theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]⟦~C.st⟧ X ≤ 1 := by
+theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]⟦@C.st⟧ X ≤ 1 := by
   induction C generalizing X with
   | skip => simp [st, hX]
   | assign => simp [st]; intro σ; apply hX

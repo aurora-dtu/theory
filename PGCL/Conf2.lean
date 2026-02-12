@@ -93,8 +93,8 @@ end Conf
 @[simp] theorem seq_ne_left : ¬seq C₁ C₂ = C₁ := (left_ne_seq ·.symm)
 
 def after (C' : pGCL ϖ) : Conf₁ ϖ → Conf₁ ϖ
-  | conf₁[~c, σ] => conf₁[~c ; ~C', σ]
-  | conf₁[⇓, σ] => conf₁[~C', σ]
+  | conf₁[@c, σ] => conf₁[@c ; @C', σ]
+  | conf₁[⇓, σ] => conf₁[@C', σ]
   | conf₁[↯, σ] => conf₁[↯, σ]
 
 @[grind inj]
@@ -104,14 +104,14 @@ def after_inj (C' : pGCL ϖ) : Function.Injective C'.after := by
   split at h <;> split at h <;> simp_all
 
 @[simp]
-theorem after_eq_seq_iff : pGCL.after C₂ c = conf₁[~C₁ ; ~C₂, σ] ↔ c = conf₁[~C₁, σ] := by
+theorem after_eq_seq_iff : pGCL.after C₂ c = conf₁[@C₁ ; @C₂, σ] ↔ c = conf₁[@C₁, σ] := by
   simp [after]
   split <;> simp_all
 
 -- @[simp] theorem after_none : after C₂ .bot = .bot := by simp [after]
-@[grind =, simp] theorem after_term : after C₂ conf₁[⇓, σ] = conf₁[~C₂, σ] := by simp [after]
+@[grind =, simp] theorem after_term : after C₂ conf₁[⇓, σ] = conf₁[@C₂, σ] := by simp [after]
 @[grind =, simp] theorem after_fault : after C₂ conf₁[↯, σ] = conf₁[↯, σ] := by simp [after]
-@[grind =, simp] theorem after_eq_right : after C₂ a = conf₁[~C₂,σ] ↔ a = conf₁[⇓, σ] := by
+@[grind =, simp] theorem after_eq_right : after C₂ a = conf₁[@C₂,σ] ↔ a = conf₁[⇓, σ] := by
   simp [after]; split <;> simp
 @[grind ., simp] theorem after_neq_term : ¬after C₂ c' = conf₁[⇓, σ] := by simp [after]; split <;> simp
 -- @[simp] theorem after_eq_none : after C₂ c' = .bot ↔ c' = .bot := by simp [after]; split <;> simp
@@ -120,10 +120,10 @@ omit [DecidableEq 𝒱] in
 theorem tsum_after_eq (C₂ : pGCL ϖ) {f g : Conf₁ ϖ → ENNReal}
   (hg₂ : ∀ σ, g conf₁[⇓, σ] = 0)
   (hg₂' : ∀ σ, f conf₁[↯, σ] = 0 → g conf₁[↯, σ] = 0)
-  (hg₃ : ∀ C σ, ¬g conf₁[~C, σ] = 0 → ∃ a, ¬f a = 0 ∧ C₂.after a = conf₁[~C, σ])
-  (hf₂ : ∀ σ, ¬f conf₁[⇓, σ] = 0 → f conf₁[⇓, σ] = g conf₁[~C₂, σ])
+  (hg₃ : ∀ C σ, ¬g conf₁[@C, σ] = 0 → ∃ a, ¬f a = 0 ∧ C₂.after a = conf₁[@C, σ])
+  (hf₂ : ∀ σ, ¬f conf₁[⇓, σ] = 0 → f conf₁[⇓, σ] = g conf₁[@C₂, σ])
   (hf₂' : ∀ σ, ¬f conf₁[↯, σ] = 0 → f conf₁[↯, σ] = g conf₁[↯, σ])
-  (hf₃ : ∀ C σ, ¬f conf₁[~C, σ] = 0 → f conf₁[~C, σ] = g conf₁[~C ; ~C₂, σ]) :
+  (hf₃ : ∀ C σ, ¬f conf₁[@C, σ] = 0 → f conf₁[@C, σ] = g conf₁[@C ; @C₂, σ]) :
     (∑' s, g s) = ∑' s, f s :=
   tsum_eq_tsum_of_ne_zero_bij (C₂.after ·.val) (fun ⟨_, _⟩ ⟨_, _⟩ ↦ by simp; apply C₂.after_inj)
     (by rintro ⟨(za | _ | _), σ⟩ <;> simp_all
@@ -142,10 +142,10 @@ omit [DecidableEq 𝒱] in
 theorem tsum_after_eq' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNReal}
   (hg₂ : ∀ p σ, g (p, conf₁[⇓, σ]) = 0)
   (hg₂' : ∀ p σ, f (p, conf₁[↯, σ]) = 0 → g (p, conf₁[↯, σ]) = 0)
-  (hg₃ : ∀ p C σ, ¬g (p, conf₁[~C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[~C, σ])
-  (hf₂ : ∀ p σ, ¬f (p, conf₁[⇓, σ]) = 0 → f (p, conf₁[⇓, σ]) = g (p, conf₁[~C₂, σ]))
+  (hg₃ : ∀ p C σ, ¬g (p, conf₁[@C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[@C, σ])
+  (hf₂ : ∀ p σ, ¬f (p, conf₁[⇓, σ]) = 0 → f (p, conf₁[⇓, σ]) = g (p, conf₁[@C₂, σ]))
   (hf₂' : ∀ p σ, ¬f (p, conf₁[↯, σ]) = 0 → f (p, conf₁[↯, σ]) = g (p, conf₁[↯, σ]))
-  (hf₃ : ∀ p C σ, ¬f (p, conf₁[~C, σ]) = 0 → f (p, conf₁[~C, σ]) = g (p, conf₁[~C ; ~C₂, σ])) :
+  (hf₃ : ∀ p C σ, ¬f (p, conf₁[@C, σ]) = 0 → f (p, conf₁[@C, σ]) = g (p, conf₁[@C ; @C₂, σ])) :
     (∑' s, g s) = ∑' s, f s :=
   tsum_eq_tsum_of_ne_zero_bij (fun ⟨(p, C), _⟩ ↦ (p, C₂.after C))
     (fun ⟨⟨_, a⟩, _⟩ ⟨⟨_, b⟩, _⟩ h ↦ by
@@ -168,7 +168,7 @@ omit [DecidableEq 𝒱] in
 theorem tsum_after_eq'' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNReal}
   (hg₂ : ∀ p σ, g (p, conf₁[⇓, σ]) = 0)
   (hg₂' : ∀ p σ, f (p, conf₁[↯, σ]) = 0 → g (p, conf₁[↯, σ]) = 0)
-  (hg₃ : ∀ p C σ, ¬g (p, conf₁[~C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[~C, σ])
+  (hg₃ : ∀ p C σ, ¬g (p, conf₁[@C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[@C, σ])
   (hf : ∀ (a : ENNReal),
     (∀ (C : pGCL ϖ) (σ : States ϖ),
         ¬f (a, Sum.inl C, σ) = 0 → g (a, C₂.after (Sum.inl C, σ)) = f (a, Sum.inl C, σ)) ∧
@@ -191,18 +191,18 @@ theorem tsum_after_eq'' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNR
 
 omit [DecidableEq 𝒱] in
 theorem tsum_after_le (C₂ : pGCL ϖ) {f g : Conf₁ ϖ → ENNReal}
-  (h₂ : ∀ σ, g conf₁[⇓, σ] ≤ f conf₁[~C₂, σ])
+  (h₂ : ∀ σ, g conf₁[⇓, σ] ≤ f conf₁[@C₂, σ])
   (h₂ : ∀ σ, g conf₁[↯, σ] ≤ f conf₁[↯, σ])
-  (h₂ : ∀ C σ, g conf₁[~C, σ] ≤ f conf₁[~C ; ~C₂, σ]) :
+  (h₂ : ∀ C σ, g conf₁[@C, σ] ≤ f conf₁[@C ; @C₂, σ]) :
     (∑' s, g s) ≤ ∑' s, f s :=
   Summable.tsum_le_tsum_of_inj C₂.after C₂.after_inj (by simp_all)
     (by rintro ((_ | _) | _ | _) <;> simp_all [after]) (by simp) (by simp)
 
 omit [DecidableEq 𝒱] in
 theorem tsum_after_le' (C₂ : pGCL ϖ) {f g : (ENNReal × Conf₁ ϖ) → ENNReal}
-  (h₁ : ∀ p σ, g (p, conf₁[⇓, σ]) ≤ f (p, conf₁[~C₂, σ]))
+  (h₁ : ∀ p σ, g (p, conf₁[⇓, σ]) ≤ f (p, conf₁[@C₂, σ]))
   (h₂ : ∀ p σ, g (p, conf₁[↯, σ]) ≤ f (p, conf₁[↯, σ]))
-  (h₃ : ∀ p C σ, g (p, conf₁[~C, σ]) ≤ f (p, conf₁[~C ; ~C₂, σ])) :
+  (h₃ : ∀ p C σ, g (p, conf₁[@C, σ]) ≤ f (p, conf₁[@C ; @C₂, σ])) :
     (∑' s, g s) ≤ ∑' s, f s :=
   Summable.tsum_le_tsum_of_inj
     (Prod.map id C₂.after) (Function.Injective.prodMap (fun _ _ ↦ id) C₂.after_inj) (by simp_all)

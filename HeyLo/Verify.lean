@@ -131,8 +131,8 @@ macro_rules
 
 def Conditions.sound (C : Conditions D) : Prop :=
   match D with
-  | .Lower => wp[C.O]⟦~C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
-  | .Upper => C.pre.sem ≤ wlp''[C.O]⟦~C.original.pGCL⟧ C.post.sem
+  | .Lower => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
+  | .Upper => C.pre.sem ≤ wlp''[C.O]⟦@C.original.pGCL⟧ C.post.sem
 
 def Conditions.show_lower (C : Conditions .Lower) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]

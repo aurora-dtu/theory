@@ -21,19 +21,19 @@ syntax "heyvl" ppHardSpace "{" cheyvl "}" : term
 declare_syntax_cat cpgcl'
 syntax "pgcl'" ppHardSpace "{" cpgcl' "}" : term
 
-syntax:max "~" term:max : cheylo_var
-syntax:max "~" term:max : cheylo_vars
-syntax:max "~" term:max : cheylo_dist
-syntax:max "~" term:max : cheylo
-syntax:max "~" term:max : cheyvl
-syntax:max "~" term:max : cpgcl'
+syntax:max "@" term:max : cheylo_var
+syntax:max "@" term:max : cheylo_vars
+syntax:max "@" term:max : cheylo_dist
+syntax:max "@" term:max : cheylo
+syntax:max "@" term:max : cheyvl
+syntax:max "@" term:max : cpgcl'
 macro_rules
-| `(heylo_var { ~$c }) => `($c)
-| `(heylo_vars { ~$c }) => `($c)
-| `(heylo_dist { ~$c }) => `($c)
-| `(heylo { ~$c }) => `($c)
-| `(heyvl { ~$c }) => `($c)
-| `(pgcl' { ~$c }) => `($c)
+| `(heylo_var { @$c }) => `($c)
+| `(heylo_vars { @$c }) => `($c)
+| `(heylo_dist { @$c }) => `($c)
+| `(heylo { @$c }) => `($c)
+| `(heyvl { @$c }) => `($c)
+| `(pgcl' { @$c }) => `($c)
 
 syntax ident : cheylo_var
 
@@ -198,7 +198,7 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
 | c@`(HeyLo.Var $x $_) =>
     match x with
     | `($a:ident.$_) => `(cheylo| $a:ident)
-    | _ => `(cheylo|~ $c)
+    | _ => `(cheylo|@ $c)
     -- let name := mkIdent <| Name.mkSimple x.getString
     -- `(cheylo|$name:ident)
 | `(fun $σ ↦ $σ' $x:str) =>
@@ -246,7 +246,7 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
 | `($a ≤ $b) => do
   let a ← unexpandAexp a; let b ← unexpandAexp b
   `(cheylo|$a ≤ $b)
-| c => `(cheylo|~ $c)
+| c => `(cheylo|@ $c)
 
 @[app_unexpander HeyLo.Binary]
 def BinaryUnexpander : Unexpander
@@ -296,6 +296,21 @@ def LitUnexpander : Unexpander
 #guard_msgs in
 #check (heylo { y ≤ y } : HeyLo .Bool)
 
+syntax "⟦" cheylo "⟧'" : term
+
+macro_rules
+| `(⟦$t:cheylo⟧') => `(HeyLo.sem heylo {$t})
+
+@[app_unexpander HeyLo.sem]
+def semUnexpander : Unexpander
+| `($_ $t) => do
+  let t ← unexpandAexp t
+  `(⟦$t⟧')
+| _ => throw ()
+
+/-- info: ⟦1 + [true ∧ false]⟧' : Ty.ENNReal.expr -/
+#guard_msgs in #check (⟦1 + [true ∧ false]⟧')
+
 @[app_unexpander pGCL'.skip]
 def skipUnexpander : Unexpander
 | `($(_)) =>
@@ -313,58 +328,58 @@ def assignUnexpander : Unexpander
   let e ← unexpandAexp e
   `(pgcl' { $name:ident := $e })
 | `($(_) $name $e) => do
-  let e ← match e with | `(heylo {$e}) => pure e | _ => `(cheylo| ~ $e)
-  `(pgcl' { ~$name := $e })
+  let e ← match e with | `(heylo {$e}) => pure e | _ => `(cheylo|@ $e)
+  `(pgcl' { @$name := $e })
 | _ => throw ()
 
 abbrev x : Ident := ⟨"x", .ENNReal⟩
 
-/-- info: pgcl' {~x := x} : pGCL' -/
+/-- info: pgcl' {@x := x} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := x }
 
-/-- info: pgcl' {~x := ~(heylo {x} - 1)} : pGCL' -/
+/-- info: pgcl' {@x := @(heylo {x} - 1)} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := x - 1 }
 
-/-- info: pgcl' {~x := ~1} : pGCL' -/
+/-- info: pgcl' {@x := @1} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := 1 }
 
 @[app_unexpander pGCL'.seq]
 def seqUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'| ~ $l)
-  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'| ~ $r)
+  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'|@$l)
+  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'|@$r)
   `(pgcl' { $l ; $r })
 | _ => throw ()
 
-/-- info: pgcl' {~x := ~1 ; skip} : pGCL' -/
+/-- info: pgcl' {@x := @1 ; skip} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := 1 ; skip }
 
 @[app_unexpander pGCL'.prob]
 def probUnexpander : Unexpander
 | `($(_) $l $p $r) => do
-  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'| ~ $l)
+  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'|@$l)
   let p ← unexpandAexp p
-  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'| ~ $r)
+  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'|@$r)
   `(pgcl' { { $l } [$p] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ ~x := ~1 } [1] { skip }} : pGCL' -/
+/-- info: pgcl' {{ @x := @1 } [1] { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { { x := 1 } [1] { skip } }
 
 @[app_unexpander pGCL'.nonDet]
 def nonDetUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'| ~ $l)
-  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'| ~ $r)
+  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'|@$l)
+  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'|@$r)
   `(pgcl' { { $l } [] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ ~x := ~1 } [] { skip }} : pGCL' -/
+/-- info: pgcl' {{ @x := @1 } [] { skip }} : pGCL' -/
 #guard_msgs in
 #check pgcl' { { x := 1 } [] { skip } }
 
@@ -373,7 +388,7 @@ def loopUnexpander : Unexpander
 | `($(_) $b $i $C) => do
   let b ← unexpandAexp b
   let i ← unexpandAexp i
-  let C ← match C with | `(pgcl' {$C}) => pure C | _ => `(cpgcl'| ~ $C)
+  let C ← match C with | `(pgcl' {$C}) => pure C | _ => `(cpgcl'|@$C)
   `(pgcl' { while $b inv($i) {$C} })
 | _ => throw ()
 
@@ -392,9 +407,9 @@ def tickUnexpander : Unexpander
 #guard_msgs in
 #check pgcl' { tick(1) }
 
-/-- info: fun r ↦ pgcl' {tick(~ r)} : 𝔼r → pGCL' -/
+/-- info: fun r ↦ pgcl' {tick(@r)} : 𝔼r → pGCL' -/
 #guard_msgs in
-#check fun r ↦ pgcl' { tick(~ r) }
+#check fun r ↦ pgcl' { tick(@r) }
 
 @[app_unexpander pGCL'.observe]
 def observeUnexpander : Unexpander
@@ -411,8 +426,8 @@ def observeUnexpander : Unexpander
 def iteUnexpander : Unexpander
 | `($(_) $b $l $r) => do
   let b ← unexpandAexp b
-  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'| ~ $l)
-  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'| ~ $r)
+  let l ← match l with | `(pgcl' {$l}) => pure l | _ => `(cpgcl'|@$l)
+  let r ← match r with | `(pgcl' {$r}) => pure r | _ => `(cpgcl'|@$r)
   `(pgcl' { if $b then $l else $r end })
 | _ => throw ()
 
@@ -421,13 +436,13 @@ def iteUnexpander : Unexpander
 #check pgcl' { if false then skip else tick(1) end }
 
 /--
-info: pgcl' {~z := ~(Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
+info: pgcl' {@z := @(Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
 -/
 #guard_msgs in
 #check (pgcl' { z := nlog₂ (nfloor y) } : pGCL').pGCL
 
 /--
-info: pgcl' {while n < 10 inv([n ≤ 10]) { { ~n := ~(heylo {n} + 2) } [1 / 2] { ~n := ~(heylo {n} + 1) } }} : pGCL'
+info: pgcl' {while n < 10 inv([n ≤ 10]) { { @n := @(heylo {n} + 2) } [1 / 2] { @n := @(heylo {n} + 1) } }} : pGCL'
 -/
 #guard_msgs in
 #check pgcl' { while n < 10 inv([n ≤ 10]) { {n := n + 2} [1/2] {n := n + 1} } }
@@ -442,11 +457,11 @@ def HeyVL.skipUnexpander : Unexpander
 def ifUnexpander : Unexpander
 | `($(_) $b $S₁ $S₂) => do
   let b ← unexpandAexp b
-  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl| ~ $S₁)
+  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl|@$S₁)
   match S₂ with
   | `(heyvl {skip}) => `(heyvl { if ($b) { $S₁ } })
   | S₂ =>
-    let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl| ~ $S₂)
+    let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl|@$S₂)
     `(heyvl { if ($b) { $S₁ } else { $S₂ } })
 | _ => throw ()
 
@@ -464,16 +479,16 @@ def rewardUnexpander : Unexpander
 @[app_unexpander HeyVL.Seq]
 def heyvlSeqUnexpander : Unexpander
 | `($(_) $S₁ $S₂) => do
-  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl| ~ $S₁)
-  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl| ~ $S₂)
+  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl|@$S₁)
+  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl|@$S₂)
   `(heyvl { $S₁ ; $S₂ })
 | _ => throw ()
 
 @[app_unexpander HeyVL.IfInf]
 def ifInfUnexpander : Unexpander
 | `($(_) $S₁ $S₂) => do
-  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl| ~ $S₁)
-  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl| ~ $S₂)
+  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl|@$S₁)
+  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl|@$S₂)
   `(heyvl { if (⊓) { $S₁ } else { $S₂ } })
 | _ => throw ()
 
@@ -494,7 +509,7 @@ def assumeUnexpander : Unexpander
 @[app_unexpander HeyVL.Havoc]
 def havocUnexpander : Unexpander
 | `($(_) $x) => do
-  let x ← match x with | `(heylo_var {$x}) => pure x | _ => `(cheylo_var| ~ $x)
+  let x ← match x with | `(heylo_var {$x}) => pure x | _ => `(cheylo_var|@$x)
   `(heyvl { havoc($x) })
 | _ => throw ()
 
@@ -507,8 +522,8 @@ def validateUnexpander : Unexpander
 @[app_unexpander HeyVL.IfSup]
 def ifSupUnexpander : Unexpander
 | `($(_) $S₁ $S₂) => do
-  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl| ~ $S₁)
-  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl| ~ $S₂)
+  let S₁ ← match S₁ with | `(heyvl {$S₁}) => pure S₁ | _ => `(cheyvl|@$S₁)
+  let S₂ ← match S₂ with | `(heyvl {$S₂}) => pure S₂ | _ => `(cheyvl|@$S₂)
   `(heyvl { if (⊔) { $S₁ } else { $S₂ } })
 | _ => throw ()
 
@@ -529,7 +544,7 @@ def coassumeUnexpander : Unexpander
 @[app_unexpander HeyVL.Cohavoc]
 def cohavocUnexpander : Unexpander
 | `($(_) $x) => do
-  let x ← match x with | `(heylo_var {$x}) => pure x | _ => `(cheylo_var| ~ $x)
+  let x ← match x with | `(heylo_var {$x}) => pure x | _ => `(cheylo_var|@$x)
   `(heyvl { cohavoc($x) })
 | _ => throw ()
 

@@ -187,28 +187,28 @@ def ProbExp.fix (X : ProbExp ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : ProbExp (�
 @[grind]
 def mods : pGCL ϖ → Set 𝒱
   | pgcl {skip} => ∅
-  | pgcl {~x := ~_} => {x}
-  | pgcl {~C₁ ; ~C₂} => C₁.mods ∪ C₂.mods
-  | pgcl {{~C₁} [~_] {~C₂}} => C₁.mods ∪ C₂.mods
-  | pgcl {{~C₁} [] {~C₂}} => C₁.mods ∪ C₂.mods
-  | pgcl {while ~_ {~C'}} => C'.mods
-  | pgcl {tick(~ _)} => ∅
-  | pgcl {observe(~ _)} => ∅
+  | pgcl {@x := @_} => {x}
+  | pgcl {@C₁ ; @C₂} => C₁.mods ∪ C₂.mods
+  | pgcl {{@C₁} [@_] {@C₂}} => C₁.mods ∪ C₂.mods
+  | pgcl {{@C₁} [] {@C₂}} => C₁.mods ∪ C₂.mods
+  | pgcl {while @_ {@C'}} => C'.mods
+  | pgcl {tick(@ _)} => ∅
+  | pgcl {observe(@ _)} => ∅
 
 open scoped Classical in
 noncomputable def fix (C : pGCL ϖ) (S : Set 𝒱) (σ₀ : States ϖ) : pGCL (ϖ · : ↑Sᶜ → _) :=
   match C with
   | pgcl {skip} => pgcl {skip}
-  | pgcl {~x := ~A} =>
+  | pgcl {@x := @A} =>
     let q : (States fun (x : ↑Sᶜ) ↦ ϖ x) → ϖ x := Exp.fix A S σ₀
-    if hx : _ then pgcl {~⟨x, hx⟩ := ~q} else pgcl {skip}
-  | pgcl {~C₁ ; ~C₂} => pgcl {~(C₁.fix S σ₀) ; ~(C₂.fix S σ₀)}
-  | pgcl {{~C₁} [~p] {~C₂}} =>
-    pgcl {{~(C₁.fix S σ₀)} [~(p.fix S σ₀)] {~(C₂.fix S σ₀)}}
-  | pgcl {{~C₁} [] {~C₂}} => pgcl {{~(C₁.fix S σ₀)} [] {~(C₂.fix S σ₀)}}
-  | pgcl {while ~b {~C'}} => pgcl {while ~(Exp.fix b S σ₀) {~(C'.fix S σ₀)}}
-  | pgcl {tick(~ r)} => pgcl {tick(~(Exp.fix r S σ₀))}
-  | pgcl {observe(~ b)} => pgcl {observe(~(Exp.fix b S σ₀))}
+    if hx : _ then pgcl {@⟨x, hx⟩ := @q} else pgcl {skip}
+  | pgcl {@C₁ ; @C₂} => pgcl {@(C₁.fix S σ₀) ; @(C₂.fix S σ₀)}
+  | pgcl {{@C₁} [@p] {@C₂}} =>
+    pgcl {{@(C₁.fix S σ₀)} [@(p.fix S σ₀)] {@(C₂.fix S σ₀)}}
+  | pgcl {{@C₁} [] {@C₂}} => pgcl {{@(C₁.fix S σ₀)} [] {@(C₂.fix S σ₀)}}
+  | pgcl {while @b {@C'}} => pgcl {while @(Exp.fix b S σ₀) {@(C'.fix S σ₀)}}
+  | pgcl {tick(@ r)} => pgcl {tick(@(Exp.fix r S σ₀))}
+  | pgcl {observe(@ b)} => pgcl {observe(@(Exp.fix b S σ₀))}
 
 @[simp] theorem Exp.fix_apply {φ : 𝔼[ϖ, α]} : Exp.fix φ S σ₀ σ = φ (σ₀.cofix σ) := rfl
 
@@ -246,28 +246,28 @@ example {φ : 𝔼[ϖ, ENNReal]} {x : 𝒱} {σ₀ : States ϖ}
   grind [States.cofix]
 
 theorem wp_le_of_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (X : 𝔼[ϖ, ENNReal]) :
-    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ ≤ Exp.fix X S σ₀ → wp[O]⟦~C⟧ φ σ₀ ≤ X σ₀ := by
+    Exp.fix (wp[O]⟦@C⟧ φ) S σ₀ ≤ Exp.fix X S σ₀ → wp[O]⟦@C⟧ φ σ₀ ≤ X σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
 theorem le_wlp''_of_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (X : 𝔼[ϖ, ENNReal]) :
-    Exp.fix X S σ₀ ≤ Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ → X σ₀ ≤ wlp''[O]⟦~C⟧ φ σ₀ := by
+    Exp.fix X S σ₀ ≤ Exp.fix (wlp''[O]⟦@C⟧ φ) S σ₀ → X σ₀ ≤ wlp''[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
 theorem le_wlp_of_fix (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (X : ProbExp ϖ) :
-    X.fix S σ₀ ≤ (wlp[O]⟦~C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp[O]⟦~C⟧ φ σ₀ := by
+    X.fix S σ₀ ≤ (wlp[O]⟦@C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
 theorem wp_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
-    Exp.fix (wp[O]⟦~C⟧ φ) S σ₀ = wp[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
+    Exp.fix (wp[O]⟦@C⟧ φ) S σ₀ = wp[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with simp_all [fix, mods] <;> try rfl
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
@@ -290,7 +290,7 @@ theorem wp_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mod
       exact congrFun (ih ((Φ[_] b φ)^[i] 0)) σ
 
 theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
-    Exp.fix (wlp''[O]⟦~C⟧ φ) S σ₀ = wlp''[O]⟦~(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
+    Exp.fix (wlp''[O]⟦@C⟧ φ) S σ₀ = wlp''[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with (simp_all [fix, mods]; try rfl)
   | assign x A =>
@@ -308,8 +308,8 @@ theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.
   | seq C₁ C₂ ih₁ ih₂ =>
     ext
     simp
-    specialize ih₁ (wlp''[O]⟦~C₂⟧ φ ⊓ 1)
-    have : (Exp.fix (wlp''[O]⟦~C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦~C₂⟧ φ) S σ₀) ⊓ 1 := by
+    specialize ih₁ (wlp''[O]⟦@C₂⟧ φ ⊓ 1)
+    have : (Exp.fix (wlp''[O]⟦@C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦@C₂⟧ φ) S σ₀) ⊓ 1 := by
       ext; simp
     simp [this] at ih₁
     simp [ih₁]
@@ -334,7 +334,7 @@ theorem wlp''_fix (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (S : Set 𝒱) (hS : C.
       exact congrFun (ih ((Φ[_] b (φ ⊓ 1))^[i] 1)) σ
 
 theorem wlp_fix_apply (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
-    Exp.fix (wlp[O]⟦~C⟧ φ) S σ₀ σ = wlp[O]⟦~(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp⟩ σ := by
+    Exp.fix (wlp[O]⟦@C⟧ φ) S σ₀ σ = wlp[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp⟩ σ := by
   simp
   have := congrFun (C.wlp''_fix φ.val S hS (O:=O) (σ₀:=σ₀)) σ
   simp at this
@@ -350,11 +350,11 @@ theorem wlp_fix_apply (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mod
     rfl
 
 theorem wlp_fix_apply' (C : pGCL ϖ) (φ : 𝔼[ϖ, ENNReal]) (hφ : φ ≤ 1) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
-      Exp.fix (wlp[O]⟦~C⟧ ⟨φ, hφ⟩) S σ₀ σ
-    = wlp[O]⟦~(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp_fix_apply _ _ _ hS _
+      Exp.fix (wlp[O]⟦@C⟧ ⟨φ, hφ⟩) S σ₀ σ
+    = wlp[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp_fix_apply _ _ _ hS _
 
 theorem wlp_fix (C : pGCL ϖ) (φ : ProbExp ϖ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
-    (wlp[O]⟦~C⟧ φ).fix S σ₀ = wlp[O]⟦~(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
+    (wlp[O]⟦@C⟧ φ).fix S σ₀ = wlp[O]⟦@(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
   ext σ
   have := congrFun (C.wlp''_fix φ S hS (σ₀:=σ₀) (O:=O)) σ
   simp [wlp''] at this

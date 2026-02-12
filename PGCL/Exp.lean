@@ -32,6 +32,8 @@ instance {α : Type*} [Compl α] : Covalidate α := ⟨fun x ↦ xᶜᶜ⟩
 noncomputable instance {α β : Type*} [SDiff β] : SDiff (α → β) := inferInstance
 
 noncomputable instance : SDiff ENNReal := inferInstance
+example {φ ψ : ENNReal} : φ ⇨ ψ = if φ ≤ ψ then ⊤ else ψ := by simp [himp]
+example {φ ψ : ENNReal} : φ ↜ ψ = (if ψ ≤ φ then 0 else ψ) := by simp [sdiff]
 example {φ : ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
 example {φ : ι → ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
 example {φ : ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot]
