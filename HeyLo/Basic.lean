@@ -853,8 +853,6 @@ theorem pGCLr.prob_vp {C₁ C₂ : pGCLr} {G : Globals} (hG : (C₁.prob p C₂)
       (((C₁.prob p C₂).HeyVL O E G).2.vp φ).sem
     =   (p.sem ⊓ 1) * ((C₁.HeyVL O E G).2.vp φ).sem
       + (1 - p.sem ⊓ 1) * ((C₂.HeyVL O E (C₁.HeyVL O E G).1).2.vp φ).sem := by
-    -- =   (p.sem ⊓ 1) * ((C₁.HeyVL O E (C₂.HeyVL O E G).1).2.vp φ).sem
-    --   + (1 - p.sem ⊓ 1) * ((C₂.HeyVL O E G).2.vp φ).sem := by
   simp [HeyVL, HeyVL.vp, HeyVL.If]
   simp [Distribution.flip]
   have : i[fun (σ : States Ty.Γ) ↦ True] = 1 := by ext; simp

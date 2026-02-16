@@ -108,13 +108,11 @@ theorem after_eq_seq_iff : pGCL.after C₂ c = conf₁[@C₁ ; @C₂, σ] ↔ c 
   simp [after]
   split <;> simp_all
 
--- @[simp] theorem after_none : after C₂ .bot = .bot := by simp [after]
 @[grind =, simp] theorem after_term : after C₂ conf₁[⇓, σ] = conf₁[@C₂, σ] := by simp [after]
 @[grind =, simp] theorem after_fault : after C₂ conf₁[↯, σ] = conf₁[↯, σ] := by simp [after]
 @[grind =, simp] theorem after_eq_right : after C₂ a = conf₁[@C₂,σ] ↔ a = conf₁[⇓, σ] := by
   simp [after]; split <;> simp
 @[grind ., simp] theorem after_neq_term : ¬after C₂ c' = conf₁[⇓, σ] := by simp [after]; split <;> simp
--- @[simp] theorem after_eq_none : after C₂ c' = .bot ↔ c' = .bot := by simp [after]; split <;> simp
 
 omit [DecidableEq 𝒱] in
 theorem tsum_after_eq (C₂ : pGCL Γ) {f g : Conf₁ Γ → ENNReal}

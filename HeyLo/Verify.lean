@@ -225,5 +225,3 @@ info: 'NatLog'.soundess' depends on axioms: [propext, Classical.choice, Lean.ofR
 -/
 #guard_msgs in
 #print axioms NatLog'.soundess
-
--- end

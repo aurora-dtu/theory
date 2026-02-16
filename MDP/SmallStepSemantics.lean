@@ -104,8 +104,7 @@ noncomputable def mdp : MDP (Conf P S T) (Option A) :=
 
 def psucc (C : P) (σ : S) (α : A) : Set (ENNReal × (P ⊕ T) × S) := {s | 𝕊.r (C, σ) α s.fst s.snd}
 
--- TODO: rename these
-theorem please₀ (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNReal) :
+theorem sub_psucc_eq_sum_r (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNReal) :
       ∑' (s : (psucc C σ α)), f s.val
     = ∑' (s : {s // ∃ p, 𝕊.r (C, σ) α p s}),
         ∑' (p : {sp : ENNReal × (P ⊕ T) × S // sp.2 = s.val ∧ 𝕊.r (C, σ) α sp.1 sp.2}), f p.val
@@ -126,11 +125,11 @@ theorem please₀ (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → E
     specialize hZ₁ hZ
     specialize hZ₂ hZ
     simp_all only [ne_eq, Set.mem_setOf_eq]
-theorem please (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNReal) :
+theorem sum_psucc_eq_sub_succ_univ (C : P) (σ : S) (α : A) (f : ENNReal × (P ⊕ T) × S → ENNReal) :
       ∑' (s : (psucc C σ α)), f s.val
     = ∑' (x : ↑(𝕊.mdp.succs_univ (Conf.prog C σ))) (p : {p // rr (Conf.prog C σ) (some α) p x.val}),
         if let some C := conf_to_conf₂ x.val then f (p, C) else 0 := by
-  simp [please₀]
+  simp [sub_psucc_eq_sum_r]
   symm
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨⟨x, hx₀⟩, hx₁⟩ ↦ ⟨conf₂_to_conf x, by
     simp_all only [Function.mem_support, ne_eq, ENNReal.tsum_eq_zero, Subtype.forall, and_imp,
@@ -212,7 +211,6 @@ theorem _root_.Optimization.act_gcongr {O : Optimization} {C : Conf P S T}
 
 open scoped Optimization.Notation
 
--- TODO: consider changing to ∑' π
 noncomputable def op (O : Optimization) (C : P) : 𝔼[S] →o 𝔼[S] :=
   ⟨fun X ↦ (lfp (𝕊.mdp.Φ O <| 𝕊.cost X) <| Conf.prog C ·), fun a b h σ ↦ by
     suffices lfp (𝕊.mdp.Φ O (𝕊.cost a)) ≤ lfp (𝕊.mdp.Φ O (𝕊.cost b)) by exact this _
@@ -250,10 +248,10 @@ theorem Φ_simp {C : Conf P S T} :
     grind
   · split <;> split <;> simp [mdp]
     · rename_i C σ _ α
-      have := 𝕊.please (A:=A) (C:=C) (σ:=σ) (α:=α) (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 *
-        match s.2 with
-        | (Sum.inl C', σ') => f (.prog C' σ')
-        | (Sum.inr t, σ') => f (.term t σ'))
+      have := 𝕊.sum_psucc_eq_sub_succ_univ (A:=A) (C:=C) (σ:=σ) (α:=α)
+        (f:=fun (s : ENNReal × (P ⊕ T) × S) ↦ s.1 * match s.2 with
+                                                    | (Sum.inl C', σ') => f (.prog C' σ')
+                                                    | (Sum.inr t, σ') => f (.term t σ'))
       simp at this
       rw [this]; clear this
       simp [tsum_succs_univ']

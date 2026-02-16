@@ -90,9 +90,6 @@ noncomputable def measure [MeasurableSpace State] (M : MarkovChain State) (s : S
 instance [MeasurableSpace State] : IsProbabilityMeasure (M.measure s) :=
   PMF.toMeasure.isProbabilityMeasure _
 
--- noncomputable def kernel (M : MarkovChain State) : ProbabilityTheory.Kernel State State :=
---   ⟨M.measure, sorry⟩
-
 @[grind]
 def Path.take (π : M.Path) (i : Fin ‖π‖) : M.Path := { states := π.states.take (i + 1) }
 def Path.take_inj (π : M.Path) : Function.Injective π.take := by intro i j hi; grind [take]

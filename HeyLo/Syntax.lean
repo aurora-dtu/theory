@@ -90,21 +90,19 @@ syntax ident : cheyvl
 syntax cheylo_var " :≈ " cheylo_dist : cheyvl
 syntax "reward(" cheylo ")" : cheyvl
 syntax cheyvl " ; " cheyvl : cheyvl
-  --
+
 syntax "if" ppHardSpace "(⊓)" ppHardSpace "{" cheyvl "}" " else " "{" cheyvl "}" : cheyvl
 syntax "assert(" cheylo ")" : cheyvl
 syntax "assume(" cheylo ")" : cheyvl
 syntax "havoc(" cheylo_var ")" : cheyvl
 syntax "havocs(" cheylo_vars ")" : cheyvl
--- syntax "validate" : cheyvl
---
+
 syntax "if" ppHardSpace "(⊔)" ppHardSpace "{" cheyvl "}" " else " "{" cheyvl "}" : cheyvl
 syntax "coassert(" cheylo ")" : cheyvl
 syntax "coassume(" cheylo ")" : cheyvl
 syntax "cohavoc(" cheylo_var ")" : cheyvl
 syntax "cohavocs(" cheylo_vars ")" : cheyvl
--- syntax "covalidate" : cheyvl
---
+
 syntax "if" ppHardSpace "(" cheylo ")" ppHardSpace "{" cheyvl "}" " else " "{" cheyvl "}" : cheyvl
 syntax "if" ppHardSpace "(" cheylo ")" ppHardSpace "{" cheyvl "}" : cheyvl
 
@@ -202,8 +200,6 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
     match x with
     | `($a:ident.$_) => `(cheylo| $a:ident)
     | _ => `(cheylo|@ $c)
-    -- let name := mkIdent <| Name.mkSimple x.getString
-    -- `(cheylo|$name:ident)
 | `(fun $σ ↦ $σ' $x:str) =>
   if σ.raw == σ'.raw then
     let name := mkIdent <| Name.mkSimple x.getString
@@ -254,14 +250,12 @@ partial def unexpandAexp : TSyntax `term → UnexpandM (TSyntax `cheylo)
 @[app_unexpander HeyLo.Binary]
 def BinaryUnexpander : Unexpander
 | `($_ $op $l $r) => do
-  dbg_trace "{op}"
   let op ←
     match op with
     | `($op:ident $_) => pure op
     | `($op:ident) => pure op
     | _ => throw ()
   let l ← unexpandAexp l; let r ← unexpandAexp r
-  dbg_trace "{op}"
   match op.getId with
   | `BinOp.Add => `(heylo { $l:cheylo + $r })
   | `BinOp.And => `(heylo { $l:cheylo ∧ $r })
@@ -584,7 +578,6 @@ def covalidateUnexpander : Unexpander
 | `($(_)) =>
   let name := mkIdent <| Name.mkSimple "covalidate"
   `(heyvl { $name:ident })
--- | _ => throw ()
 
 /-- info: heyvl {b :≈ flip(1 / 2)} : HeyVL -/
 #guard_msgs in

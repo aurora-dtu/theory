@@ -58,16 +58,14 @@ instance {α : Ty} : Lean.ToExpr α.Compare where
     match α with
     | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
     | .Bool => False.elim (by cases h)
-  -- TODO
-  toTypeExpr := sorry
+  toTypeExpr := .app (.const ``Ty.Compare []) (Lean.ToExpr.toExpr α)
 open Lean in
 instance {α : Ty} : Lean.ToExpr α.Arith where
   toExpr h :=
     match α with
     | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
     | .Bool => False.elim (by cases h)
-  -- TODO
-  toTypeExpr := sorry
+  toTypeExpr := .app (.const ``Ty.Compare []) (Lean.ToExpr.toExpr α)
 
 instance {α : Ty} : DecidableEq α.Compare := fun a b ↦ by
   cases α <;> cases a
@@ -176,8 +174,6 @@ instance : Lean.ToExpr NNRat where
   toTypeExpr := .const ``NNRat []
 
 inductive Literal : Ty → Type where
-  -- /-- A string literal (`"something"`). -/
-  -- | Str : Ident → Literal Ident
   /-- An unsigned integer literal (`123`). -/
   | UInt : {α : Ty} → (h : α.Arith) → Nat → Literal α
   /-- A number literal represented by a fraction. -/
@@ -194,8 +190,6 @@ inductive Fun : Ty → Ty → Type where
 deriving DecidableEq, Lean.ToExpr
 
 end HeyLo
-
--- a ↙ b = (a ≤ )
 
 open HeyLo HeyLo.Ty in
 inductive HeyLo : Ty → Type where
@@ -215,11 +209,6 @@ inductive HeyLo : Ty → Type where
   | Lit : Literal α → HeyLo α
 deriving Lean.ToExpr, DecidableEq
 
-  -- /-- Type casting. -/
-  -- | Cast : HeyLo ENNReal → HeyLo ENNReal
-  -- /-- A de Bruijn index. -/
-  -- | DeBruijn : DeBruijnIndex → HeyLo ENNReal
-
 open HeyLo
 
 namespace HeyLo
@@ -228,7 +217,6 @@ scoped notation "𝔼r" => HeyLo Ty.ENNReal
 scoped notation "𝔼b" => HeyLo Ty.Bool
 
 end HeyLo
-
 
 instance : Top 𝔼r := ⟨.Lit .Infinity⟩
 instance HeyLo.instOfNat (h : α.Arith := by exact default) : OfNat (HeyLo α) n := ⟨.Lit (.UInt h n)⟩
@@ -261,9 +249,6 @@ def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : HeyLo x.type) : HeyLo α :=
 
 instance : Substitution (HeyLo α) (fun (v : Ident) ↦ HeyLo v.type) :=
   ⟨fun X x ↦ HeyLo.subst X x.1 x.2⟩
-
--- instance : Inhabited (BExpr Γ) where
---   default := ⟨fun _ ↦ false, inferInstance⟩
 
 @[grind =, simp]
 def HeyLo.Literal.lit (l : Literal α) : α.lit :=

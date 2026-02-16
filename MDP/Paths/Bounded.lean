@@ -139,7 +139,6 @@ end Path_le
 abbrev Path_eq_follows (s₀ : State) (n : ℕ) (s₁ : M.succs_univ s₀) : Set M.Path :=
   {π | ∃ h : π ∈ Path[M,s₀,=n+2], π[1]'(by simp_all) = s₁}
 
--- TODO: this notation is misleading because of the length
 @[inherit_doc]
 notation "Path[" M "," s₀ "─" s₁ "," "=" n "]" => Path_eq_follows M s₀ n s₁
 

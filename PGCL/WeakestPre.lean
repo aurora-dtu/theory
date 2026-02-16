@@ -80,18 +80,6 @@ noncomputable def Ψ (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (φ : BExpr 
 
 notation "Ψ[" g "]" => Ψ g
 
--- omit [DecidableEq 𝒱] in
--- theorem Ψ_eq_pick :
---     Ψ[g] φ f = ⟨fun (X : 𝔼[Γ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
---   ext X σ
---   simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
---     compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick,
---     BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
-
--- omit [DecidableEq 𝒱] in
--- theorem Ψ_eq_pick_apply {X : 𝔼[Γ, ENNReal]} : Ψ[g] φ f X = p[φ].pick (g X) f := by
---   simp [Ψ_eq_pick]
-
 noncomputable def wp (O : Optimization) : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
   | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩

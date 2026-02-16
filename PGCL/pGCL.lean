@@ -61,7 +61,6 @@ syntax cpgcl_aexp " / " cpgcl_aexp : cpgcl_aexp
 syntax "[" cpgcl_bexp "]" : cpgcl_aexp
 syntax "(" cpgcl_aexp ")" : cpgcl_aexp
 
--- syntax num "⁻¹" : cpgcl_pexp
 syntax cpgcl_aexp "⁻¹" : cpgcl_pexp
 
 syntax ident : cpgcl_bexp
@@ -288,7 +287,6 @@ def nonDetUnexpander : Unexpander
 @[app_unexpander pGCL.loop]
 def loopUnexpander : Unexpander
 | `($(_) $b $C) => do
-  -- let b ← match b with | `(pgcl_bexp {$b}) => pure b | _ => `(cpgcl_bexp| @ $b)
   let b ← unexpandBExp b
   let C ← match C with | `(pgcl {$C}) => pure C | _ => `(cpgcl_prog| @ $C)
   `(pgcl { while $b {$C} })

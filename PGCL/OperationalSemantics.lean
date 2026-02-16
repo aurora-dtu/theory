@@ -52,8 +52,6 @@ noncomputable instance : SmallStepSemantics (pGCL Γ) (States Γ) Termination Ac
 variable (cT : 𝔼[Γ, ENNReal] →o Termination × States Γ → ENNReal)
 variable (cP : pGCL Γ × States Γ → ENNReal)
 
--- @[simp] alias cP := cost_p
-
 noncomputable abbrev 𝒪 := (𝕊 cT cP (Γ:=Γ)).mdp
 
 open SmallStepSemantics

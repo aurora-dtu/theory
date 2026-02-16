@@ -179,11 +179,6 @@ def ProbExp.fix (X : ProbExp Γ) (S : Set 𝒱) (σ₀ : States Γ) : ProbExp (�
 
 @[simp] theorem ProbExp.fix_apply {φ : ProbExp Γ} : φ.fix S σ₀ σ = φ (σ₀.cofix σ) := rfl
 
--- @[gcongr]
--- theorem Exp.ennreal_coe_le (h : a ≤ b) :
---     pGCL.Exp.ennreal_coe (Γ:=Γ) a ≤ pGCL.Exp.ennreal_coe b := by
---   intro; grind
-
 @[grind]
 def mods : pGCL Γ → Set 𝒱
   | pgcl {skip} => ∅
@@ -362,83 +357,3 @@ theorem wlp_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ 
   · ext; simp [ProbExp.ofExp_apply, Exp.fix_apply, ProbExp.le_one_apply, inf_of_le_left]
 
 end pGCL
-
--- TODO: generic attempt, remove
-
--- namespace OrderHom
-
--- universe u v w
-
--- variable {ι : Type u} {α : ι → Type v} {β : Type w} [CompleteLattice β]
-
--- namespace States
-
--- open scoped Classical in
--- noncomputable
--- def cofix (σ₀ : (i : ι) → α i) {S : Set ι} (σ : (i : ↑Sᶜ) → α i) : (i : ι) → α i :=
---   fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
-
--- -- @[grind =, simp]
--- theorem cofix_apply_mem {S : Set ι} (h : v ∈ S) (σ₀ : (i : ι) → α i) (σ' : (i : ↑Sᶜ) → α i) :
---     cofix σ₀ σ' v = σ₀ v := by simp [h, cofix]
-
--- end States
-
--- open scoped Classical in
--- noncomputable
--- def fix (X : ((i : ι) → α i) → β) (S : Set ι) (σ₀ : (i : ι) → α i) : ((i : ↑Sᶜ) → α i) → β :=
---   fun σ ↦ X (States.cofix σ₀ σ)
-
-
--- theorem lfp_le_apply
---     {f : (((i : ι) → α i) → β) →o (((i : ι) → α i) → β)}
---     (a : ((i : ι) → α i) → β)
---     (σ₀ : (i : ι) → α i)
---     (S : Set ι)
---     (hS : ∀ i, DependsOn (f i) S)
---     (h : ∀ σ', (∀ s ∈ S, σ₀ s = σ' s) → f a σ' ≤ a σ') :
---     lfp f σ₀ ≤ a σ₀ := by
---   have : ∀ (x y : ((i : ι) → α i) → β), fix x S σ₀ ≤ fix y S σ₀ → x σ₀ ≤ y σ₀ := by
---     intro x y h
---     unfold fix at h
---     specialize h (fun v ↦ σ₀ v)
---     simp at h
---     convert h <;> (ext; simp [States.cofix])
---   apply this
---   -- let Z : Set ((i : ι) → α i) := sorry
---   have : fix (lfp f) S σ₀ = lfp ⟨fun x σ ↦ f (fun σ' ↦ x fun y ↦ σ' y) (States.cofix σ₀ σ), sorry⟩ := by
---     apply le_antisymm
---     · intro σ
---       simp [fix]
---       sorry
---     · apply lfp_le
---       intro σ
---       simp [fix]
---       nth_rw 2 [← map_lfp]
---       congr!
---       ext
---       simp_all [States.cofix]
---       sorry
---   rw [this]
---   apply lfp_le
---   simp
---   intro σ
---   simp
---   simp [fix]
---   specialize h (States.cofix σ₀ σ) (by simp_all [States.cofix])
---   apply le_trans _ h; clear h
-
---   apply le_trans (h _ _)
---   have : f (fun (σ' : (i : ι) → α i) ↦ fix a S σ₀ fun y ↦ σ' y.val) = f a := by
---     ext σ
---     simp [fix]
---     have := dependsOn_iff_factorsThrough.mp (hS a)
---     simp [Function.FactorsThrough] at this
---     ext
---     simp [States.cofix]
---     sorry
---   simp [fix]
---   apply le_trans (h _ _)
---   sorry
-
--- end OrderHom
