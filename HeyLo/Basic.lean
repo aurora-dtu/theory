@@ -941,7 +941,8 @@ private lemma pGCLr.wp_le_vp_aux {C : pGCLr} {G : Globals} (hG : C.fv ∪ φ.fv 
         ext x
         simp +contextual [Ξ]
         intro h
-        specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
+
+        specialize h₁ x (by contrapose! h; exact C.HeyVL_mods (by grind))
         simp_all only
       simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.covalidate_apply, Exp.substs_help_apply,
         le_sup_iff]
@@ -1004,7 +1005,7 @@ private lemma pGCLr.vp_le_wlp''_aux.loop
       ext x
       simp +contextual [Ξ]
       intro h
-      specialize h₁ x (by contrapose! h; exact C.HeyVL_mods h)
+      specialize h₁ x (by contrapose! h; exact C.HeyVL_mods (by grind))
       simp_all
     apply iInf_le_of_le Ξ
     apply ENNReal.validate_himp_le_of_lt
