@@ -1,4 +1,4 @@
-import PGCL.Conf2
+import PGCL.Conf
 import MDP.SmallStepSemantics
 
 /-!

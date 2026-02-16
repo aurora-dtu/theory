@@ -1,4 +1,4 @@
-import PGCL.SmallStep2
+import PGCL.SmallStep
 import PGCL.WeakestLiberalPre
 
 namespace pGCL
