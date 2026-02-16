@@ -78,7 +78,7 @@ theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
   simp_all [himp]
 
 structure Conditions (E : Encoding) where
-  original : pGCLr
+  original : spGCL
   O : Optimization
   post : 𝔼r
   pre : 𝔼r
@@ -93,7 +93,7 @@ declare_syntax_cat pgclEncoding
 syntax ident : pgclEncoding
 syntax "pgclEncoding[" pgclEncoding "]" : term
 
-syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cpgclr "{" cheylo "}" : term
+syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cspGCL "{" cheylo "}" : term
 
 macro_rules
 | `(pgclEncoding[wp]) => `(Encoding.wp)
@@ -101,11 +101,11 @@ macro_rules
 | `(vc[$O, $E] { $P } $C { $Q }) =>
   `(
     let C' :=
-      eval% (pGCLr.vp pgclr {$C} $O pgclEncoding[$E] heylo {$Q})
+      eval% (spGCL.vp spGCL {$C} $O pgclEncoding[$E] heylo {$Q})
     let invs :=
-      eval% (pGCLr.invsList pgclr {$C})
+      eval% (spGCL.invsList spGCL {$C})
     let P := heylo {$P}
-    let C := pgclr {$C}
+    let C := spGCL {$C}
     let Q := heylo {$Q}
     ({
       original := C
@@ -128,13 +128,13 @@ def Conditions.sound (C : Conditions E) : Prop :=
 
 def Conditions.show_wp (C : Conditions .wp) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]
-  apply le_trans pGCLr.wp_le_vp
+  apply le_trans spGCL.wp_le_vp
   simpa [C.prop]
 
 def Conditions.show_wlp (C : Conditions .wlp) (h : C.pre.sem ≤ C.encoding.sem)
     (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
   simp [sound]
-  apply le_trans _ (pGCLr.vp_le_wlp'' hpost _)
+  apply le_trans _ (spGCL.vp_le_wlp'' hpost _)
   · simpa [C.prop]
   · grind [cases Conditions]
 

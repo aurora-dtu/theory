@@ -1,5 +1,5 @@
 import HeyLo.Expr
-import HeyLo.pGCLr
+import HeyLo.spGCL
 import Lean.PrettyPrinter.Delaborator
 
 namespace HeyLo
@@ -18,22 +18,22 @@ declare_syntax_cat cheylo
 syntax "heylo" ppHardSpace "{" cheylo "}" : term
 declare_syntax_cat cheyvl
 syntax "heyvl" ppHardSpace "{" cheyvl "}" : term
-declare_syntax_cat cpgclr
-syntax "pgclr" ppHardSpace "{" cpgclr "}" : term
+declare_syntax_cat cspGCL
+syntax "spGCL" ppHardSpace "{" cspGCL "}" : term
 
 syntax:max "@" term:max : cheylo_var
 syntax:max "@" term:max : cheylo_vars
 syntax:max "@" term:max : cheylo_dist
 syntax:max "@" term:max : cheylo
 syntax:max "@" term:max : cheyvl
-syntax:max "@" term:max : cpgclr
+syntax:max "@" term:max : cspGCL
 macro_rules
 | `(heylo_var { @$c }) => `($c)
 | `(heylo_vars { @$c }) => `($c)
 | `(heylo_dist { @$c }) => `($c)
 | `(heylo { @$c }) => `($c)
 | `(heyvl { @$c }) => `($c)
-| `(pgclr { @$c }) => `($c)
+| `(spGCL { @$c }) => `($c)
 
 syntax ident : cheylo_var
 
@@ -76,15 +76,15 @@ syntax "(" cheylo ")" : cheylo
 syntax "flip(" cheylo ")" : cheylo_dist
 syntax "bin(" cheylo ", " cheylo ", " cheylo ")" : cheylo_dist
 
-syntax ident : cpgclr
-syntax cheylo_var " := " cheylo : cpgclr
-syntax cpgclr " ; " cpgclr : cpgclr
-syntax "{ " cpgclr " }" " [" cheylo "] "  "{ " cpgclr " }" : cpgclr
-syntax "{ " cpgclr " }" " [" "] "  "{ " cpgclr " }" : cpgclr
-syntax "while " cheylo ppHardSpace "inv(" cheylo ")" " { " cpgclr " }" : cpgclr
-syntax "tick(" cheylo ")"  : cpgclr
-syntax "observe(" cheylo ")" : cpgclr
-syntax "if " cheylo " then " cpgclr " else " cpgclr " end" : cpgclr
+syntax ident : cspGCL
+syntax cheylo_var " := " cheylo : cspGCL
+syntax cspGCL " ; " cspGCL : cspGCL
+syntax "{ " cspGCL " }" " [" cheylo "] "  "{ " cspGCL " }" : cspGCL
+syntax "{ " cspGCL " }" " [" "] "  "{ " cspGCL " }" : cspGCL
+syntax "while " cheylo ppHardSpace "inv(" cheylo ")" " { " cspGCL " }" : cspGCL
+syntax "tick(" cheylo ")"  : cspGCL
+syntax "observe(" cheylo ")" : cspGCL
+syntax "if " cheylo " then " cspGCL " else " cspGCL " end" : cspGCL
 
 syntax ident : cheyvl
 syntax cheylo_var " :≈ " cheylo_dist : cheyvl
@@ -138,16 +138,16 @@ macro_rules
 -- dists
 | `(heylo_dist { flip($p) }) => `(HeyLo.Distribution.flip heylo {$p})
 | `(heylo_dist { bin($l, $p, $r) }) => `(HeyLo.Distribution.bin heylo {$l} heylo {$p} heylo {$r})
--- pGCLr
-| `(pgclr { skip }) => `(pGCLr.skip)
-| `(pgclr { $v:cheylo_var := $e }) => `(pGCLr.assign heylo_var {$v} heylo {$e})
-| `(pgclr { $C₁ ; $C₂ }) => `(pGCLr.seq pgclr {$C₁} pgclr {$C₂})
-| `(pgclr { { $C₁:cpgclr } [ $p ] { $C₂ } }) => `(pGCLr.prob pgclr {$C₁} heylo {$p} pgclr {$C₂})
-| `(pgclr { { $C₁:cpgclr } [] { $C₂ } }) => `(pGCLr.nonDet pgclr {$C₁} pgclr {$C₂})
-| `(pgclr { while $b inv($i) { $C:cpgclr } }) => `(pGCLr.loop heylo {$b} heylo {$i} pgclr {$C})
-| `(pgclr { tick($r) }) => `(pGCLr.tick heylo {$r})
-| `(pgclr { observe($b) }) => `(pGCLr.observe heylo {$b})
-| `(pgclr { if $b then $C₁ else $C₂ end }) => `(pGCLr.ite heylo {$b} pgclr {$C₁} pgclr {$C₂})
+-- spGCL
+| `(spGCL { skip }) => `(spGCL.skip)
+| `(spGCL { $v:cheylo_var := $e }) => `(spGCL.assign heylo_var {$v} heylo {$e})
+| `(spGCL { $C₁ ; $C₂ }) => `(spGCL.seq spGCL {$C₁} spGCL {$C₂})
+| `(spGCL { { $C₁:cspGCL } [ $p ] { $C₂ } }) => `(spGCL.prob spGCL {$C₁} heylo {$p} spGCL {$C₂})
+| `(spGCL { { $C₁:cspGCL } [] { $C₂ } }) => `(spGCL.nonDet spGCL {$C₁} spGCL {$C₂})
+| `(spGCL { while $b inv($i) { $C:cspGCL } }) => `(spGCL.loop heylo {$b} heylo {$i} spGCL {$C})
+| `(spGCL { tick($r) }) => `(spGCL.tick heylo {$r})
+| `(spGCL { observe($b) }) => `(spGCL.observe heylo {$b})
+| `(spGCL { if $b then $C₁ else $C₂ end }) => `(spGCL.ite heylo {$b} spGCL {$C₁} spGCL {$C₂})
 -- HeyVL
 | `(heyvl { $x:cheylo_var :≈ $μ }) => `(HeyVL.Assign heylo_var {$x} heylo_dist {$μ})
 | `(heyvl { reward($a) }) => `(HeyVL.Reward heylo {$a})
@@ -308,143 +308,143 @@ def semUnexpander : Unexpander
 /-- info: ⟦1 + [true ∧ false]⟧' : Ty.ENNReal.expr -/
 #guard_msgs in #check (⟦1 + [true ∧ false]⟧')
 
-@[app_unexpander pGCLr.skip]
+@[app_unexpander spGCL.skip]
 def skipUnexpander : Unexpander
 | `($(_)) =>
   let name := mkIdent <| Name.mkSimple "skip"
-  `(pgclr { $name:ident })
+  `(spGCL { $name:ident })
 
-/-- info: pgclr {skip} : pGCLr -/
+/-- info: spGCL {skip} : spGCL -/
 #guard_msgs in
-#check pgclr { skip }
+#check spGCL { skip }
 
-@[app_unexpander pGCLr.assign]
+@[app_unexpander spGCL.assign]
 def assignUnexpander : Unexpander
 | `($(_) $name:str $e) => do
   let name := mkIdent <| Name.mkSimple name.getString
   let e ← unexpandAexp e
-  `(pgclr { $name:ident := $e })
+  `(spGCL { $name:ident := $e })
 | `($(_) $name $e) => do
   let name : TSyntax `cheylo_var ←
     match name with
     | `($x:ident) => `(cheylo_var|$x:ident)
     | `($n) => `(cheylo_var|@$n)
   let e ← match e with | `(heylo {$e}) => pure e | _ => `(cheylo|@ $e)
-  `(pgclr { $name:cheylo_var := $e })
+  `(spGCL { $name:cheylo_var := $e })
 | _ => throw ()
 
-/-- info: pgclr {x := x} : pGCLr -/
+/-- info: spGCL {x := x} : spGCL -/
 #guard_msgs in
-#check pgclr { x := x }
+#check spGCL { x := x }
 
-/-- info: pgclr {x := @(heylo {x} - 1)} : pGCLr -/
+/-- info: spGCL {x := @(heylo {x} - 1)} : spGCL -/
 #guard_msgs in
-#check pgclr { @x := x - 1 }
+#check spGCL { @x := x - 1 }
 
-/-- info: pgclr {x := @1} : pGCLr -/
+/-- info: spGCL {x := @1} : spGCL -/
 #guard_msgs in
-#check pgclr { @x := 1 }
+#check spGCL { @x := 1 }
 
-@[app_unexpander pGCLr.seq]
+@[app_unexpander spGCL.seq]
 def seqUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgclr {$l}) => pure l | _ => `(cpgclr|@$l)
-  let r ← match r with | `(pgclr {$r}) => pure r | _ => `(cpgclr|@$r)
-  `(pgclr { $l ; $r })
+  let l ← match l with | `(spGCL {$l}) => pure l | _ => `(cspGCL|@$l)
+  let r ← match r with | `(spGCL {$r}) => pure r | _ => `(cspGCL|@$r)
+  `(spGCL { $l ; $r })
 | _ => throw ()
 
-/-- info: pgclr {x := @1 ; skip} : pGCLr -/
+/-- info: spGCL {x := @1 ; skip} : spGCL -/
 #guard_msgs in
-#check pgclr { @x := 1 ; skip }
+#check spGCL { @x := 1 ; skip }
 
-@[app_unexpander pGCLr.prob]
+@[app_unexpander spGCL.prob]
 def probUnexpander : Unexpander
 | `($(_) $l $p $r) => do
-  let l ← match l with | `(pgclr {$l}) => pure l | _ => `(cpgclr|@$l)
+  let l ← match l with | `(spGCL {$l}) => pure l | _ => `(cspGCL|@$l)
   let p ← unexpandAexp p
-  let r ← match r with | `(pgclr {$r}) => pure r | _ => `(cpgclr|@$r)
-  `(pgclr { { $l } [$p] {$r} })
+  let r ← match r with | `(spGCL {$r}) => pure r | _ => `(cspGCL|@$r)
+  `(spGCL { { $l } [$p] {$r} })
 | _ => throw ()
 
-/-- info: pgclr {{ x := @1 } [1] { skip }} : pGCLr -/
+/-- info: spGCL {{ x := @1 } [1] { skip }} : spGCL -/
 #guard_msgs in
-#check pgclr { { @x := 1 } [1] { skip } }
+#check spGCL { { @x := 1 } [1] { skip } }
 
-@[app_unexpander pGCLr.nonDet]
+@[app_unexpander spGCL.nonDet]
 def nonDetUnexpander : Unexpander
 | `($(_) $l $r) => do
-  let l ← match l with | `(pgclr {$l}) => pure l | _ => `(cpgclr|@$l)
-  let r ← match r with | `(pgclr {$r}) => pure r | _ => `(cpgclr|@$r)
-  `(pgclr { { $l } [] {$r} })
+  let l ← match l with | `(spGCL {$l}) => pure l | _ => `(cspGCL|@$l)
+  let r ← match r with | `(spGCL {$r}) => pure r | _ => `(cspGCL|@$r)
+  `(spGCL { { $l } [] {$r} })
 | _ => throw ()
 
-/-- info: pgclr {{ x := @1 } [] { skip }} : pGCLr -/
+/-- info: spGCL {{ x := @1 } [] { skip }} : spGCL -/
 #guard_msgs in
-#check pgclr { { @x := 1 } [] { skip } }
+#check spGCL { { @x := 1 } [] { skip } }
 
-@[app_unexpander pGCLr.loop]
+@[app_unexpander spGCL.loop]
 def loopUnexpander : Unexpander
 | `($(_) $b $i $C) => do
   let b ← unexpandAexp b
   let i ← unexpandAexp i
-  let C ← match C with | `(pgclr {$C}) => pure C | _ => `(cpgclr|@$C)
-  `(pgclr { while $b inv($i) {$C} })
+  let C ← match C with | `(spGCL {$C}) => pure C | _ => `(cspGCL|@$C)
+  `(spGCL { while $b inv($i) {$C} })
 | _ => throw ()
 
-/-- info: pgclr {while x = 1 inv([true]) { skip }} : pGCLr -/
+/-- info: spGCL {while x = 1 inv([true]) { skip }} : spGCL -/
 #guard_msgs in
-#check pgclr { while x = 1 inv([true]) { skip } }
+#check spGCL { while x = 1 inv([true]) { skip } }
 
-@[app_unexpander pGCLr.tick]
+@[app_unexpander spGCL.tick]
 def tickUnexpander : Unexpander
 | `($(_) $r) => do
   let r ← unexpandAexp r
-  `(pgclr { tick($r) })
+  `(spGCL { tick($r) })
 | _ => throw ()
 
-/-- info: pgclr {tick(1)} : pGCLr -/
+/-- info: spGCL {tick(1)} : spGCL -/
 #guard_msgs in
-#check pgclr { tick(1) }
+#check spGCL { tick(1) }
 
-/-- info: fun r ↦ pgclr {tick(@r)} : 𝔼r → pGCLr -/
+/-- info: fun r ↦ spGCL {tick(@r)} : 𝔼r → spGCL -/
 #guard_msgs in
-#check fun r ↦ pgclr { tick(@r) }
+#check fun r ↦ spGCL { tick(@r) }
 
-@[app_unexpander pGCLr.observe]
+@[app_unexpander spGCL.observe]
 def observeUnexpander : Unexpander
 | `($(_) $r) => do
   let r ← unexpandAexp r
-  `(pgclr { observe($r) })
+  `(spGCL { observe($r) })
 | _ => throw ()
 
-/-- info: pgclr {observe(false) ; observe(true)} : pGCLr -/
+/-- info: spGCL {observe(false) ; observe(true)} : spGCL -/
 #guard_msgs in
-#check pgclr { observe(false) ; observe(true) }
+#check spGCL { observe(false) ; observe(true) }
 
-@[app_unexpander pGCLr.ite]
+@[app_unexpander spGCL.ite]
 def iteUnexpander : Unexpander
 | `($(_) $b $l $r) => do
   let b ← unexpandAexp b
-  let l ← match l with | `(pgclr {$l}) => pure l | _ => `(cpgclr|@$l)
-  let r ← match r with | `(pgclr {$r}) => pure r | _ => `(cpgclr|@$r)
-  `(pgclr { if $b then $l else $r end })
+  let l ← match l with | `(spGCL {$l}) => pure l | _ => `(cspGCL|@$l)
+  let r ← match r with | `(spGCL {$r}) => pure r | _ => `(cspGCL|@$r)
+  `(spGCL { if $b then $l else $r end })
 | _ => throw ()
 
-/-- info: pgclr {if false then skip else tick(1) end} : pGCLr -/
+/-- info: spGCL {if false then skip else tick(1) end} : spGCL -/
 #guard_msgs in
-#check pgclr { if false then skip else tick(1) end }
+#check spGCL { if false then skip else tick(1) end }
 
 /--
-info: pgclr {z := @(Call Fun.nlog2 (Call Fun.nfloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
+info: spGCL {z := @(Call Fun.nlog2 (Call Fun.nfloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
 -/
 #guard_msgs in
-#check (pgclr { @z := nlog2 (nfloor y) } : pGCLr).pGCL
+#check (spGCL { @z := nlog2 (nfloor y) } : spGCL).pGCL
 
 /--
-info: pgclr {while n < 10 inv([n ≤ 10]) { { n := @(heylo {n} + 2) } [1 / 2] { n := @(heylo {n} + 1) } }} : pGCLr
+info: spGCL {while n < 10 inv([n ≤ 10]) { { n := @(heylo {n} + 2) } [1 / 2] { n := @(heylo {n} + 1) } }} : spGCL
 -/
 #guard_msgs in
-#check pgclr { while n < 10 inv([n ≤ 10]) { {@n := n + 2} [1/2] {@n := n + 1} } }
+#check spGCL { while n < 10 inv([n ≤ 10]) { {@n := n + 2} [1/2] {@n := n + 1} } }
 
 @[app_unexpander HeyVL.Skip]
 def HeyVL.skipUnexpander : Unexpander

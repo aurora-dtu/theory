@@ -3,19 +3,19 @@ import PGCL.pGCL
 
 open HeyLo
 
-inductive pGCLr where
-  | skip : pGCLr
-  | assign : (v : Ident) → HeyLo v.type → pGCLr
-  | seq : pGCLr → pGCLr → pGCLr
-  | prob : pGCLr → 𝔼r → pGCLr → pGCLr
-  | nonDet : pGCLr → pGCLr → pGCLr
-  | ite : 𝔼b → pGCLr → pGCLr → pGCLr
-  | loop : 𝔼b → 𝔼r → pGCLr → pGCLr
-  | tick : 𝔼r → pGCLr
-  | observe : 𝔼b → pGCLr
+inductive spGCL where
+  | skip : spGCL
+  | assign : (v : Ident) → HeyLo v.type → spGCL
+  | seq : spGCL → spGCL → spGCL
+  | prob : spGCL → 𝔼r → spGCL → spGCL
+  | nonDet : spGCL → spGCL → spGCL
+  | ite : 𝔼b → spGCL → spGCL → spGCL
+  | loop : 𝔼b → 𝔼r → spGCL → spGCL
+  | tick : 𝔼r → spGCL
+  | observe : 𝔼b → spGCL
 deriving Inhabited
 
-noncomputable def pGCLr.pGCL : pGCLr → pGCL fun (x : Ident) ↦ x.type.lit
+noncomputable def spGCL.pGCL : spGCL → pGCL fun (x : Ident) ↦ x.type.lit
   | skip => .skip
   | assign x e => .assign x e.sem
   | seq C₁ C₂ => .seq C₁.pGCL C₂.pGCL
