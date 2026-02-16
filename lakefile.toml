@@ -23,16 +23,6 @@ linter.style.refine = true
 linter.style.setOption = true
 
 [[require]]
-scope = "wvhulle"
-name = "ennreal-arith"
-rev = "main"           # or a specific commit
-
-[[require]]
-name = "smt"
-scope = "ufmg-smite"
-rev = "main"
-
-[[require]]
 name = "mathlib"
 scope = "leanprover-community"
 
