@@ -78,7 +78,7 @@ theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
   simp_all [himp]
 
 structure Conditions (E : Encoding) where
-  original : pGCL'
+  original : pGCLr
   O : Optimization
   post : 𝔼r
   pre : 𝔼r
@@ -93,7 +93,7 @@ declare_syntax_cat pgclEncoding
 syntax ident : pgclEncoding
 syntax "pgclEncoding[" pgclEncoding "]" : term
 
-syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cpgcl' "{" cheylo "}" : term
+syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cpgclr "{" cheylo "}" : term
 
 macro_rules
 | `(pgclEncoding[wp]) => `(Encoding.wp)
@@ -101,11 +101,11 @@ macro_rules
 | `(vc[$O, $E] { $P } $C { $Q }) =>
   `(
     let C' :=
-      eval% (pGCL'.vp pgcl' {$C} $O pgclEncoding[$E] heylo {$Q})
+      eval% (pGCLr.vp pgclr {$C} $O pgclEncoding[$E] heylo {$Q})
     let invs :=
-      eval% (pGCL'.invsList pgcl' {$C})
+      eval% (pGCLr.invsList pgclr {$C})
     let P := heylo {$P}
-    let C := pgcl' {$C}
+    let C := pgclr {$C}
     let Q := heylo {$Q}
     ({
       original := C
@@ -128,13 +128,13 @@ def Conditions.sound (C : Conditions E) : Prop :=
 
 def Conditions.show_wp (C : Conditions .wp) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]
-  apply le_trans pGCL'.wp_le_vp
+  apply le_trans pGCLr.wp_le_vp
   simpa [C.prop]
 
 def Conditions.show_wlp (C : Conditions .wlp) (h : C.pre.sem ≤ C.encoding.sem)
     (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
   simp [sound]
-  apply le_trans _ (pGCL'.vp_le_wlp'' hpost _)
+  apply le_trans _ (pGCLr.vp_le_wlp'' hpost _)
   · simpa [C.prop]
   · grind [cases Conditions]
 
@@ -168,11 +168,11 @@ abbrev y : Ident := ⟨"y", .Nat⟩
 abbrev c : Ident := ⟨"c", .Nat⟩
 
 def NatLog := vc[𝒟, wp]
-    { ↑c + [0 < y] * ↑(y + nlog2 y) }
-      while 0 < y inv(↑c + [0 < y] * ↑(y + nlog2 y)) {
-        { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
-      }
-    { ↑c }
+  { ↑c + [0 < y] * ↑(y + nlog2 y) }
+    while 0 < y inv(↑c + [0 < y] * ↑(y + nlog2 y)) {
+      { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
+    }
+  { ↑c }
 
 theorem NatLog.soundess : NatLog.sound := by
   apply NatLog.show_wp fun σ ↦ ?_
@@ -205,15 +205,14 @@ info: 'NatLog.soundess' depends on axioms: [propext, Classical.choice, Lean.ofRe
 #guard_msgs in
 #print axioms NatLog.soundess
 
-def NatLog' :=
-  vc[𝒜, wlp]
-    { 1 }
-      while 0 < y
-        inv(1)
-      {
-        { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
-      }
-    { 1 }
+def NatLog' := vc[𝒜, wlp]
+  { 1 }
+    while 0 < y
+      inv(1)
+    {
+      { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
+    }
+  { 1 }
 
 theorem NatLog'.soundess : NatLog'.sound := by
   apply NatLog'.show_wlp fun σ ↦ ?_
