@@ -334,7 +334,7 @@ theorem mdp_act_term : 𝕊.mdp.act (Conf.term t σ) = {none} := by
 theorem mdp_act_bot : 𝕊.mdp.act Conf.bot = {none} := by
   ext; simp [mdp]
 
-instance instFiniteBrachingMDP [instFin : 𝕊.FiniteBranching] : 𝕊.mdp.FiniteBranching where
+instance instFiniteBranchingMDP [instFin : 𝕊.FiniteBranching] : 𝕊.mdp.FiniteBranching where
   act_fin C := by
     rcases C with (⟨t, σ⟩ | ⟨C, σ⟩ | _) <;> try simp
     have := instFin.finite (C, σ)

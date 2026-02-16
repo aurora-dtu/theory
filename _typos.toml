@@ -1,2 +1,2 @@
 [default]
-extend-ignore-identifiers-re = ["Hom"]
+extend-ignore-identifiers-re = ["Hom", "rela", "ands"]

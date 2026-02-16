@@ -491,7 +491,7 @@ def Distribution.binUnexpander : Unexpander
 | _ => throw ()
 
 @[app_unexpander HeyVL.Assign]
-def heyvlAsignUnexpander : Unexpander
+def heyvlAssignUnexpander : Unexpander
 | `($(_) $name $a) => do
   let name : TSyntax `cheylo_var ←
     match name with

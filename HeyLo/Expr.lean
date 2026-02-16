@@ -81,7 +81,7 @@ inductive BinOp : Ty → Ty → Type where
   | Sub : {α : Ty} → α.Arith → BinOp α α
   /-- The `*` operator (multiplication). -/
   | Mul : {α : Ty} → α.Arith → BinOp α α
-  /-- The `/` operator (divison). -/
+  /-- The `/` operator (division). -/
   | Div : {α : Ty} → α.Arith → BinOp α α
   /-- The `%` operator (modulo). -/
   | Mod : BinOp Nat Nat

@@ -236,11 +236,11 @@ def Path.ofLength_countable (n : ℕ) : Countable {π : M.Path | ‖π‖ = n} :
           use {states:=π.states ++ [s]}
           simp
 
-theorem Path.compelte : ⋃ n, {π : M.Path | ‖π‖ = n} = Set.univ := by ext; simp
+theorem Path.complete : ⋃ n, {π : M.Path | ‖π‖ = n} = Set.univ := by ext; simp
 
 instance : Countable M.Path := by
   have : Countable (Set.univ : Set M.Path) := by
-    rw [← Path.compelte]; simp
+    rw [← Path.complete]; simp
     exact Path.ofLength_countable
   exact Set.countable_univ_iff.mp this
 @[simp]
