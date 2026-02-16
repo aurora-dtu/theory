@@ -247,15 +247,15 @@ theorem wp_le_of_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (X : 
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
-theorem le_wlp''_of_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (X : 𝔼[Γ, ENNReal]) :
-    Exp.fix X S σ₀ ≤ Exp.fix (wlp''[O]⟦@C⟧ φ) S σ₀ → X σ₀ ≤ wlp''[O]⟦@C⟧ φ σ₀ := by
+theorem le_wlp_of_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (X : 𝔼[Γ, ENNReal]) :
+    Exp.fix X S σ₀ ≤ Exp.fix (wlp[O]⟦@C⟧ φ) S σ₀ → X σ₀ ≤ wlp[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
   convert h <;> ext <;> simp [States.cofix]
 
-theorem le_wlp_of_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (X : ProbExp Γ) :
-    X.fix S σ₀ ≤ (wlp[O]⟦@C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp[O]⟦@C⟧ φ σ₀ := by
+theorem le_wlp'_of_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (X : ProbExp Γ) :
+    X.fix S σ₀ ≤ (wlp'[O]⟦@C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp'[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
@@ -284,8 +284,8 @@ theorem wp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mod
       rw [ih']
       exact congrFun (ih ((Ψ[_] b φ)^[i] 0)) σ
 
-theorem wlp''_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
-    Exp.fix (wlp''[O]⟦@C⟧ φ) S σ₀ = wlp''[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
+theorem wlp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
+    Exp.fix (wlp[O]⟦@C⟧ φ) S σ₀ = wlp[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with (simp_all [fix, mods]; try rfl)
   | assign x A =>
@@ -303,15 +303,15 @@ theorem wlp''_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.
   | seq C₁ C₂ ih₁ ih₂ =>
     ext
     simp
-    specialize ih₁ (wlp''[O]⟦@C₂⟧ φ ⊓ 1)
-    have : (Exp.fix (wlp''[O]⟦@C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp''[O]⟦@C₂⟧ φ) S σ₀) ⊓ 1 := by
+    specialize ih₁ (wlp[O]⟦@C₂⟧ φ ⊓ 1)
+    have : (Exp.fix (wlp[O]⟦@C₂⟧ φ ⊓ 1) S σ₀) = (Exp.fix (wlp[O]⟦@C₂⟧ φ) S σ₀) ⊓ 1 := by
       ext; simp
     simp [this] at ih₁
     simp [ih₁]
   | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
   | loop b C ih =>
     ext σ
-    simp only [wlp''_loop_eq_iter, iInf_apply, Exp.iInf_fix]
+    simp only [wlp_loop_eq_iter, iInf_apply, Exp.iInf_fix]
     simp
     congr with i
     induction i generalizing σ with
@@ -328,15 +328,15 @@ theorem wlp''_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.
       rw [ih']
       exact congrFun (ih ((Ψ[_] b (φ ⊓ 1))^[i] 1)) σ
 
-theorem wlp_fix_apply (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
-    Exp.fix (wlp[O]⟦@C⟧ φ) S σ₀ σ = wlp[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp⟩ σ := by
+theorem wlp'_fix_apply (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
+    Exp.fix (wlp'[O]⟦@C⟧ φ) S σ₀ σ = wlp'[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp⟩ σ := by
   simp
-  have := congrFun (C.wlp''_fix φ.val S hS (O:=O) (σ₀:=σ₀)) σ
+  have := congrFun (C.wlp_fix φ.val S hS (O:=O) (σ₀:=σ₀)) σ
   simp at this
   convert this
-  · simp [wlp'']; congr; ext σ; have := φ.prop σ; simp_all only [Pi.one_apply,
+  · simp [wlp]; congr; ext σ; have := φ.prop σ; simp_all only [Pi.one_apply,
     ProbExp.ofExp_apply, inf_of_le_left]; rfl
-  · simp [wlp'']
+  · simp [wlp]
     congr
     ext σ
     simp
@@ -344,15 +344,15 @@ theorem wlp_fix_apply (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mod
     simp_all
     rfl
 
-theorem wlp_fix_apply' (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (hφ : φ ≤ 1) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
-      Exp.fix (wlp[O]⟦@C⟧ ⟨φ, hφ⟩) S σ₀ σ
-    = wlp[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp_fix_apply _ _ _ hS _
+theorem wlp'_fix_apply' (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (hφ : φ ≤ 1) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
+      Exp.fix (wlp'[O]⟦@C⟧ ⟨φ, hφ⟩) S σ₀ σ
+    = wlp'[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp'_fix_apply _ _ _ hS _
 
-theorem wlp_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
-    (wlp[O]⟦@C⟧ φ).fix S σ₀ = wlp[O]⟦@(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
+theorem wlp'_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
+    (wlp'[O]⟦@C⟧ φ).fix S σ₀ = wlp'[O]⟦@(C.fix S σ₀)⟧ (φ.fix S σ₀) := by
   ext σ
-  have := congrFun (C.wlp''_fix φ S hS (σ₀:=σ₀) (O:=O)) σ
-  simp [wlp''] at this
+  have := congrFun (C.wlp_fix φ S hS (σ₀:=σ₀) (O:=O)) σ
+  simp [wlp] at this
   convert this
   · ext; simp [ProbExp.ofExp_apply, Exp.fix_apply, ProbExp.le_one_apply, inf_of_le_left]
 

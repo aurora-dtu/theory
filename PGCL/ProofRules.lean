@@ -17,7 +17,7 @@ open Optimization.Notation
 def AST (C : pGCL Γ) : Prop := wp[𝒟]⟦@C.st⟧ 1 = 1
 
 noncomputable def cwp (O : Optimization) (C : pGCL Γ) : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] :=
-  ⟨(wp[O]⟦@C⟧ · / wlp[O]⟦@C⟧ 1),
+  ⟨(wp[O]⟦@C⟧ · / wlp'[O]⟦@C⟧ 1),
     fun a b hab σ ↦ ENNReal.div_le_div ((wp _ _).monotone hab _) (by rfl)⟩
 
 syntax "cwp[" term "]⟦" cpgcl_prog "⟧" : term
@@ -74,8 +74,8 @@ def ParkCoinvariant (g : ProbExp Γ →o ProbExp Γ) (b : BExpr Γ) (φ : ProbEx
 
 /-- _Park coinduction_. -/
 theorem ParkCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : ProbExp Γ} {I : ProbExp Γ}
-    (h : ParkCoinvariant wlp[O]⟦@C⟧ b φ I) :
-    I ≤ wlp[O]⟦while @b { @C }⟧ φ := le_gfp _ h
+    (h : ParkCoinvariant wlp'[O]⟦@C⟧ b φ I) :
+    I ≤ wlp'[O]⟦while @b { @C }⟧ φ := le_gfp _ h
 
 /-- A _Park k-invariant_. -/
 def ParkKInvariant (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (b : BExpr Γ) (φ : 𝔼[Γ, ENNReal]) (k : ℕ)
@@ -92,7 +92,7 @@ def ParkKCoinvariant (g : ProbExp Γ →o ProbExp Γ) (b : BExpr Γ) (φ : ProbE
 
 /-- _Park k-coinduction_. -/
 theorem ParkKCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : ProbExp Γ} {I : ProbExp Γ} (k : ℕ)
-    (h : ParkKCoinvariant wlp[O]⟦@C⟧ b φ k I) :
-    I ≤ wlp[O]⟦while @b { @C }⟧ φ := le_gfp_of_iter k h
+    (h : ParkKCoinvariant wlp'[O]⟦@C⟧ b φ k I) :
+    I ≤ wlp'[O]⟦while @b { @C }⟧ φ := le_gfp_of_iter k h
 
 end pGCL

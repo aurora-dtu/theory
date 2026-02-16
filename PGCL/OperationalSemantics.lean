@@ -197,7 +197,7 @@ theorem tsum_succs_univ'' {α : Act} (f : (𝕊 cT cost_p').psucc C σ α → EN
   · intro ⟨_, _⟩ ⟨_, _⟩; simp; apply SetCoe.ext
   · simp_all
 
-theorem ς.seq' {C₁ C₂ : pGCL Γ}
+theorem ς.seq {C₁ C₂ : pGCL Γ}
     (ih₁ : (𝕊 cost_t cost_p).ς O (wp O) C₁ = C₁.wp O) :
     (𝕊 cost_t cost_p).ς O (wp O) (pgcl {@C₁ ; @C₂}) = (wp O C₁).comp (wp O C₂) := by
   ext X σ
@@ -212,9 +212,9 @@ theorem ς.seq' {C₁ C₂ : pGCL Γ}
     · simp only [DFunLike.coe] at h₀; simp only [OrderHom.toFun_eq_coe] at h₀
       grind
 
-theorem ς.seq'' {C₁ C₂ : pGCL Γ}
-    (ih₁ : (𝕊 cost_t' cost_p').ς O (wfp' O) C₁ = C₁.wfp' O) :
-    (𝕊 cost_t' cost_p').ς O (wfp' O) (pgcl {@C₁ ; @C₂}) = (wfp' O C₁).comp (wfp' O C₂) := by
+theorem ς.seq' {C₁ C₂ : pGCL Γ}
+    (ih₁ : (𝕊 cost_t' cost_p').ς O (wfp O) C₁ = C₁.wfp O) :
+    (𝕊 cost_t' cost_p').ς O (wfp O) (pgcl {@C₁ ; @C₂}) = (wfp O C₁).comp (wfp O C₂) := by
   ext X σ
   simp [← ih₁, ς_apply, tsum_succs_univ', Optimization.act]
   congr! 4 with α' α
@@ -225,9 +225,9 @@ theorem ς.seq'' {C₁ C₂ : pGCL Γ}
     grind
   · rintro ⟨p, (C | t), σ⟩
       <;> simp only [after, Set.mem_range, Subtype.exists, Prod.exists, Function.mem_support]
-    · grind [wfp', mul_eq_zero, Function.mem_support]
+    · grind [wfp, mul_eq_zero, Function.mem_support]
     · grind [one_ne_zero, mul_eq_zero, Function.mem_support]
-  · simp [after, wfp']
+  · simp [after, wfp]
     grind
 
 theorem op_le_seq [(𝕊 cT cP).mdp.FiniteBranching]
@@ -297,7 +297,7 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (Γ:=Γ)) where
     | observe b => rw [← ς_op_eq_op]; intro _ _; simp
   et_prefixed_point := by
     apply le_of_eq
-    funext C; induction C with try simp_all [ς.seq']; (try rfl) <;> try ext; simp
+    funext C; induction C with try simp_all [ς.seq]; (try rfl) <;> try ext; simp
     | loop b C' ih =>
       rw [ς.loop]
       ext
@@ -317,8 +317,8 @@ noncomputable instance : (𝕊 cost_t' cost_p' (Γ:=Γ)).FiniteBranching where
   finite := by simp [r, ← SmallStep.succs_univ_fin'_eq_r]
 
 open scoped Classical in
-theorem wfp'_le_op.loop (ih : C.wfp' O ≤ (𝕊 cost_t' cost_p').op O C) :
-    wfp'[O]⟦while @b { @C }⟧ ≤ (𝕊 cost_t' cost_p').op O (.loop b C (Γ:=Γ)) := by
+theorem wfp_le_op.loop (ih : C.wfp O ≤ (𝕊 cost_t' cost_p').op O C) :
+    wfp[O]⟦while @b { @C }⟧ ≤ (𝕊 cost_t' cost_p').op O (.loop b C (Γ:=Γ)) := by
   intro X
   apply OrderHom.lfp_le
   simp
@@ -332,41 +332,41 @@ theorem wfp'_le_op.loop (ih : C.wfp' O ≤ (𝕊 cost_t' cost_p').op O C) :
   else
     simp [ς.loop, hb, Ψ]
 
-noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (Γ:=Γ)) where
+noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp O (Γ:=Γ)) where
   et_le_op := by
-    intro C; induction C with try simp_all; (try rw [← ς_op_eq_op]; simp [wfp']; (try rfl); done)
+    intro C; induction C with try simp_all; (try rw [← ς_op_eq_op]; simp [wfp]; (try rfl); done)
     | seq C₁ C₂ ih₁ ih₂ =>
       apply le_trans _ (op_le_seq _ _ 1 _ _ _) <;> simp
       intro σ
-      simp [wfp']
+      simp [wfp]
       exact OrderHom.apply_mono ih₁ (ih₂ σ)
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X
       rw [← ς_op_eq_op]
       simp only [OrderHom.toFun_eq_coe, ς.prob, OrderHom.add_apply, cP'_apply, Pi.ofNat_apply,
         Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
-      simp [wfp']
+      simp [wfp]
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
       intro X
-      rw [← ς_op_eq_op]; simp [wfp']
+      rw [← ς_op_eq_op]; simp [wfp]
       gcongr <;> apply_assumption
-    | loop b C' ih => apply wfp'_le_op.loop ih
+    | loop b C' ih => apply wfp_le_op.loop ih
   et_prefixed_point := by
     apply le_of_eq
-    funext C; induction C with try simp_all [ς.seq'']; (try rfl) <;> try ext; simp [wfp']; done
+    funext C; induction C with try simp_all [ς.seq']; (try rfl) <;> try ext; simp [wfp]; done
     | loop b C' ih =>
       rw [ς.loop]
       ext X σ
       simp
-      nth_rw 1 [wfp']
-      nth_rw 1 [← wfp'_fp]
+      nth_rw 1 [wfp]
+      nth_rw 1 [← wfp_fp]
       rfl
 
 /-- info: 'pGCL.instET'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
 #print axioms instET'
 
-example {C : pGCL Γ} : wfp'[O]⟦@C⟧ = (𝕊 cost_t' cost_p').op O C := by rw [instET'.et_eq_op]
+example {C : pGCL Γ} : wfp[O]⟦@C⟧ = (𝕊 cost_t' cost_p').op O C := by rw [instET'.et_eq_op]
 
 end pGCL

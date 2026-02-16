@@ -667,7 +667,7 @@ theorem HeyVL.Cohavocs_mods : (HeyVL.Cohavocs xs).mods = ∅ := by
 theorem spGCL.pGCL_mods (C : spGCL) : C.pGCL.mods = ↑C.mods := by
   induction C with simp_all [mods, pGCL, pGCL.mods, pGCL.ite]
 
-inductive Encoding where | wlp | wp
+inductive Encoding where | wlp' | wp
 
 /-- Generate a fresh variables given some global.
 
@@ -687,7 +687,7 @@ def spGCL.HeyVL (C : spGCL) (O : Optimization) (E : Encoding) :
     | .wp => (G, heyvl {
       coassert(@I) ; cohavocs(@C.mods) ; covalidate ; coassume(@I) ;
       if (@b) { @C ; coassert(@I) ; coassume(⊤) } })
-    | .wlp => (G, heyvl {
+    | .wlp' => (G, heyvl {
       assert(@I) ; havocs(@C.mods) ; validate ; assume(@I) ;
       if (@b) { @C ; assert(@I) ; assume(0) } })
   | spGCL {{@C₁} [@p] {@C₂}} =>
@@ -714,7 +714,7 @@ def spGCL.HeyVL (C : spGCL) (O : Optimization) (E : Encoding) :
     match E with
     | .wp => (G, heyvl { reward(@r) })
     -- NOTE: we include `r` as a subexpression such that `fv` is the same in both cases
-    | .wlp => (G, heyvl { reward(0 * @r) })
+    | .wlp' => (G, heyvl { reward(0 * @r) })
   | spGCL {observe(@r)} => (G, heyvl { assert(@r.embed) })
 
 @[grind ., grind! ., simp]
@@ -975,19 +975,19 @@ theorem spGCL.wp_le_vp {C : spGCL} :
 #print axioms spGCL.wp_le_vp
 
 @[grind ., simp]
-theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {Γ : Γ[𝒱]} {C : pGCL Γ} {φ} : wlp''[O]⟦@C⟧ φ ≤ 1 := by
-  intro; simp [wlp'']
+theorem pGCL.wlp_le_one [DecidableEq 𝒱] {Γ : Γ[𝒱]} {C : pGCL Γ} {φ} : wlp[O]⟦@C⟧ φ ≤ 1 := by
+  intro; simp [wlp]
 
-private lemma spGCL.vp_le_wlp''_aux.loop
+private lemma spGCL.vp_le_wlp_aux.loop
     (ih : ∀ {φ : 𝔼r} {G : Globals}, C.fv ∪ φ.fv ⊆ G →
-      φ.sem ≤ 1 → ((C.HeyVL O Encoding.wlp G).2.vp φ).sem ≤ wlp''[O]⟦@C.pGCL⟧ φ.sem)
+      φ.sem ≤ 1 → ((C.HeyVL O Encoding.wlp' G).2.vp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem)
     (hG : (loop b I C).fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1) (hI : I.sem ≤ 1 ∧ ∀ a ∈ C.invs, a.sem ≤ 1) :
-    (((loop b I C).HeyVL O Encoding.wlp G).2.vp φ).sem ≤ wlp''[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
+    (((loop b I C).HeyVL O Encoding.wlp' G).2.vp φ).sem ≤ wlp[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
   simp only [Ty.expr, HeyVL, HeyVL.vp, sem_inf_apply, Finset.sort_nodup, HeyVL.vp_havocs,
     sem_validate, sem_himp_apply, HeyVL.if_vp_sem, sem_not_apply, Exp.validate_subst,
     Exp.himp_subst, Exp.add_subst, Exp.mul_subst, Exp.iver_subst, pGCL]
   intro σ
-  if inv : IdleCoinvariant wlp''[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
+  if inv : IdleCoinvariant wlp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
     simp
     left
     apply IdleCoinduction <;> grind
@@ -1000,7 +1000,7 @@ private lemma spGCL.vp_le_wlp''_aux.loop
     simp_all only [Ty.expr, Ty.lit, hnot_eq_compl, Exp.not_subst, iInf_apply, Exp.validate_apply,
       Pi.himp_apply, Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
       Pi.compl_apply, compl_iff_not]
-    let Ξ := HeyVL.Subs.of (C.HeyVL O .wlp G).2.mods.sort (by simp) σ'
+    let Ξ := HeyVL.Subs.of (C.HeyVL O .wlp' G).2.mods.sort (by simp) σ'
     have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
       ext x
       simp +contextual [Ξ]
@@ -1011,39 +1011,39 @@ private lemma spGCL.vp_le_wlp''_aux.loop
     apply ENNReal.validate_himp_le_of_lt
     simp [HeyVL.vp, HeyVL.Skip, σ_eq_σ']
     replace ih :
-          ((C.HeyVL O .wlp G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
-        ≤ wlp''[O]⟦@C.pGCL⟧ I.sem σ' := by
+          ((C.HeyVL O .wlp' G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
+        ≤ wlp[O]⟦@C.pGCL⟧ I.sem σ' := by
       specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) (by simp; grind) σ'
       grw [ih]; simp
     grw [ih]
     exact h₂
 
 set_option maxHeartbeats 700000 in
-private lemma  spGCL.vp_le_wlp''_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
+private lemma  spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
     (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
-    ((C.HeyVL O .wlp G).2.vp φ).sem ≤ wlp'' O C.pGCL φ.sem := by
+    ((C.HeyVL O .wlp' G).2.vp φ).sem ≤ wlp O C.pGCL φ.sem := by
   induction C generalizing G φ with
   | skip =>
     intro σ
     have hφ' : ∀ σ, φ.sem σ ≤ 1 := (hφ ·)
     simp only [Ty.lit, HeyVL, HeyVL.Skip, HeyVL.vp, sem_add_apply, Ty.expr, sem_zero, Pi.add_apply,
-      Pi.ofNat_apply, add_zero, pGCL, wlp''.skip_apply, Pi.inf_apply, hφ', inf_of_le_left, le_refl]
+      Pi.ofNat_apply, add_zero, pGCL, wlp.skip_apply, Pi.inf_apply, hφ', inf_of_le_left, le_refl]
   | assign x e =>
     intro σ
     have hφ' : ∀ σ, φ.sem σ ≤ 1 := (hφ ·)
     simp only [Ty.lit, HeyVL, HeyVL.vp, Distribution.pure_map, Distribution.pure_toExpr,
       sem_add_apply, Ty.expr, sem_mul_apply, sem_one, sem_subst, one_mul, sem_zero, Pi.add_apply,
-      Pi.substs_cons, Substitution.substs_nil, Pi.zero_apply, add_zero, pGCL, wlp''.assign_apply,
+      Pi.substs_cons, Substitution.substs_nil, Pi.zero_apply, add_zero, pGCL, wlp.assign_apply,
       Pi.inf_apply, Pi.one_apply, hφ', inf_of_le_left, le_refl]
   | seq C₁ C₂ ih₁ ih₂ =>
-    simp only [Ty.expr, HeyVL, HeyVL.vp, pGCL, wlp''.seq_apply]
+    simp only [Ty.expr, HeyVL, HeyVL.vp, pGCL, wlp.seq_apply]
     simp_all
     specialize ih₂ (G:=G) (by grind) hφ
     grw [ih₁, ih₂]
     · grind
     · apply le_trans ih₂; simp
   | ite b C₁ C₂ ih₁ ih₂ =>
-    simp only [Ty.expr, HeyVL, HeyVL.if_vp_sem, sem_not_apply, pGCL, pGCL.ite, wlp''.prob_apply]
+    simp only [Ty.expr, HeyVL, HeyVL.if_vp_sem, sem_not_apply, pGCL, pGCL.ite, wlp.prob_apply]
     simp only [fv, Finset.union_assoc] at hG
     grw [ih₁ _ hφ, ih₂ _ hφ]
     · intro; simp only [Ty.lit, hnot_eq_compl, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
@@ -1051,7 +1051,7 @@ private lemma  spGCL.vp_le_wlp''_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ
       BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply, le_refl]
     all_goals grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
-    simp only [Ty.expr, HeyVL, pGCL, wlp''.nonDet_apply, Optimization.opt₂]
+    simp only [Ty.expr, HeyVL, pGCL, wlp.nonDet_apply, Optimization.opt₂]
     simp [spGCL.fv] at hG
     have : C₁.fv ∪ φ.fv ⊆ G := by grind
     cases O
@@ -1063,13 +1063,13 @@ private lemma  spGCL.vp_le_wlp''_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ
     simp only [Ty.lit, spGCL.prob_vp hG, Ty.expr]
     grw [ih₁ _ hφ, ih₂ _ hφ]
     · intro σ
-      simp only [Ty.lit, wlp'', ProbExp.ofExp, OrderHom.coe_mk, Pi.add_apply, Pi.mul_apply,
-        Pi.inf_apply, Pi.one_apply, Pi.sub_apply, pGCL, wlp.prob_apply, OrderHom.mk_apply,
+      simp only [Ty.lit, wlp, ProbExp.ofExp, OrderHom.coe_mk, Pi.add_apply, Pi.mul_apply,
+        Pi.inf_apply, Pi.one_apply, Pi.sub_apply, pGCL, wlp'.prob_apply, OrderHom.mk_apply,
         ProbExp.add_apply, ProbExp.mul_apply, ProbExp.coe_apply, ProbExp.sub_apply,
         ProbExp.one_apply, le_inf_iff, le_refl, true_and]
       have := ProbExp.pick_le (p:=ProbExp.ofExp p.sem) (x:=1)
-                (l:=wlp[O]⟦@C₁.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
-                (r:=wlp[O]⟦@C₂.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+                (l:=wlp'[O]⟦@C₁.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
+                (r:=wlp'[O]⟦@C₂.pGCL⟧ ⟨φ.sem ⊓ 1, by simp⟩ σ)
       simp only [Ty.lit, ProbExp.le_one_apply, ProbExp.ofExp_apply, forall_const] at this
       grind
     · grind
@@ -1079,16 +1079,16 @@ private lemma  spGCL.vp_le_wlp''_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ
   | loop b I C ih =>
     simp_all only [Ty.expr, Ty.lit, invs, Finset.mem_insert, or_true, implies_true, forall_const,
       forall_eq_or_imp]
-    exact vp_le_wlp''_aux.loop ih hG hφ hI
+    exact vp_le_wlp_aux.loop ih hG hφ hI
   | tick r =>
-    simp only [Ty.expr, Ty.lit, HeyVL, HeyVL.vp, sem_add_apply, pGCL, wlp''.tick_apply]
+    simp only [Ty.expr, Ty.lit, HeyVL, HeyVL.vp, sem_add_apply, pGCL, wlp.tick_apply]
     intro σ
     simp [Pi.add_apply, Ty.lit, add_zero, le_refl]
     apply hφ
   | observe r =>
     intro σ
     simp only [Ty.lit, HeyVL, HeyVL.vp, sem_inf_apply, Ty.expr, sem_embed, Pi.inf_apply,
-      Pi.mul_apply, Pi.iver_apply, Pi.top_apply, pGCL, wlp''.observe_apply, inf_le_iff]
+      Pi.mul_apply, Pi.iver_apply, Pi.top_apply, pGCL, wlp.observe_apply, inf_le_iff]
     if r.sem σ then
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
         Iverson.iver_True, Nat.cast_one, one_mul, BExpr.probOf_apply, Pi.one_apply, le_inf_iff,
@@ -1099,9 +1099,9 @@ private lemma  spGCL.vp_le_wlp''_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ
         Iverson.iver_False, CharP.cast_eq_zero, zero_mul, BExpr.probOf_apply, Pi.one_apply, le_refl,
         nonpos_iff_eq_zero, true_or]
 
-theorem spGCL.vp_le_wlp'' {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
-    (C.vp O .wlp φ).sem ≤ wlp''[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp''_aux (by rfl) hφ hI
+theorem spGCL.vp_le_wlp {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
+    (C.vp O .wlp' φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp_aux (by rfl) hφ hI
 
-/-- info: 'spGCL.vp_le_wlp''' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+/-- info: 'spGCL.vp_le_wlp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
-#print axioms spGCL.vp_le_wlp''
+#print axioms spGCL.vp_le_wlp

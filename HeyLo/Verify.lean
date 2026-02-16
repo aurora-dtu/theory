@@ -97,7 +97,7 @@ syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cspGCL "{" cheylo "}" : te
 
 macro_rules
 | `(pgclEncoding[wp]) => `(Encoding.wp)
-| `(pgclEncoding[wlp]) => `(Encoding.wlp)
+| `(pgclEncoding[wlp']) => `(Encoding.wlp')
 | `(vc[$O, $E] { $P } $C { $Q }) =>
   `(
     let C' :=
@@ -124,17 +124,17 @@ macro_rules
 def Conditions.sound (C : Conditions E) : Prop :=
   match E with
   | .wp => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
-  | .wlp => C.pre.sem ≤ wlp''[C.O]⟦@C.original.pGCL⟧ C.post.sem
+  | .wlp' => C.pre.sem ≤ wlp[C.O]⟦@C.original.pGCL⟧ C.post.sem
 
 def Conditions.show_wp (C : Conditions .wp) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]
   apply le_trans spGCL.wp_le_vp
   simpa [C.prop]
 
-def Conditions.show_wlp (C : Conditions .wlp) (h : C.pre.sem ≤ C.encoding.sem)
+def Conditions.show_wlp' (C : Conditions .wlp') (h : C.pre.sem ≤ C.encoding.sem)
     (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
   simp [sound]
-  apply le_trans _ (spGCL.vp_le_wlp'' hpost _)
+  apply le_trans _ (spGCL.vp_le_wlp hpost _)
   · simpa [C.prop]
   · grind [cases Conditions]
 
@@ -205,7 +205,7 @@ info: 'NatLog.soundess' depends on axioms: [propext, Classical.choice, Lean.ofRe
 #guard_msgs in
 #print axioms NatLog.soundess
 
-def NatLog' := vc[𝒜, wlp]
+def NatLog' := vc[𝒜, wlp']
   { 1 }
     while 0 < y
       inv(1)
@@ -215,7 +215,7 @@ def NatLog' := vc[𝒜, wlp]
   { 1 }
 
 theorem NatLog'.soundess : NatLog'.sound := by
-  apply NatLog'.show_wlp fun σ ↦ ?_
+  apply NatLog'.show_wlp' fun σ ↦ ?_
   · intro σ; simp [NatLog']
   · simp [NatLog', sem]
   simp [NatLog', BinOp.sem, UnOp.sem, sem, ENNReal.inv_two_add_inv_two, hnot]

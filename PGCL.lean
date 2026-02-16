@@ -24,9 +24,9 @@ import PGCL.IdleInduction
 
 open scoped Optimization.Notation
 
-theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
+theorem pGCL.iSup_iSup_EC_eq_wfp' [DecidableEq 𝒱] :
       ⨆ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[@C,σ]
-    = wfp'[𝒜]⟦@C⟧ X σ := by
+    = wfp[𝒜]⟦@C⟧ X σ := by
   rw [instET'.et_eq_op]
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
@@ -34,9 +34,9 @@ theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
   rw [← MDP.iSup_iSup_EC_eq_lfp_Φ𝒜, iSup_comm]
   simp only [iSup_apply]
 
-theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :
+theorem pGCL.iInf_iSup_EC_eq_wfp' [DecidableEq 𝒱] :
       ⨅ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[@C,σ]
-    = wfp'[𝒟]⟦@C⟧ X σ := by
+    = wfp[𝒟]⟦@C⟧ X σ := by
   rw [instET'.et_eq_op]
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
@@ -44,7 +44,7 @@ theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :
   rw [← MDP.iSup_iInf_EC_eq_lfp_Φ𝒟, MDP.iSup_iInf_EC_eq_iInf_iSup_EC]
   simp only [iInf_apply, iSup_apply]
 
-/-- info: 'pGCL.iSup_iSup_EC_eq_wfp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in #print axioms pGCL.iSup_iSup_EC_eq_wfp
-/-- info: 'pGCL.iInf_iSup_EC_eq_wfp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs in #print axioms pGCL.iInf_iSup_EC_eq_wfp
+/-- info: 'pGCL.iSup_iSup_EC_eq_wfp depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms pGCL.iSup_iSup_EC_eq_wfp'
+/-- info: 'pGCL.iInf_iSup_EC_eq_wfp depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms pGCL.iInf_iSup_EC_eq_wfp'
