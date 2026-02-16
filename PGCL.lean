@@ -25,8 +25,8 @@ import PGCL.IdleInduction
 open scoped Optimization.Notation
 
 theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
-      ⨆ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[~C,σ]
-    = wfp'[𝒜]⟦~C⟧ X σ := by
+      ⨆ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[@C,σ]
+    = wfp'[𝒜]⟦@C⟧ X σ := by
   rw [instET'.et_eq_op]
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
@@ -35,8 +35,8 @@ theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
   simp only [iSup_apply]
 
 theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :
-      ⨅ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[~C,σ]
-    = wfp'[𝒟]⟦~C⟧ X σ := by
+      ⨅ 𝒮, ⨆ n, (𝕊 (𝒱:=𝒱) cost_t' cost_p').mdp.EC ((𝕊 cost_t' cost_p').cost X) 𝒮 n conf[@C,σ]
+    = wfp'[𝒟]⟦@C⟧ X σ := by
   rw [instET'.et_eq_op]
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]

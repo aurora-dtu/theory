@@ -38,13 +38,10 @@ macro_rules
 syntax ident : cheylo_var
 
 syntax num : cheylo
+syntax "⊤" : cheylo
 syntax ident cheylo* : cheylo
 syntax "[" cheylo "]" : cheylo
 syntax "(" cheylo ")" : cheylo
-
--- syntax num "⁻¹" : cpgcl_pexp
--- syntax cheylo "⁻¹" : cpgcl_pexp
-
 
 syntax:70 cheylo:70 " * " cheylo:71 : cheylo
 syntax:70 cheylo:70 " / " cheylo:71 : cheylo
@@ -69,17 +66,15 @@ syntax:35 cheylo:35 " ∧ " cheylo:36 : cheylo
 syntax:35 cheylo:35 " ∨ " cheylo:36 : cheylo
 syntax:35 cheylo:35 " → " cheylo:36 : cheylo
 
+syntax "⨅ " cheylo_var ", " cheylo : cheylo
+syntax "⨆ " cheylo_var ", " cheylo : cheylo
+syntax "∀ " cheylo_var ", " cheylo : cheylo
+syntax "∃ " cheylo_var ", " cheylo : cheylo
 
--- syntax cheylo " + " cheylo : cheylo
--- syntax cheylo " - " cheylo : cheylo
--- syntax cheylo " * " cheylo : cheylo
--- syntax cheylo " / " cheylo : cheylo
--- syntax cheylo " < " cheylo : cheylo
--- syntax cheylo " ≤ " cheylo : cheylo
--- syntax cheylo " = " cheylo : cheylo
--- syntax cheylo " ∧ " cheylo : cheylo
--- syntax cheylo " ∨ " cheylo : cheylo
 syntax "(" cheylo ")" : cheylo
+
+syntax "flip(" cheylo ")" : cheylo_dist
+syntax "bin(" cheylo ", " cheylo ", " cheylo ")" : cheylo_dist
 
 syntax ident : cpgcl'
 syntax cheylo_var " := " cheylo : cpgcl'
@@ -115,14 +110,14 @@ syntax "if" ppHardSpace "(" cheylo ")" ppHardSpace "{" cheyvl "}" : cheyvl
 
 macro_rules
 -- vars
-| `(heylo_var { $v:ident }) => `(term|$(quote v.getId.toString))
--- pexp
+| `(heylo_var { $v:ident }) => `(term|$v)
+-- heylo
 | `(heylo { $n:num }) => `(($n : HeyLo _))
+| `(heylo { ⊤ }) => `(⊤)
 | `(heylo { true }) => `(HeyLo.Lit (.Bool true))
 | `(heylo { false }) => `(HeyLo.Lit (.Bool false))
-| `(heylo { nfloor $x }) => `(term|HeyLo.Call .NFloor heylo {$x} )
-| `(heylo { nlog₂ $x }) => `(term|HeyLo.Call .NLog₂ heylo {$x} )
-| `(heylo { isNat $x }) => `(term|HeyLo.Call .IsNat heylo {$x} )
+| `(heylo { nfloor $x }) => `(term|HeyLo.Call .nfloor heylo {$x} )
+| `(heylo { nlog2 $x }) => `(term|HeyLo.Call .nlog2 heylo {$x} )
 | `(heylo { $v:ident }) => `(term|HeyLo.Var ($v).name ($v).type)
 | `(heylo { $l:cheylo + $r }) => `(heylo {$l} + heylo {$r})
 | `(heylo { $l:cheylo - $r }) => `(heylo {$l} - heylo {$r})
@@ -138,11 +133,17 @@ macro_rules
 | `(heylo { $l:cheylo ∨ $r }) => `(HeyLo.Binary .Or (heylo {$l}) (heylo {$r}))
 | `(heylo { ¬$l:cheylo }) => `(HeyLo.Unary .Not (heylo {$l}))
 | `(heylo { ↑ $l:cheylo }) => `(HeyLo.Unary .NatToENNReal (heylo {$l}))
+| `(heylo {⨅ $x, $y}) => `(HeyLo.Quant QuantOp.Inf heylo_var {$x} heylo {$y})
+| `(heylo {⨆ $x, $y}) => `(HeyLo.Quant QuantOp.Sup heylo_var {$x} heylo {$y})
+| `(heylo {∀ $x, $y}) => `(HeyLo.Quant QuantOp.Forall heylo_var {$x} heylo {$y})
+| `(heylo {∃ $x, $y}) => `(HeyLo.Quant QuantOp.Exists heylo_var {$x} heylo {$y})
+-- dists
+| `(heylo_dist { flip($p) }) => `(HeyLo.Distribution.flip heylo {$p})
+| `(heylo_dist { bin($l, $p, $r) }) => `(HeyLo.Distribution.bin heylo {$l} heylo {$p} heylo {$r})
 -- pGCL'
 | `(pgcl' { skip }) => `(pGCL'.skip)
-| `(pgcl' { $v:ident := $e }) => `(pGCL'.assign $v heylo {$e})
+| `(pgcl' { $v:cheylo_var := $e }) => `(pGCL'.assign heylo_var {$v} heylo {$e})
 | `(pgcl' { $C₁ ; $C₂ }) => `(pGCL'.seq pgcl' {$C₁} pgcl' {$C₂})
--- | `(pgcl' { { $C₁:cpgcl' } [ $p ] { $C₂ } }) => `(pGCL'.prob pgcl' {$C₁} heylo {$p} pgcl' {$C₂})
 | `(pgcl' { { $C₁:cpgcl' } [ $p ] { $C₂ } }) => `(pGCL'.prob pgcl' {$C₁} heylo {$p} pgcl' {$C₂})
 | `(pgcl' { { $C₁:cpgcl' } [] { $C₂ } }) => `(pGCL'.nonDet pgcl' {$C₁} pgcl' {$C₂})
 | `(pgcl' { while $b inv($i) { $C:cpgcl' } }) => `(pGCL'.loop heylo {$b} heylo {$i} pgcl' {$C})
@@ -157,13 +158,13 @@ macro_rules
 | `(heyvl { assert($φ) }) => `(HeyVL.Assert heylo {$φ})
 | `(heyvl { assume($φ) }) => `(HeyVL.Assume heylo {$φ})
 | `(heyvl { havoc($x:cheylo_var) }) => `(HeyVL.Havoc heylo_var {$x})
-| `(heyvl { havocs($xs:cheylo_vars) }) => `(HeyVL.Havocs heylo_vars {$xs})
+| `(heyvl { havocs($xs:cheylo_vars) }) => `(HeyVL.Havocs (heylo_vars {$xs}).sort)
 | `(heyvl { validate }) => `(HeyVL.Validate)
 | `(heyvl { if (⊔) { $S₁:cheyvl } else { $S₂ } }) => `(HeyVL.IfSup heyvl {$S₁} heyvl {$S₂})
 | `(heyvl { coassert($φ) }) => `(HeyVL.Coassert heylo {$φ})
 | `(heyvl { coassume($φ) }) => `(HeyVL.Coassume heylo {$φ})
 | `(heyvl { cohavoc($x:cheylo_var) }) => `(HeyVL.Cohavoc heylo_var {$x})
-| `(heyvl { cohavocs($xs:cheylo_vars) }) => `(HeyVL.Cohavocs heylo_vars {$xs})
+| `(heyvl { cohavocs($xs:cheylo_vars) }) => `(HeyVL.Cohavocs (heylo_vars {$xs}).sort)
 | `(heyvl { covalidate }) => `(HeyVL.Covalidate)
 -- Sugar
 | `(heyvl { skip }) => `(HeyVL.Skip)
@@ -171,7 +172,9 @@ macro_rules
     `(HeyVL.If heylo {$b} heyvl {$S₁} heyvl {$S₂})
 | `(heyvl { if ($b:cheylo) {$S₁:cheyvl} }) => `(HeyVL.If heylo {$b} heyvl {$S₁} heyvl {skip})
 
+abbrev x : Ident := ⟨"x", .ENNReal⟩
 abbrev y : Ident := ⟨"y", .ENNReal⟩
+abbrev b : Ident := ⟨"b", .Bool⟩
 abbrev z : Ident := ⟨"z", .Nat⟩
 abbrev n : Ident := ⟨"n", .Nat⟩
 
@@ -278,7 +281,7 @@ def LitUnexpander : Unexpander
 | `($_ $b) => do
   match b with
   | `($_ $b) => `($b)
-  | _ => `(idk)
+  | _ => throw ()
 | _ => throw ()
 
 /-- info: heylo {true ∧ true} : 𝔼b -/
@@ -289,9 +292,9 @@ def LitUnexpander : Unexpander
 #guard_msgs in
 #check (heylo { ((1 + 2) = 2) ∧ true } : HeyLo .Bool)
 
-/-- info: Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})) : HeyLo Ty.Nat -/
+/-- info: Call Fun.nlog2 (Call Fun.nfloor (heylo {y})) : HeyLo Ty.Nat -/
 #guard_msgs in
-#check (heylo { nlog₂ (nfloor y) } : HeyLo .Nat)
+#check (heylo { nlog2 (nfloor y) } : HeyLo .Nat)
 /-- info: heylo {y ≤ y} : 𝔼b -/
 #guard_msgs in
 #check (heylo { y ≤ y } : HeyLo .Bool)
@@ -328,23 +331,25 @@ def assignUnexpander : Unexpander
   let e ← unexpandAexp e
   `(pgcl' { $name:ident := $e })
 | `($(_) $name $e) => do
+  let name : TSyntax `cheylo_var ←
+    match name with
+    | `($x:ident) => `(cheylo_var|$x:ident)
+    | `($n) => `(cheylo_var|@$n)
   let e ← match e with | `(heylo {$e}) => pure e | _ => `(cheylo|@ $e)
-  `(pgcl' { @$name := $e })
+  `(pgcl' { $name:cheylo_var := $e })
 | _ => throw ()
 
-abbrev x : Ident := ⟨"x", .ENNReal⟩
-
-/-- info: pgcl' {@x := x} : pGCL' -/
+/-- info: pgcl' {x := x} : pGCL' -/
 #guard_msgs in
 #check pgcl' { x := x }
 
-/-- info: pgcl' {@x := @(heylo {x} - 1)} : pGCL' -/
+/-- info: pgcl' {x := @(heylo {x} - 1)} : pGCL' -/
 #guard_msgs in
-#check pgcl' { x := x - 1 }
+#check pgcl' { @x := x - 1 }
 
-/-- info: pgcl' {@x := @1} : pGCL' -/
+/-- info: pgcl' {x := @1} : pGCL' -/
 #guard_msgs in
-#check pgcl' { x := 1 }
+#check pgcl' { @x := 1 }
 
 @[app_unexpander pGCL'.seq]
 def seqUnexpander : Unexpander
@@ -354,9 +359,9 @@ def seqUnexpander : Unexpander
   `(pgcl' { $l ; $r })
 | _ => throw ()
 
-/-- info: pgcl' {@x := @1 ; skip} : pGCL' -/
+/-- info: pgcl' {x := @1 ; skip} : pGCL' -/
 #guard_msgs in
-#check pgcl' { x := 1 ; skip }
+#check pgcl' { @x := 1 ; skip }
 
 @[app_unexpander pGCL'.prob]
 def probUnexpander : Unexpander
@@ -367,9 +372,9 @@ def probUnexpander : Unexpander
   `(pgcl' { { $l } [$p] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ @x := @1 } [1] { skip }} : pGCL' -/
+/-- info: pgcl' {{ x := @1 } [1] { skip }} : pGCL' -/
 #guard_msgs in
-#check pgcl' { { x := 1 } [1] { skip } }
+#check pgcl' { { @x := 1 } [1] { skip } }
 
 @[app_unexpander pGCL'.nonDet]
 def nonDetUnexpander : Unexpander
@@ -379,9 +384,9 @@ def nonDetUnexpander : Unexpander
   `(pgcl' { { $l } [] {$r} })
 | _ => throw ()
 
-/-- info: pgcl' {{ @x := @1 } [] { skip }} : pGCL' -/
+/-- info: pgcl' {{ x := @1 } [] { skip }} : pGCL' -/
 #guard_msgs in
-#check pgcl' { { x := 1 } [] { skip } }
+#check pgcl' { { @x := 1 } [] { skip } }
 
 @[app_unexpander pGCL'.loop]
 def loopUnexpander : Unexpander
@@ -436,16 +441,16 @@ def iteUnexpander : Unexpander
 #check pgcl' { if false then skip else tick(1) end }
 
 /--
-info: pgcl' {@z := @(Call Fun.NLog₂ (Call Fun.NFloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
+info: pgcl' {z := @(Call Fun.nlog2 (Call Fun.nfloor (heylo {y})))}.pGCL : pGCL fun x ↦ x.type.lit
 -/
 #guard_msgs in
-#check (pgcl' { z := nlog₂ (nfloor y) } : pGCL').pGCL
+#check (pgcl' { @z := nlog2 (nfloor y) } : pGCL').pGCL
 
 /--
-info: pgcl' {while n < 10 inv([n ≤ 10]) { { @n := @(heylo {n} + 2) } [1 / 2] { @n := @(heylo {n} + 1) } }} : pGCL'
+info: pgcl' {while n < 10 inv([n ≤ 10]) { { n := @(heylo {n} + 2) } [1 / 2] { n := @(heylo {n} + 1) } }} : pGCL'
 -/
 #guard_msgs in
-#check pgcl' { while n < 10 inv([n ≤ 10]) { {n := n + 2} [1/2] {n := n + 1} } }
+#check pgcl' { while n < 10 inv([n ≤ 10]) { {@n := n + 2} [1/2] {@n := n + 1} } }
 
 @[app_unexpander HeyVL.Skip]
 def HeyVL.skipUnexpander : Unexpander
@@ -474,6 +479,32 @@ def rewardUnexpander : Unexpander
 | `($(_) $a) => do
   let a ← unexpandAexp a
   `(heyvl { reward($a) })
+| _ => throw ()
+
+@[app_unexpander HeyLo.Distribution.flip]
+def Distribution.flipUnexpander : Unexpander
+| `($(_) $p) => do
+  let p ← unexpandAexp p
+  `(heylo_dist {flip($p)})
+| _ => throw ()
+@[app_unexpander HeyLo.Distribution.bin]
+def Distribution.binUnexpander : Unexpander
+| `($(_) $l $p $r) => do
+  let l ← unexpandAexp l
+  let p ← unexpandAexp p
+  let r ← unexpandAexp r
+  `(heylo_dist {bin($l, $p, $r)})
+| _ => throw ()
+
+@[app_unexpander HeyVL.Assign]
+def heyvlAsignUnexpander : Unexpander
+| `($(_) $name $a) => do
+  let name : TSyntax `cheylo_var ←
+    match name with
+    | `($x:ident) => `(cheylo_var|$x:ident)
+    | `($n) => `(cheylo_var|@$n)
+  let a ← match a with | `(heylo_dist {$a}) => pure a | _ => `(cheylo_dist|@$a)
+  `(heyvl { $name:cheylo_var :≈ $a })
 | _ => throw ()
 
 @[app_unexpander HeyVL.Seq]
@@ -554,6 +585,14 @@ def covalidateUnexpander : Unexpander
   let name := mkIdent <| Name.mkSimple "covalidate"
   `(heyvl { $name:ident })
 -- | _ => throw ()
+
+/-- info: heyvl {b :≈ flip(1 / 2)} : HeyVL -/
+#guard_msgs in
+#check heyvl { b :≈ flip(1/2) }
+/-- info: heyvl {x :≈ bin(15, 1 / 3, 20)} : HeyVL -/
+#guard_msgs in
+#check heyvl { x :≈ bin(15, 1/3, 20) }
+
 /-- info: heyvl {reward(1)} : HeyVL -/
 #guard_msgs in
 #check heyvl { reward(1) }

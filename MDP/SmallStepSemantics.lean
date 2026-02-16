@@ -455,19 +455,15 @@ theorem ς_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContin
     apply hab
   · intro c
     ext X σ
-    simp [ωSup]
     have := ωScottContinuous_iff_map_ωSup_of_orderHom.mp (i.Φ_continuous (𝕊.cost X))
-    simp [ωSup] at this
-    have := congrFun (this ⟨fun i ↦ (fun s' ↦
-          match s' with
-          | Conf.prog C' σ' => (c i C') X σ'
-          | Conf.term t σ' => (cost_t P A) X (t, σ')
-          | Conf.bot => 0),
-        fun _ _ _ _ ↦ by simp; split <;> (try gcongr); apply c.mono ‹_›⟩) (Conf.prog C σ)
-    simp at this
-    convert this
-    simp only [DFunLike.coe]
-    simp
+              ⟨fun i ↦ (match · with
+                | .prog C' σ' => c i C' X σ'
+                | .term t σ' => cost_t P A X ⟨t, σ'⟩
+                | .bot => 0),
+              fun _ _ _ _ ↦ by simp; split <;> (try gcongr); apply c.mono ‹_›⟩
+    convert congrFun this (.prog C σ)
+    simp [ωSup]; simp only [DFunLike.coe]; simp only [toFun_eq_coe]
+    congr!
     split <;> simp
 
 theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (𝕊.ς O)^[n] ⊥ := by
@@ -509,8 +505,6 @@ theorem op_le_seq
     split
     · apply Summable.tsum_le_tsum_of_inj (fun ⟨⟨p, a⟩, ha⟩ ↦ ⟨⟨p, after C' a⟩, h_succ ha⟩) <;> simp
       · intro ⟨⟨_, c₁⟩, _⟩ ⟨⟨_, c₂⟩, _⟩ h
-        simp at h
-        have := @after_inj C' c₁ c₂ h.right
         grind
       · intro p
         constructor
@@ -520,24 +514,13 @@ theorem op_le_seq
           apply h₁
         · intro t σ₁ h
           gcongr
-          split
-          · rename_i C₀ σ₀ h
-            have := h_after_t h
-            simp at this
-            obtain ⟨⟨_⟩, ⟨_⟩⟩ := this
-            apply h_c h
-          · rename_i t₀ σ₀ h
-            have := h_after_t h
-            simp at this
-            obtain ⟨⟨⟨_⟩, ⟨_⟩⟩, h'⟩ := this
-            simp [h']
+          grind only
     · rfl
   · simp
     intro Z hZ C C' X
     simp
     intro f hfZ σ
-    have := hZ _ hfZ C C' X σ
-    simp at this
-    grw [this]
+    specialize hZ _ hfZ C C' X σ
+    grind only
 
 end SmallStepSemantics

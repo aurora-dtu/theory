@@ -45,30 +45,25 @@ def HeyLo.opt : HeyLo α → HeyLo α
 
 @[grind =, simp]
 theorem ENNReal.himp_zero_le (x y : ENNReal) : x ⇨ 0 ≤ y ↔ (x = 0 → y = ⊤) := by
-  simp_all [himp]; split_ifs
-  · grind
-  · simp_all
+  simp only [himp]; grind [zero_le, nonpos_iff_eq_zero]
 @[grind =, simp]
 theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := by
   suffices x ⇨ 0 ≤ 0 ↔ (¬x = 0) by simpa
-  rw [himp_zero_le]
-  simp
+  simp only [himp_zero_le, zero_ne_top, imp_false]
 @[grind =, simp]
 theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
-  simp [sdiff, sdiff]
-  constructor
-  · if y < x then simp_all else simp_all
-  · simp_all
+  simp only [sdiff]; constructor <;> grind [sdiff, zero_le]
 
 @[simp]
 theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
     (i[x = 0] : ENNReal) * (⊤ : ENNReal) ⇨ y ≤ z ↔ x = 0 ∧ y ≤ z := by
   simp [himp]
   if x = 0 then
-    simp_all
-    split_ifs <;> simp_all
+    simp_all only [Iverson.iver_True]
+    grind
   else
-    simp_all
+    simp_all only [Iverson.iver_False, CharP.cast_eq_zero, zero_mul]
+    grind [zero_le]
 
 @[grind =, simp]
 theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [sdiff]
@@ -82,34 +77,31 @@ theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < 
 theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
   simp_all [himp]
 
-structure Conditions (D : Direction) where
+structure Conditions (E : Encoding) where
   original : pGCL'
   O : Optimization
   post : 𝔼r
   pre : 𝔼r
   encoding : 𝔼r
-  prop : original.vp O D post = encoding
+  prop : original.vp O E post = encoding
   fv : Globals
   fv_prop : fv = original.fv ∪ post.fv ∪ pre.fv
   invs : List 𝔼r
   invs_prop : invs = original.invsList
 
-abbrev y : Ident := ⟨"y", .Nat⟩
-abbrev c : Ident := ⟨"c", .Nat⟩
+declare_syntax_cat pgclEncoding
+syntax ident : pgclEncoding
+syntax "pgclEncoding[" pgclEncoding "]" : term
 
-declare_syntax_cat wp_direction
-syntax ident : wp_direction
-syntax "wpDirection[" wp_direction "]" : term
-
-syntax "vc[" term "," wp_direction "]" "{" cheylo "}" cpgcl' "{" cheylo "}" : term
+syntax "vc[" term "," pgclEncoding "]" "{" cheylo "}" cpgcl' "{" cheylo "}" : term
 
 macro_rules
-| `(wpDirection[wp]) => `(Direction.Lower)
-| `(wpDirection[wlp]) => `(Direction.Upper)
-| `(vc[$O, $D] { $P } $C { $Q }) =>
+| `(pgclEncoding[wp]) => `(Encoding.wp)
+| `(pgclEncoding[wlp]) => `(Encoding.wlp)
+| `(vc[$O, $E] { $P } $C { $Q }) =>
   `(
     let C' :=
-      eval% (pGCL'.vp pgcl' {$C} $O wpDirection[$D] heylo {$Q})
+      eval% (pGCL'.vp pgcl' {$C} $O pgclEncoding[$E] heylo {$Q})
     let invs :=
       eval% (pGCL'.invsList pgcl' {$C})
     let P := heylo {$P}
@@ -126,20 +118,20 @@ macro_rules
       invs_prop := by decide +native
       encoding := C'
       prop := by decide +native
-    } : Conditions wpDirection[$D])
+    } : Conditions pgclEncoding[$E])
   )
 
-def Conditions.sound (C : Conditions D) : Prop :=
-  match D with
-  | .Lower => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
-  | .Upper => C.pre.sem ≤ wlp''[C.O]⟦@C.original.pGCL⟧ C.post.sem
+def Conditions.sound (C : Conditions E) : Prop :=
+  match E with
+  | .wp => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
+  | .wlp => C.pre.sem ≤ wlp''[C.O]⟦@C.original.pGCL⟧ C.post.sem
 
-def Conditions.show_lower (C : Conditions .Lower) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
+def Conditions.show_wp (C : Conditions .wp) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
   simp [sound]
   apply le_trans pGCL'.wp_le_vp
   simpa [C.prop]
 
-def Conditions.show_upper (C : Conditions .Upper) (h : C.pre.sem ≤ C.encoding.sem)
+def Conditions.show_wlp (C : Conditions .wlp) (h : C.pre.sem ≤ C.encoding.sem)
     (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
   simp [sound]
   apply le_trans _ (pGCL'.vp_le_wlp'' hpost _)
@@ -172,18 +164,18 @@ theorem ENNReal.two (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
   simp [*]
 
-def NatLog :=
-  vc[𝒟, wp]
-    { ↑c + [0 < y] * ↑(y + nlog₂ y) }
-      while 0 < y
-        inv(↑c + [0 < y] * ↑(y + nlog₂ y))
-      {
+abbrev y : Ident := ⟨"y", .Nat⟩
+abbrev c : Ident := ⟨"c", .Nat⟩
+
+def NatLog := vc[𝒟, wp]
+    { ↑c + [0 < y] * ↑(y + nlog2 y) }
+      while 0 < y inv(↑c + [0 < y] * ↑(y + nlog2 y)) {
         { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
       }
     { ↑c }
 
 theorem NatLog.soundess : NatLog.sound := by
-  apply NatLog.show_lower fun σ ↦ ?_
+  apply NatLog.show_wp fun σ ↦ ?_
   simp [NatLog]
   simp [BinOp.sem, UnOp.sem, sem, Fun.sem]
   set c : ℕ := σ c; set y : ℕ := σ y
@@ -198,9 +190,9 @@ theorem NatLog.soundess : NatLog.sound := by
     grw [(by omega : (y' + 1) / 2 ≤ (y' + 1))]
     simp [← ENNReal.toReal_le_toReal, ENNReal.mul_eq_top, ENNReal.toReal_add]
     rw [ENNReal.toReal_sub_of_le]
-    · simp; ring_nf; rfl
-    · simp; apply (Nat.le_log2 ?_).mpr <;> omega
-    · simp
+    · grind [ENNReal.toReal_natCast, ENNReal.toReal_one]
+    · simp; apply (Nat.le_log2 ?_).mpr <;> grind
+    · grind [ENNReal.natCast_ne_top]
   else
     have : y' = 0 := by omega
     subst_eqs
@@ -224,7 +216,7 @@ def NatLog' :=
     { 1 }
 
 theorem NatLog'.soundess : NatLog'.sound := by
-  apply NatLog'.show_upper fun σ ↦ ?_
+  apply NatLog'.show_wlp fun σ ↦ ?_
   · intro σ; simp [NatLog']
   · simp [NatLog', sem]
   simp [NatLog', BinOp.sem, UnOp.sem, sem, ENNReal.inv_two_add_inv_two, hnot]

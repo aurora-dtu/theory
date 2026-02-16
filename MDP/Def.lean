@@ -10,6 +10,8 @@ import Mathlib.Tactic.Monotonicity.Basic
 import MDP.Optimization
 import MDP.MarkovChain
 
+namespace Next
+
 structure MDP (S A : Type*) where
   acts : S → Type*
   acts_inhabited : ∀ s, Inhabited (acts s)
@@ -564,3 +566,5 @@ theorem EC_eq_lfp_Φ [M.ΦContinuous O] :
     rw [EC_succ]
 
 end MDP
+
+end Next

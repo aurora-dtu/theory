@@ -34,15 +34,6 @@ def substsUnexpander : Unexpander
 #check fun (x : Std.HashMap String ℕ) ↦ x[..[Sigma.mk "a" 12]]
 #check fun (x : Std.HashMap String ℕ) (xs : List ((_ : String) × ℕ)) ↦ x[..xs]
 
--- theorem substs_of_subst {α β : Type*} [Substitution α β] {m : α} {xs : List β}
---     (p : α → Prop) (h : ∀ m (b : β), p m[..[b]]) : p (m[..xs]) := by
---   induction xs generalizing m p with
---   | nil =>
---     simp [substs]
---     sorry
---   | cons x xs ih =>
---     simp_all [substs]
-
 variable {α ι : Type*} {β : ι → Type*} [Substitution α β]
 
 @[grind =, simp]
@@ -58,13 +49,6 @@ theorem substs_append {m : α} {xs ys : List (Sigma β)} :
 theorem subst_singleton {m : α} {x : Sigma β} :
     substs m [x] = subst m x := by
   simp [substs]
-
--- theorem substs_of_binary {α β : Type*} [Substitution α β] {m n : α} {xs : List β}
---     {f : α → α → α} (h : ∀ m n (b : β), (f m n)[..[b]] = (f m[..[b]] n[..[b]])) :
---     (f m n)[..xs] = f m[..xs] n[..xs] := by
---   induction xs generalizing m n f with
---   | nil => simp
---   | cons x xs ih => simp_all [substs_cons]
 
 theorem substs_of_binary {α₁ α₂ α₃ ι : Type*} {β : ι → Type*}
     [Substitution α₁ β] [Substitution α₂ β] [Substitution α₃ β]

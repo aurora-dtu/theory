@@ -58,6 +58,7 @@ instance {α : Ty} : Lean.ToExpr α.Compare where
     match α with
     | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
     | .Bool => False.elim (by cases h)
+  -- TODO
   toTypeExpr := sorry
 open Lean in
 instance {α : Ty} : Lean.ToExpr α.Arith where
@@ -65,6 +66,7 @@ instance {α : Ty} : Lean.ToExpr α.Arith where
     match α with
     | .ENNReal | .Nat => Lean.ToExpr.toExpr Yes.yes
     | .Bool => False.elim (by cases h)
+  -- TODO
   toTypeExpr := sorry
 
 instance {α : Ty} : DecidableEq α.Compare := fun a b ↦ by
@@ -187,9 +189,8 @@ inductive Literal : Ty → Type where
 deriving DecidableEq, Lean.ToExpr
 
 inductive Fun : Ty → Ty → Type where
-  | NFloor : Fun ENNReal Nat
-  | NLog₂ : Fun Nat Nat
-  | IsNat : Fun ENNReal Bool
+  | nfloor : Fun ENNReal Nat
+  | nlog2 : Fun Nat Nat
 deriving DecidableEq, Lean.ToExpr
 
 end HeyLo
@@ -347,11 +348,8 @@ theorem HeyLo.QuantOp.Sup_sem_eq_iInf_ennreal {x : Ident} :
 noncomputable def HeyLo.Fun.sem (f : HeyLo.Fun α β) (m : α.expr) :
     β.expr :=
   match f with
-  | .NFloor => fun σ ↦ ⌊(m σ).toReal⌋.toNat
-  | .NLog₂ => fun σ ↦ Nat.log2 (m σ)
-  | .IsNat => fun σ ↦
-    have : Decidable (∃ (n : ℕ), m σ = ↑n) := Classical.propDecidable _
-    decide (∃ (n : ℕ), m σ = n)
+  | .nfloor => fun σ ↦ ⌊(m σ).toReal⌋.toNat
+  | .nlog2 => fun σ ↦ Nat.log2 (m σ)
 open scoped Classical in
 noncomputable def HeyLo.sem (X : HeyLo α) : α.expr :=
   match X with
@@ -439,9 +437,10 @@ theorem Array.map_mul_sum {α β : Type*} [MonoidWithZero β] [AddMonoid β] [Le
   obtain ⟨A⟩ := A
   induction A with grind [mul_zero, left_distrib]
 
-structure Distribution (α : Ty) where
+structure HeyLo.Distribution (α : Ty) where
   values : Array (𝔼r × HeyLo α)
   prop : ∀ (σ : States Ty.ϖ), (values.map (·.fst.sem σ)).sum = 1
+deriving DecidableEq
 
 attribute [simp] Distribution.prop
 
@@ -451,8 +450,8 @@ instance : Lean.ToExpr (Distribution α) where
     toExpr μ.values
   toTypeExpr := .const ``Distribution []
 
-def Distribution.pure (v : HeyLo α) : Distribution α := ⟨#[(1, v)], by simp [sem]⟩
-def Distribution.bind {α β : Ty} (μ : Distribution α) (f : HeyLo α → Distribution β) :
+def HeyLo.Distribution.pure (v : HeyLo α) : Distribution α := ⟨#[(1, v)], by simp [sem]⟩
+def HeyLo.Distribution.bind {α β : Ty} (μ : Distribution α) (f : HeyLo α → Distribution β) :
     Distribution β :=
   let values := μ.values.flatMap (fun (p, v) ↦ (f v).values.map (fun (p', v') ↦ (p * p', v')))
   {values, prop := by
@@ -464,18 +463,18 @@ def Distribution.bind {α β : Ty} (μ : Distribution α) (f : HeyLo α → Dist
     simp only [mul_one]
     rw [prop]
   }
-def Distribution.map (μ : Distribution α) (f : HeyLo α → HeyLo β) : Distribution β :=
+def HeyLo.Distribution.map (μ : Distribution α) (f : HeyLo α → HeyLo β) : Distribution β :=
   ⟨μ.values.map (fun (p, v) ↦ (p, f v)), by simp; unfold Function.comp; simp; apply prop⟩
 
 instance {x : Ident} : Inhabited (x.type.lit) where
   default := by simp; split <;> exact default
 
 @[grind ., simp]
-theorem Distribution.values_ne_empty (μ : Distribution α) : μ.values ≠ #[] := by
+theorem HeyLo.Distribution.values_ne_empty (μ : Distribution α) : μ.values ≠ #[] := by
   have := μ.prop fun x ↦ default
   grind [zero_ne_one]
 @[simp]
-theorem Distribution.exists_in_values (μ : Distribution α) : ∃ x v, (x, v) ∈ μ.values := by
+theorem HeyLo.Distribution.exists_in_values (μ : Distribution α) : ∃ x v, (x, v) ∈ μ.values := by
   have : ∃ x, x ∈ μ.values := by simp [Array.isEmpty_eq_false_iff_exists_mem.mp]
   grind
 
@@ -486,34 +485,34 @@ theorem Array.sum_replicate {α : Type*} {x : α} [Semiring α] :
   | zero => grind
   | succ n ih => grind [push, toList_replicate, List.sum_replicate]
 
-def Distribution.unif (vs : Array (HeyLo α)) (h : vs ≠ #[]) : Distribution α :=
+def HeyLo.Distribution.unif (vs : Array (HeyLo α)) (h : vs ≠ #[]) : Distribution α :=
   ⟨vs.map fun v ↦ (.Binary (.Div .yes) (1 : 𝔼r) (OfNat.ofNat vs.size), v), by
     intro σ
     simp only [Array.map_map]
     unfold Function.comp
     simp [sem, BinOp.sem, Array.map_const', h, ENNReal.mul_inv_cancel]⟩
-def Distribution.bin (a : HeyLo α) (p : 𝔼r) (b : HeyLo α) : Distribution α :=
+def HeyLo.Distribution.bin (a : HeyLo α) (p : 𝔼r) (b : HeyLo α) : Distribution α :=
   ⟨#[(p ⊓ 1, a), (1 - (p ⊓ 1), b)], by intro σ; simp [sem, BinOp.sem]⟩
-def Distribution.flip (p : 𝔼r) : Distribution .Bool :=
+def HeyLo.Distribution.flip (p : 𝔼r) : Distribution .Bool :=
   bin (HeyLo.Lit (.Bool true)) p (HeyLo.Lit (.Bool false))
 
 @[grind =, simp]
-theorem Distribution.pure_map {e : HeyLo α} :
+theorem HeyLo.Distribution.pure_map {e : HeyLo α} :
     (Distribution.pure e).map f = Distribution.pure (f e) := by
   simp [pure, map]
 @[grind =, simp]
-theorem Distribution.bin_map {a b : HeyLo α} :
+theorem HeyLo.Distribution.bin_map {a b : HeyLo α} :
     (Distribution.bin a p b).map f = Distribution.bin (f a) p (f b) := by
   simp [bin, map]
 
-def Distribution.toExpr (μ : Distribution .ENNReal) : 𝔼r :=
+def HeyLo.Distribution.toExpr (μ : Distribution .ENNReal) : 𝔼r :=
   μ.values.map (fun (p, v) ↦ p * v) |>.sum
 @[grind =, simp]
-theorem Distribution.pure_toExpr {a : 𝔼r} :
+theorem HeyLo.Distribution.pure_toExpr {a : 𝔼r} :
     (Distribution.pure a).toExpr = 1 * a + 0 := by
   simp [pure, toExpr]
 @[grind =, simp]
-theorem Distribution.bin_toExpr {a b : 𝔼r} :
+theorem HeyLo.Distribution.bin_toExpr {a b : 𝔼r} :
     (Distribution.bin a p b).toExpr = (p ⊓ 1) * a + ((1 - (p ⊓ 1)) * b + 0) := by
   simp [bin, toExpr]
 
@@ -551,7 +550,7 @@ inductive HeyVL where
   | Cohavoc (x : Ident)
   /-- `covalidate` -/
   | Covalidate
-deriving Lean.ToExpr
+deriving Lean.ToExpr, DecidableEq
 
 infixr:50 " ;; " => HeyVL.Seq
 

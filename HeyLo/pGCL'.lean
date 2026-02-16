@@ -15,8 +15,7 @@ inductive pGCL' where
   | observe : 𝔼b → pGCL'
 deriving Inhabited
 
-noncomputable def pGCL'.pGCL (C : pGCL') : pGCL fun (x : Ident) ↦ x.type.lit :=
-  match C with
+noncomputable def pGCL'.pGCL : pGCL' → pGCL fun (x : Ident) ↦ x.type.lit
   | skip => .skip
   | assign x e => .assign x e.sem
   | seq C₁ C₂ => .seq C₁.pGCL C₂.pGCL

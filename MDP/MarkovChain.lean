@@ -320,6 +320,13 @@ noncomputable def embed (f : (π : M.Path) → π.succs) : M.Path' :=
     rw [← this]
     exact (f (embed.help f i)).val.property i (by simp)⟩
 
+open scoped Classical in
+noncomputable def embedInv (π' : M.Path') : (π : M.Path) → π.succs :=
+  fun π ↦ if h : π ∈ π'.pref then ⟨π'.take (‖π‖ ), by
+    simp [Path'.pref] at h
+    obtain ⟨i, ⟨_⟩⟩ := h
+    simp [Path.succs, Path'.take]⟩ else default
+
 def Path.theSet (π : M.Path) : Set ((i : ↥π.pref) → i.val.succs) :=
   {f | ∀ π', π'.val ≠ π → (f π').val ∈ π.pref}
 

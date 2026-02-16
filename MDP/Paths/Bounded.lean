@@ -33,7 +33,7 @@ variable (π : Path[M,s,=n])
 @[simp] theorem first_eq : π.val[0]'(by simp) = s := π.prop.right
 @[simp] theorem length_eq : ‖π.val‖ = n := π.prop.left
 
-@[simp] theorem iff (π) : π ∈ Path[M,s,=n] ↔ ‖π‖ = n ∧ π[0] = s := by simp [Path_eq]
+@[simp] theorem mem_iff (π) : π ∈ Path[M,s,=n] ↔ ‖π‖ = n ∧ π[0] = s := by simp [Path_eq]
 
 end
 
@@ -150,7 +150,7 @@ theorem Path_eq_follows_disjoint : Set.univ.PairwiseDisjoint (Path[M,s₀─·,=
 namespace Path_eq
 
 theorem succs_univ_disjoint : Path[M,s,=n].PairwiseDisjoint Path.succs_univ := by
-  simp [Set.PairwiseDisjoint_iff, iff, and_imp]
+  simp [Set.PairwiseDisjoint_iff, mem_iff, and_imp]
   intro x a b _ _ _ _ ha hb
   rw [←Path.mem_succs_univ_prev <| ha, ←Path.mem_succs_univ_prev <| hb]
 
