@@ -63,12 +63,13 @@ jobs:
       #       MathlibDoc-
 
       - name: Build documentation
-        run: ~/.elan/bin/lake -Kenv=dev build MDP:docs PGCL:docs HeyLo:docs
+        run: ~/.elan/bin/lake build MDP:docs PGCL:docs HeyLo:docs
+        working-directory: docbuild
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: "./.lake/build/doc"
+          path: "./docbuild/.lake/build/doc"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

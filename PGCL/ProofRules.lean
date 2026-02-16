@@ -3,7 +3,6 @@ import PGCL.WeakestLiberalPre
 import Mathlib.Data.ENNReal.Inv
 import Mathlib.Data.NNReal.Basic
 import Mathlib.Data.String.Basic
-import ENNRealArith
 import PGCL.KInduction
 
 namespace pGCL
