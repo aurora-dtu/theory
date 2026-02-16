@@ -171,15 +171,11 @@ open scoped Classical in
 theorem ς.loop :
       (𝕊 cT cP).ς O f (.loop b C (Γ:=Γ))
     = (cP' cP (.loop b C))
-      -- TODO: make this Φ
-      + ⟨fun X σ ↦ i[b σ] * f (pgcl { @C ; while @b {@C} }) X σ + i[¬b σ] * cT X (.term, σ),
-        fun a b h σ ↦ by
-          simp; gcongr
-          · apply (f _).mono h
-          · apply cT.mono h⟩
+      + ⟨fun X ↦ Ψ[f (pgcl { @C ; while @b {@C} })] b (cT X ⟨.term, ·⟩) X,
+        fun x y h ↦ by simp only [Ψ, OrderHom.coe_mk]; gcongr; intro; apply cT.mono h⟩
 := by
   ext X σ
-  simp [ς, psucc, r, Optimization.act]
+  simp [ς, psucc, r, Optimization.act, Ψ]
   congr
   if hb : b σ then
     rw [tsum_eq_single ⟨(1, conf₁[@C ; while @b { @C }, σ]), by simp [hb]⟩] <;> simp [hb]
@@ -306,9 +302,8 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (Γ:=Γ)) where
       rw [ς.loop]
       ext
       simp
-      nth_rw 2 [← wp_fp]
-      simp only [Ψ, OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-        Pi.compl_apply, compl_iff_not]
+      nth_rw 1 [← wp_fp]
+      rfl
 
 example {C : pGCL Γ} : wp[O]⟦@C⟧ = (𝕊 cost_t cost_p).op O C := by rw [← instET.et_eq_op]
 
@@ -365,9 +360,8 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp' O (Γ:=Γ)) w
       ext X σ
       simp
       nth_rw 1 [wfp']
-      simp
-      nth_rw 2 [← wfp'_fp]
-      simp [Ψ]
+      nth_rw 1 [← wfp'_fp]
+      rfl
 
 /-- info: 'pGCL.instET'' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
