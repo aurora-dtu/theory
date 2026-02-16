@@ -11,11 +11,11 @@ import MDP.SmallStepSemantics
 
 namespace pGCL
 
-variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
+variable {𝒱 : Type*} {Γ : Γ[𝒱]} [DecidableEq 𝒱]
 
 /-- Probabilistic small step operational semantics for `pGCL` -/
 @[aesop safe [constructors, cases], grind]
-inductive SmallStep : Conf₀ ϖ → Act → ENNReal → Conf₁ ϖ → Prop where
+inductive SmallStep : Conf₀ Γ → Act → ENNReal → Conf₁ Γ → Prop where
   -- | bot      : SmallStep conf₀[⊥] .N 1 conf[⊥]
   | skip     : SmallStep conf₀[skip, σ]          .N 1 conf₁[⇓, σ]
   -- | term     : SmallStep conf₀[⇓, σ]           .N 1 conf₁[⊥]
@@ -47,7 +47,7 @@ notation c " ⤳[" α "," p "] " c' => SmallStep c α p c'
 
 namespace SmallStep
 
-variable {c : Conf₀ ϖ} {c' : Conf₁ ϖ} {σ : States ϖ}
+variable {c : Conf₀ Γ} {c' : Conf₁ Γ} {σ : States Γ}
 
 @[simp] theorem p_pos (h : c ⤳[α,p] c') : 0 < p := by induction h <;> simp_all
 @[simp] theorem p_ne_zero (h : c ⤳[α,p] c') : ¬p = 0 :=
@@ -101,7 +101,7 @@ open scoped Classical in
     ↔ p = 1 ∧ α = .N ∧ c' = (if b σ then conf₁[⇓, σ] else conf₁[↯, σ])
   := by grind
 -- open scoped Classical in
-@[simp] theorem seq_iff {C₁ C₂ : pGCL ϖ} :
+@[simp] theorem seq_iff {C₁ C₂ : pGCL Γ} :
       (conf₀[@C₁ ; @C₂, σ] ⤳[α,p] c')
     ↔
           (∃ C' σ', (conf₀[@C₁, σ] ⤳[α,p] conf₁[@C', σ']) ∧ c' = conf₁[@C' ; @C₂, σ'])
@@ -111,7 +111,7 @@ open scoped Classical in
 open scoped Classical in
 @[simp] theorem loop_iff : (conf₀[while @b {@C}, σ] ⤳[α,p] c')
     ↔ p = 1 ∧ α = .N ∧ c' = if b σ then conf₁[@C ; while @b {@C}, σ] else conf₁[⇓, σ] := by grind
-def act (c : Conf₀ ϖ) : Set Act := {α | ∃ p c', c ⤳[α,p] c'}
+def act (c : Conf₀ Γ) : Set Act := {α | ∃ p c', c ⤳[α,p] c'}
 
 noncomputable instance : Decidable (α ∈ act c) := Classical.propDecidable _
 
@@ -120,7 +120,7 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
 
 
 -- @[simp]
--- theorem exists_succ_iff {C : pGCL ϖ} (h : ¬C = .skip) :
+-- theorem exists_succ_iff {C : pGCL Γ} (h : ¬C = .skip) :
 --       (∃ c', conf[@C,σ] ⤳[α,p] c')
 --     ↔ (∃ C' σ', conf[@C,σ] ⤳[α,p] conf[@C',σ']) ∨ (∃ σ', conf[@C,σ] ⤳[α,p] conf₁[↯,σ'])
 -- := by
@@ -128,7 +128,7 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
 --   · rintro (_ | ⟨σ' | σ' | C', σ'⟩) <;> (try simp_all) <;> grind
 --   · rintro ⟨C', σ', _⟩ <;> grind
 
--- @[simp] theorem act_bot : act (ϖ:=ϖ) conf[⊥] = {.N} := by simp [act]
+-- @[simp] theorem act_bot : act (Γ:=Γ) conf[⊥] = {.N} := by simp [act]
 -- @[simp] theorem act_term : act conf₁[⇓, σ] = {.N} := by simp [act]
 -- @[simp] theorem act_fault : act conf₁[↯, σ] = {.N} := by simp [act]
 @[simp] theorem act_skip : act conf₀[skip, σ] = {.N} := by simp [act]
@@ -151,15 +151,15 @@ noncomputable instance : Fintype (act c) := Fintype.ofFinite _
 @[simp] theorem act_tick : act conf₀[tick(@ r), σ] = {.N} := by simp [act]
 @[simp] theorem act_observe : act conf₀[observe(@ r), σ] = {.N} := by simp [act]
 
-instance act_nonempty (s : Conf₀ ϖ) : Nonempty (act s) := by
+instance act_nonempty (s : Conf₀ Γ) : Nonempty (act s) := by
   obtain ⟨c, σ⟩ := s; induction c <;> simp_all
 
-theorem progress (s : Conf₀ ϖ) : ∃ p a x, s ⤳[a,p] x :=
+theorem progress (s : Conf₀ Γ) : ∃ p a x, s ⤳[a,p] x :=
   have ⟨α, h⟩ := act_nonempty s
   exists_comm.mp (Exists.intro α (by exact h))
 
 @[simp]
-theorem iInf_act_const {C : Conf₀ ϖ} {x : ENNReal} : ⨅ α ∈ act C, x = x :=
+theorem iInf_act_const {C : Conf₀ Γ} {x : ENNReal} : ⨅ α ∈ act C, x = x :=
   biInf_const Set.Nonempty.of_subtype
 
 noncomputable instance : Decidable (c ⤳[α,p] c') := Classical.propDecidable _
@@ -171,9 +171,9 @@ theorem tsum_p :
   apply tsum_eq_tsum_of_ne_zero_bij (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩) <;> simp_all
   exact StrictMono.injective fun _ _ a ↦ a
 
-def succs (c : Conf₀ ϖ) (α : Act) : Set (Conf₁ ϖ) := {c' | ∃ p, c ⤳[α, p] c'}
+def succs (c : Conf₀ Γ) (α : Act) : Set (Conf₁ Γ) := {c' | ∃ p, c ⤳[α, p] c'}
 open scoped Classical in
-noncomputable def succs_fin (c : Conf₀ ϖ) (α : Act) : Finset (Conf₁ ϖ) :=
+noncomputable def succs_fin (c : Conf₀ Γ) (α : Act) : Finset (Conf₁ Γ) :=
   match c, α with
   -- | conf₀[⊥], .N => {conf[⊥]}
   -- | conf₀[⇓, _], .N => {conf[⊥]}
@@ -193,7 +193,7 @@ noncomputable def succs_fin (c : Conf₀ ϖ) (α : Act) : Finset (Conf₁ ϖ) :=
   | conf₀[@C₁ ; @C₂, σ], α => succs_fin conf₀[@C₁, σ] α |>.map ⟨C₂.after, C₂.after_inj⟩
   | _, _ => {}
 open scoped Classical in
-noncomputable def succs_univ_fin (c : Conf₀ ϖ) : Finset (Act × Conf₁ ϖ) :=
+noncomputable def succs_univ_fin (c : Conf₀ Γ) : Finset (Act × Conf₁ Γ) :=
   match c with
   -- | conf[⊥] => {⟨.N, conf[⊥]⟩}
   -- | conf₁[⇓, _] => {⟨.N, conf[⊥]⟩}
@@ -214,7 +214,7 @@ noncomputable def succs_univ_fin (c : Conf₀ ϖ) : Finset (Act × Conf₁ ϖ) :
     succs_univ_fin conf₀[@C₁, σ]
       |>.map ⟨Prod.map id C₂.after, Function.Injective.prodMap (fun _ _ a ↦ a) C₂.after_inj⟩
 open scoped Classical in
-noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × Conf₁ ϖ) :=
+noncomputable def succs_univ_fin' (c : Conf₀ Γ) : Finset (Act × ENNReal × Conf₁ Γ) :=
   match c with
   -- | conf[⊥] => {⟨.N, 1, conf[⊥]⟩}
   -- | conf₁[⇓, _] => {⟨.N, 1, conf[⊥]⟩}
@@ -237,7 +237,7 @@ noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × C
               Function.Injective.prodMap (fun _ _ a ↦ a)
                 (Function.Injective.prodMap (fun _ _ a ↦ a) C₂.after_inj)⟩
 
--- theorem succs_univ_fin_eq_succs_fin (c : Conf₀ ϖ) :
+-- theorem succs_univ_fin_eq_succs_fin (c : Conf₀ Γ) :
 --     ∀ α c', (α, c') ∈ succs_univ_fin c ↔ c' ∈ succs_fin c α := by
 --   intro α
 --   induction c, α using succs_fin.induct <;> simp_all [succs_univ_fin, succs_fin] <;> try grind
@@ -256,7 +256,7 @@ noncomputable def succs_univ_fin' (c : Conf₀ ϖ) : Finset (Act × ENNReal × C
 --     · simp_all [succs_univ_fin]
 
 set_option maxHeartbeats 500000 in
-theorem succs_univ_fin'_eq_r (c : Conf₀ ϖ) :
+theorem succs_univ_fin'_eq_r (c : Conf₀ Γ) :
     ∀ α p c', (α, p, c') ∈ succs_univ_fin' c ↔ c ⤳[α, p] c' := by
   induction c using succs_univ_fin'.induct <;> simp_all [succs_univ_fin'] <;> try grind
   · intros
@@ -322,7 +322,7 @@ theorem succs_univ_fin'_eq_r (c : Conf₀ ϖ) :
 set_option maxHeartbeats 500000 in
 open scoped Classical in
 theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
-    (∑' (c' : Conf₁ ϖ) (p : {p // c ⤳[α,p] c'}), p.val) = 1 := by
+    (∑' (c' : Conf₁ Γ) (p : {p // c ⤳[α,p] c'}), p.val) = 1 := by
   induction h₀ with
     simp_all only [↓reduceIte, assign_iff, false_and, false_or, ite_and, loop_iff, nonDet_iff,
       observe_iff, or_false, prob_iff, reduceCtorEq, seq_iff, skip_iff, tick_iff, true_and,

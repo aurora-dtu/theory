@@ -156,9 +156,9 @@ instance instLinearOrder : LinearOrder Ident :=
 
 end Ident
 
-abbrev Ty.ϖ : Ident → Type := fun (x : Ident) ↦ Ty.lit (Ident.type x)
+abbrev Ty.Γ : Ident → Type := fun (x : Ident) ↦ Ty.lit (Ident.type x)
 
-notation "𝔼'[" t "]" => 𝔼[Ty.ϖ, t]
+notation "𝔼'[" t "]" => 𝔼[Ty.Γ, t]
 
 abbrev Ty.expr (t : Ty) : Type :=
   𝔼'[t.lit]
@@ -262,7 +262,7 @@ def HeyLo.subst (X : HeyLo α) (x : Ident) (Y : HeyLo x.type) : HeyLo α :=
 instance : Substitution (HeyLo α) (fun (v : Ident) ↦ HeyLo v.type) :=
   ⟨fun X x ↦ HeyLo.subst X x.1 x.2⟩
 
--- instance : Inhabited (BExpr ϖ) where
+-- instance : Inhabited (BExpr Γ) where
 --   default := ⟨fun _ ↦ false, inferInstance⟩
 
 @[grind =, simp]
@@ -439,7 +439,7 @@ theorem Array.map_mul_sum {α β : Type*} [MonoidWithZero β] [AddMonoid β] [Le
 
 structure HeyLo.Distribution (α : Ty) where
   values : Array (𝔼r × HeyLo α)
-  prop : ∀ (σ : States Ty.ϖ), (values.map (·.fst.sem σ)).sum = 1
+  prop : ∀ (σ : States Ty.Γ), (values.map (·.fst.sem σ)).sum = 1
 deriving DecidableEq
 
 attribute [simp] Distribution.prop

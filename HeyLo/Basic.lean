@@ -858,10 +858,10 @@ theorem pGCL'.prob_vp {C₁ C₂ : pGCL'} {G : Globals} (hG : (C₁.prob p C₂)
     --   + (1 - p.sem ⊓ 1) * ((C₂.HeyVL O E G).2.vp φ).sem := by
   simp [HeyVL, HeyVL.vp, HeyVL.If]
   simp [Distribution.flip]
-  have : i[fun (σ : States Ty.ϖ) ↦ True] = 1 := by ext; simp
-  have : i[(fun (σ : States Ty.ϖ) ↦ True)ᶜ] = 0 := by ext; simp
-  have : i[fun (σ : States Ty.ϖ) ↦ False] = 0 := by ext; simp
-  have : i[(fun (σ : States Ty.ϖ) ↦ False)ᶜ] = 1 := by ext; simp
+  have : i[fun (σ : States Ty.Γ) ↦ True] = 1 := by ext; simp
+  have : i[(fun (σ : States Ty.Γ) ↦ True)ᶜ] = 0 := by ext; simp
+  have : i[fun (σ : States Ty.Γ) ↦ False] = 0 := by ext; simp
+  have : i[(fun (σ : States Ty.Γ) ↦ False)ᶜ] = 1 := by ext; simp
   simp [*]
   have :
       { name := ((C₂.HeyVL O E (C₁.HeyVL O E G).1).1.fresh Ty.Bool).2.name, type := Ty.Bool }
@@ -938,7 +938,7 @@ private lemma pGCL'.wp_le_vp_aux {C : pGCL'} {G : Globals} (hG : C.fv ∪ φ.fv 
     else
       simp [IdleInvariant] at inv
       obtain ⟨σ', h₁, h₂⟩ := inv
-      simp [Φ] at h₂
+      simp [Ψ] at h₂
       let Ξ := HeyVL.Subs.of (C.HeyVL O .wp G).2.mods.sort (by simp) σ'
       have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
         ext x
@@ -977,7 +977,7 @@ theorem pGCL'.wp_le_vp {C : pGCL'} :
 #print axioms pGCL'.wp_le_vp
 
 @[grind ., simp]
-theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {ϖ : Γ[𝒱]} {C : pGCL ϖ} {φ} : wlp''[O]⟦@C⟧ φ ≤ 1 := by
+theorem pGCL.wlp''_le_one [DecidableEq 𝒱] {Γ : Γ[𝒱]} {C : pGCL Γ} {φ} : wlp''[O]⟦@C⟧ φ ≤ 1 := by
   intro; simp [wlp'']
 
 private lemma pGCL'.vp_le_wlp''_aux.loop
@@ -996,7 +996,7 @@ private lemma pGCL'.vp_le_wlp''_aux.loop
   else
     simp [IdleCoinvariant] at inv
     obtain ⟨σ', h₁, h₂⟩ := inv
-    simp [Φ] at h₂
+    simp [Ψ] at h₂
     simp_all only [Pi.inf_apply, inf_le_iff]
     right
     simp_all only [Ty.expr, Ty.lit, hnot_eq_compl, Exp.not_subst, iInf_apply, Exp.validate_apply,

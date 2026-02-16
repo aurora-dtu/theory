@@ -71,28 +71,28 @@ namespace pGCL
 
 open scoped Optimization.Notation
 
-variable {𝒱 : Type*} {ϖ : Γ[𝒱]} [DecidableEq 𝒱]
+variable {𝒱 : Type*} {Γ : Γ[𝒱]} [DecidableEq 𝒱]
 
-noncomputable def Φ (g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]) (φ : BExpr ϖ) :
-    𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] :=
+noncomputable def Ψ (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (φ : BExpr Γ) :
+    𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] :=
   ⟨fun f ↦ ⟨fun X ↦ i[φ] * g X + i[φᶜ] * f, by intro _ _ _; simp; gcongr⟩,
     by intro _ _ _ _; simp; gcongr⟩
 
-notation "Φ[" g "]" => Φ g
+notation "Ψ[" g "]" => Ψ g
 
 -- omit [DecidableEq 𝒱] in
--- theorem Φ_eq_pick :
---     Φ[g] φ f = ⟨fun (X : 𝔼[ϖ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
+-- theorem Ψ_eq_pick :
+--     Ψ[g] φ f = ⟨fun (X : 𝔼[Γ, ENNReal]) ↦ p[φ].pick (g X) f, fun _ _ _ ↦ by simp; gcongr⟩ := by
 --   ext X σ
---   simp only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
+--   simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
 --     compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, ProbExp.pick,
 --     BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply]
 
 -- omit [DecidableEq 𝒱] in
--- theorem Φ_eq_pick_apply {X : 𝔼[ϖ, ENNReal]} : Φ[g] φ f X = p[φ].pick (g X) f := by
---   simp [Φ_eq_pick]
+-- theorem Ψ_eq_pick_apply {X : 𝔼[Γ, ENNReal]} : Ψ[g] φ f X = p[φ].pick (g X) f := by
+--   simp [Ψ_eq_pick]
 
-noncomputable def wp (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]
+noncomputable def wp (O : Optimization) : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]
   | pgcl {skip} => ⟨fun X ↦ X, fun ⦃_ _⦄ a ↦ a⟩
   | pgcl {@x := @A} => ⟨fun X ↦ X[x ↦ A], fun ⦃_ _⦄ a j ↦ by exact a _⟩
   | pgcl {@C₁; @C₂} => ⟨fun X ↦ C₁.wp O (C₂.wp O X), fun a b h ↦ (C₁.wp _).mono ((C₂.wp _).mono h)⟩
@@ -101,7 +101,7 @@ noncomputable def wp (O : Optimization) : pGCL ϖ → 𝔼[ϖ, ENNReal] →o �
      fun a b hab ↦ by simp only; gcongr⟩
   | pgcl {{@C₁}[]{@C₂}} =>
     ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
-  | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Φ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
+  | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Ψ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(@e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(@b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
 
@@ -119,17 +119,17 @@ def wpUnexpander : Lean.PrettyPrinter.Unexpander
 
 variable {O : Optimization}
 
-theorem wp_loop (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wp[O]⟦while @φ{@C'}⟧ f = lfp (Φ[wp[O]⟦@C'⟧] φ f) := rfl
+theorem wp_loop (φ  : BExpr Γ) (C' : pGCL Γ) :
+    wp[O]⟦while @φ{@C'}⟧ f = lfp (Ψ[wp[O]⟦@C'⟧] φ f) := rfl
 
-theorem wp_fp (φ : BExpr ϖ) (C' : pGCL ϖ) :
-    (Φ[wp[O]⟦@C'⟧] φ f) (wp[O]⟦while @φ{@C'}⟧ f) = wp[O]⟦while @φ{@C'}⟧ f := by simp [wp_loop]
+theorem wp_fp (φ : BExpr Γ) (C' : pGCL Γ) :
+    (Ψ[wp[O]⟦@C'⟧] φ f) (wp[O]⟦while @φ{@C'}⟧ f) = wp[O]⟦while @φ{@C'}⟧ f := by simp [wp_loop]
 
-variable {x : 𝒱} {e : 𝔼[ϖ, ENNReal]} {b : BExpr ϖ} {C₁ : pGCL ϖ}
+variable {x : 𝒱} {e : 𝔼[Γ, ENNReal]} {b : BExpr Γ} {C₁ : pGCL Γ}
 
 section
 
-variable {X : 𝔼[ϖ, ENNReal]}
+variable {X : 𝔼[Γ, ENNReal]}
 
 @[simp] theorem wp.skip_apply : wp[O]⟦skip⟧ X = X := rfl
 @[simp] theorem wp.assign_apply :
@@ -147,11 +147,11 @@ variable {X : 𝔼[ϖ, ENNReal]}
 end
 
 @[gcongr]
-theorem wp_le_wp {C : pGCL ϖ} {a b : 𝔼[ϖ, ENNReal]} (h : a ≤ b) : wp[O]⟦@C⟧ a σ ≤ wp[O]⟦@C⟧ b σ :=
+theorem wp_le_wp {C : pGCL Γ} {a b : 𝔼[Γ, ENNReal]} (h : a ≤ b) : wp[O]⟦@C⟧ a σ ≤ wp[O]⟦@C⟧ b σ :=
   (wp _ _).mono h σ
 
-noncomputable abbrev dwp : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] := wp 𝒟
-noncomputable abbrev awp : pGCL ϖ → 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal] := wp 𝒜
+noncomputable abbrev dwp : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] := wp 𝒟
+noncomputable abbrev awp : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] := wp 𝒜
 
 syntax "dwp⟦" cpgcl_prog "⟧" : term
 syntax "awp⟦" cpgcl_prog "⟧" : term
@@ -175,7 +175,7 @@ def awpUnexpander : Lean.PrettyPrinter.Unexpander
 | _ => throw ()
 
 /-- Strip all `tick`s from a program. -/
-def st : pGCL ϖ → pGCL ϖ
+def st : pGCL Γ → pGCL Γ
   | pgcl {skip} => pgcl {skip}
   | pgcl {@x := @A} => pgcl {@x := @A}
   | pgcl {@C₁ ; @C₂} => pgcl {@C₁.st ; @C₂.st}
@@ -185,35 +185,35 @@ def st : pGCL ϖ → pGCL ϖ
   | pgcl {tick(@ _)} => pgcl {skip}
   | pgcl {observe(@ b)} => pgcl {observe(@b)}
 
-def Φ.continuous {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (ih : ωScottContinuous g) :
-    ωScottContinuous ⇑(Φ[g] b X) := by
+def Ψ.continuous {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (ih : ωScottContinuous g) :
+    ωScottContinuous ⇑(Ψ[g] b X) := by
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom] at ih ⊢
   intro c
-  simp [Φ, ωSup] at ih ⊢
+  simp [Ψ, ωSup] at ih ⊢
   ext σ
   simp [ih, ENNReal.mul_iSup, ENNReal.iSup_add]
 
-def Φ.continuous' {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} : ωScottContinuous ⇑(Φ[g] b) := by
+def Ψ.continuous' {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} : ωScottContinuous ⇑(Ψ[g] b) := by
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
   intro c
   ext X σ
-  simp only [Φ, ωSup, Chain.map_coe, Pi.evalOrderHom_coe, Function.comp_apply, Function.eval,
+  simp only [Ψ, ωSup, Chain.map_coe, Pi.evalOrderHom_coe, Function.comp_apply, Function.eval,
     coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply, compl_iff_not,
     ENNReal.mul_iSup, ENNReal.add_iSup, OrderHom.ωSup, apply_coe]
 omit [DecidableEq 𝒱] in
-theorem Φ_iSup {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (f : ℕ → 𝔼[ϖ, ENNReal]) :
-    Φ[g] b (⨆ i, f i) = ⨆ i, Φ[g] b (f i) := by
+theorem Ψ_iSup {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (f : ℕ → 𝔼[Γ, ENNReal]) :
+    Ψ[g] b (⨆ i, f i) = ⨆ i, Ψ[g] b (f i) := by
   ext X σ
-  simp [Φ, ENNReal.mul_iSup, ENNReal.add_iSup]
+  simp [Ψ, ENNReal.mul_iSup, ENNReal.add_iSup]
 omit [DecidableEq 𝒱] in
-theorem Φ_iSup' {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (f : ℕ → 𝔼[ϖ, ENNReal]) :
-    Φ[g] b (fun a ↦ ⨆ i, f i a) = ⨆ i, Φ[g] b (f i) := by
+theorem Ψ_iSup' {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (f : ℕ → 𝔼[Γ, ENNReal]) :
+    Ψ[g] b (fun a ↦ ⨆ i, f i a) = ⨆ i, Ψ[g] b (f i) := by
   ext X σ
-  simp [Φ, ENNReal.mul_iSup, ENNReal.add_iSup]
+  simp [Ψ, ENNReal.mul_iSup, ENNReal.add_iSup]
 
 omit [DecidableEq 𝒱] in
-theorem ωScottContinuous_dual_iff {f : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} :
-      ωScottContinuous f.dual ↔ (∀ (c : Chain (𝔼[ϖ, ENNReal])ᵒᵈ), f (⨅ i, c i) = ⨅ i, f (c i)) := by
+theorem ωScottContinuous_dual_iff {f : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} :
+      ωScottContinuous f.dual ↔ (∀ (c : Chain (𝔼[Γ, ENNReal])ᵒᵈ), f (⨅ i, c i) = ⨅ i, f (c i)) := by
   simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]; rfl
 
 omit [DecidableEq 𝒱] in
@@ -224,18 +224,18 @@ theorem ωScottContinuous_dual_iff' {α ι : Type*} [CompleteLattice α] {f : (�
   · intro h c hc; exact h ⟨c, hc⟩
   · intro h c; exact h c c.mono
 
-def Φ.cocontinuous {g : 𝔼[ϖ, ENNReal] →o 𝔼[ϖ, ENNReal]} (ih : ωScottContinuous g.dual) :
-    ωScottContinuous (Φ[g] b X).dual := by
+def Ψ.cocontinuous {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (ih : ωScottContinuous g.dual) :
+    ωScottContinuous (Ψ[g] b X).dual := by
   simp [ωScottContinuous_dual_iff] at ih ⊢
   intro c
-  simp [Φ] at ih ⊢
+  simp [Ψ] at ih ⊢
   ext σ
   simp only [ih, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, _root_.iInf_apply,
     ENNReal.natCast_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf, Pi.compl_apply, compl_iff_not,
     ENNReal.iInf_add]
 
 @[simp]
-def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
+def wp.continuous (C : pGCL Γ) : ωScottContinuous (C.wp O) := by
   induction C with
   | skip => exact ωScottContinuous_iff_map_ωSup_of_orderHom.mpr (congrFun rfl)
   | assign => exact ωScottContinuous_iff_map_ωSup_of_orderHom.mpr (congrFun rfl)
@@ -251,20 +251,20 @@ def wp.continuous (C : pGCL ϖ) : ωScottContinuous (C.wp O) := by
     apply iSup_iSup_eq_iSup
     · intro _ _ _ _; simp; gcongr
     · intro _ _ _ _; simp; gcongr
-  | loop b C' ih => apply OrderHom.lfp_ωScottContinuous Φ.continuous' (fun _ ↦ Φ.continuous ih)
+  | loop b C' ih => apply OrderHom.lfp_ωScottContinuous Ψ.continuous' (fun _ ↦ Ψ.continuous ih)
   | tick => simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, funext_iff, ENNReal.add_iSup]
   | observe => simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, funext_iff, ENNReal.mul_iSup]
 
 @[simp]
-def Φ.wp_continuous {C' : pGCL ϖ} : ωScottContinuous ⇑(Φ[wp[O]⟦@C'⟧] b X) :=
+def Ψ.wp_continuous {C' : pGCL Γ} : ωScottContinuous ⇑(Ψ[wp[O]⟦@C'⟧] b X) :=
   continuous (wp.continuous C')
 
-theorem wp_loop_eq_iter (φ  : BExpr ϖ) (C' : pGCL ϖ) :
-    wp[O]⟦while @φ{@C'}⟧ f = ⨆ n, (Φ[wp[O]⟦@C'⟧] φ f)^[n] 0 := by
-  rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Φ.wp_continuous]
+theorem wp_loop_eq_iter (φ  : BExpr Γ) (C' : pGCL Γ) :
+    wp[O]⟦while @φ{@C'}⟧ f = ⨆ n, (Ψ[wp[O]⟦@C'⟧] φ f)^[n] 0 := by
+  rw [wp_loop, fixedPoints.lfp_eq_sSup_iterate _ Ψ.wp_continuous]
   rfl
 
-theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]⟦@C.st⟧ X ≤ 1 := by
+theorem wp_le_one (C : pGCL Γ) (X : 𝔼[Γ, ENNReal]) (hX : X ≤ 1) : wp[O]⟦@C.st⟧ X ≤ 1 := by
   induction C generalizing X with
   | skip => simp [st, hX]
   | assign => simp [st]; intro σ; apply hX
@@ -286,7 +286,7 @@ theorem wp_le_one (C : pGCL ϖ) (X : 𝔼[ϖ, ENNReal]) (hX : X ≤ 1) : wp[O]�
     simp [st]
     apply lfp_le
     intro σ
-    simp_all only [Φ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
+    simp_all only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
       compl_iff_not, Pi.one_apply]
     if b σ then
       simp_all

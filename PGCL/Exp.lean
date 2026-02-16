@@ -115,31 +115,31 @@ end Pi
 
 namespace pGCL
 
-notation "Γ[" ϖ "]" => ϖ → Type*
+notation "Γ[" Γ "]" => Γ → Type*
 def States {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
 
-variable {𝒱 : Type*} {ϖ : Γ[𝒱]}
+variable {𝒱 : Type*} {Γ : Γ[𝒱]}
 
-notation "𝔼[" ϖ "," α "]" => States ϖ → α
+notation "𝔼[" Γ "," α "]" => States Γ → α
 
-instance States.instSubstitution [DecidableEq 𝒱] : Substitution (States ϖ) ϖ where
-  subst σ := fun ⟨v, t⟩ α ↦ if h : v = α then cast (congrArg ϖ h) t else σ α
+instance States.instSubstitution [DecidableEq 𝒱] : Substitution (States Γ) Γ where
+  subst σ := fun ⟨v, t⟩ α ↦ if h : v = α then cast (congrArg Γ h) t else σ α
 
-@[ext] theorem States.ext {σ₁ σ₂ : States ϖ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
+@[ext] theorem States.ext {σ₁ σ₂ : States Γ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
 
-@[grind =, simp] theorem States.subst_apply [DecidableEq 𝒱] {σ : States ϖ} :
-    σ[x ↦ v] y = if h : x = y then cast (congrArg ϖ h) v else σ y := rfl
+@[grind =, simp] theorem States.subst_apply [DecidableEq 𝒱] {σ : States Γ} :
+    σ[x ↦ v] y = if h : x = y then cast (congrArg Γ h) v else σ y := rfl
 
 namespace Exp
 
-variable {a b : 𝔼[ϖ, α]}
+variable {a b : 𝔼[Γ, α]}
 
 instance {ι : Type*} [Add α] [LE α] [AddLeftMono α] : AddLeftMono (ι → α) := ⟨fun a b c h σ ↦ by
   simp only [Pi.add_apply]; gcongr; apply h⟩
 instance {ι : Type*} [Add α] [LE α] [AddRightMono α] : AddRightMono (ι → α) := ⟨fun a b c h σ ↦ by
   simp only [Pi.add_apply, Function.swap]; gcongr; apply h⟩
 
-variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[ϖ, α]}
+variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[Γ, α]}
 
 @[simp] theorem add_subst [Add α] :
     (a + b)[..xs] = a[..xs] + b[..xs] := Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
@@ -160,81 +160,81 @@ variable [DecidableEq 𝒱] {v : 𝒱} {e : 𝔼[ϖ, α]}
 
 omit [DecidableEq 𝒱]
 
-@[grind =, simp] theorem validate_apply [HNot α] {φ : 𝔼[ϖ, α]} :
+@[grind =, simp] theorem validate_apply [HNot α] {φ : 𝔼[Γ, α]} :
     (▵ φ) σ = ▵ φ σ := rfl
-@[grind =, simp] theorem covalidate_apply [Compl α] {φ : 𝔼[ϖ, α]} :
+@[grind =, simp] theorem covalidate_apply [Compl α] {φ : 𝔼[Γ, α]} :
     (▿ φ) σ = ▿ φ σ := rfl
 
 @[grind =, simp]
-theorem subst_apply [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (A : 𝔼[ϖ, ϖ x]) :
+theorem subst_apply [DecidableEq 𝒱] (e : 𝔼[Γ, α]) (x : 𝒱) (A : 𝔼[Γ, Γ x]) :
     e[x ↦ A] σ = e (σ[x ↦ A σ]) := rfl
 @[grind =, simp]
-theorem subst₂_apply [DecidableEq 𝒱] (e : 𝔼[ϖ, α]) (x : 𝒱) (A : 𝔼[ϖ, ϖ x]) :
+theorem subst₂_apply [DecidableEq 𝒱] (e : 𝔼[Γ, α]) (x : 𝒱) (A : 𝔼[Γ, Γ x]) :
     e[x ↦ A, y ↦ B] σ = e (σ[y ↦ B σ[x ↦ A σ], x ↦ A σ]) := by
   simp_all [Substitution.substs_cons, Substitution.subst]
 
 @[gcongr]
-theorem add_le_add [Add α] [Preorder α] [AddLeftMono α] [AddRightMono α] (a b c d : 𝔼[ϖ, α])
+theorem add_le_add [Add α] [Preorder α] [AddLeftMono α] [AddRightMono α] (a b c d : 𝔼[Γ, α])
     (hac : a ≤ c) (hbd : b ≤ d) : a + b ≤ c + d := by
   intro; simp; gcongr <;> apply_assumption
 @[gcongr]
-theorem mul_le_mul [Mul α] [Preorder α] [MulLeftMono α] [MulRightMono α] (a b c d : 𝔼[ϖ, α])
+theorem mul_le_mul [Mul α] [Preorder α] [MulLeftMono α] [MulRightMono α] (a b c d : 𝔼[Γ, α])
     (hac : a ≤ c) (hbd : b ≤ d) : a * b ≤ c * d := by
   intro; simp; gcongr <;> apply_assumption
 
 end Exp
 
-abbrev BExpr (ϖ : Γ[𝒱]) := 𝔼[ϖ, Prop]
+abbrev BExpr (Γ : Γ[𝒱]) := 𝔼[Γ, Prop]
 
 namespace BExpr
 
-noncomputable def forall_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr ϖ) : BExpr ϖ :=
-  fun σ ↦ ∀ (v : ϖ x), b σ[x ↦ v]
-noncomputable def exists_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr ϖ) : BExpr ϖ :=
-  fun σ ↦ ∃ (v : ϖ x), b σ[x ↦ v]
+noncomputable def forall_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr Γ) : BExpr Γ :=
+  fun σ ↦ ∀ (v : Γ x), b σ[x ↦ v]
+noncomputable def exists_ [DecidableEq 𝒱] (x : 𝒱) (b : BExpr Γ) : BExpr Γ :=
+  fun σ ↦ ∃ (v : Γ x), b σ[x ↦ v]
 
 instance : HNot (BExpr α) where hnot := compl
 
-variable {b : BExpr ϖ}
+variable {b : BExpr Γ}
 
-@[coe] def coe_prop : Prop → BExpr ϖ := fun b ↦ fun _ ↦ b
-instance : Coe Prop 𝔼[ϖ, Prop] := ⟨coe_prop⟩
-@[grind =, simp] theorem coe_prop_apply {b} : coe_prop (ϖ:=ϖ) b σ = b := by rfl
+@[coe] def coe_prop : Prop → BExpr Γ := fun b ↦ fun _ ↦ b
+instance : Coe Prop 𝔼[Γ, Prop] := ⟨coe_prop⟩
+@[grind =, simp] theorem coe_prop_apply {b} : coe_prop (Γ:=Γ) b σ = b := by rfl
 
-@[simp] theorem iver_mul_le_apply {X : 𝔼[ϖ, ENNReal]} : i[b σ] * X σ ≤ X σ := by calc
+@[simp] theorem iver_mul_le_apply {X : 𝔼[Γ, ENNReal]} : i[b σ] * X σ ≤ X σ := by calc
   _ ≤ 1 * X σ := by gcongr; simp
   _ = _ := by simp
 @[grind ., simp] theorem iver_mul_le : i[b] * X ≤ X := by intro; simp
-@[simp] theorem mul_iver_le_apply {X : 𝔼[ϖ, ENNReal]} : X σ * i[b σ] ≤ X σ := by calc
+@[simp] theorem mul_iver_le_apply {X : 𝔼[Γ, ENNReal]} : X σ * i[b σ] ≤ X σ := by calc
   _ ≤ X σ * 1 := by gcongr; simp
   _ = _ := by simp
 @[grind ., simp] theorem mul_iver_le : X * i[b] ≤ X := by intro; simp
 
 variable [PartialOrder α]
 
-noncomputable def lt (l r : 𝔼[ϖ, α]) : BExpr ϖ :=
+noncomputable def lt (l r : 𝔼[Γ, α]) : BExpr Γ :=
   fun σ ↦ l σ < r σ
-noncomputable def le (l r : 𝔼[ϖ, α]) : BExpr ϖ :=
+noncomputable def le (l r : 𝔼[Γ, α]) : BExpr Γ :=
   fun σ ↦ l σ ≤ r σ
-noncomputable def eq (l r : 𝔼[ϖ, α]) : BExpr ϖ :=
+noncomputable def eq (l r : 𝔼[Γ, α]) : BExpr Γ :=
   fun σ ↦ l σ = r σ
-def and (l r : BExpr ϖ) : BExpr ϖ := fun σ ↦ l σ ∧ r σ
-def or (l r : BExpr ϖ) : BExpr ϖ := fun σ ↦ l σ ∨ r σ
-noncomputable def ite (b l r : BExpr ϖ) : BExpr ϖ :=
+def and (l r : BExpr Γ) : BExpr Γ := fun σ ↦ l σ ∧ r σ
+def or (l r : BExpr Γ) : BExpr Γ := fun σ ↦ l σ ∨ r σ
+noncomputable def ite (b l r : BExpr Γ) : BExpr Γ :=
   letI := Classical.decPred b
   fun σ ↦ if (b σ) then l σ else r σ
 
-@[grind =, simp] theorem lt_apply {l r : 𝔼[ϖ, α]} : lt l r σ ↔ l σ < r σ := by rfl
-@[grind =, simp] theorem le_apply {l r : 𝔼[ϖ, α]} : le l r σ ↔ l σ ≤ r σ := by rfl
+@[grind =, simp] theorem lt_apply {l r : 𝔼[Γ, α]} : lt l r σ ↔ l σ < r σ := by rfl
+@[grind =, simp] theorem le_apply {l r : 𝔼[Γ, α]} : le l r σ ↔ l σ ≤ r σ := by rfl
 omit [PartialOrder α] in
-@[grind =, simp] theorem eq_apply {l r : 𝔼[ϖ, α]} : eq l r σ ↔ l σ = r σ := by rfl
-@[grind =, simp] theorem and_apply {l r : BExpr ϖ} : and l r σ ↔ l σ ∧ r σ := by rfl
-@[grind =, simp] theorem or_apply {l r : BExpr ϖ} : or l r σ ↔ l σ ∨ r σ := by rfl
+@[grind =, simp] theorem eq_apply {l r : 𝔼[Γ, α]} : eq l r σ ↔ l σ = r σ := by rfl
+@[grind =, simp] theorem and_apply {l r : BExpr Γ} : and l r σ ↔ l σ ∧ r σ := by rfl
+@[grind =, simp] theorem or_apply {l r : BExpr Γ} : or l r σ ↔ l σ ∨ r σ := by rfl
 open scoped Classical in
-@[grind =, simp] theorem ite_apply (b l r : BExpr ϖ) : ite b l r σ = if b σ then l σ else r σ := rfl
+@[grind =, simp] theorem ite_apply (b l r : BExpr Γ) : ite b l r σ = if b σ then l σ else r σ := rfl
 
 omit [PartialOrder α] in
-@[simp] theorem eq_subst [DecidableEq 𝒱] {a b : 𝔼[ϖ, α]} :
+@[simp] theorem eq_subst [DecidableEq 𝒱] {a b : 𝔼[Γ, α]} :
     (BExpr.eq a b)[..xs] = BExpr.eq a[..xs] b[..xs] :=
   Substitution.substs_of_binary fun _ _ ↦ congrFun rfl
 
@@ -248,15 +248,15 @@ namespace OrderHom
 
 variable {α β : Type*} [Preorder α] [Preorder β] [Add β] [AddLeftMono β] [AddRightMono β]
 
-instance : AddLeftMono (States ϖ → ENNReal) where
+instance : AddLeftMono (States Γ → ENNReal) where
   elim a _ _ hbc := fun σ ↦ add_le_add_right (hbc σ) (a σ)
-instance : AddRightMono (States ϖ → ENNReal) where
+instance : AddRightMono (States Γ → ENNReal) where
   elim a _ _ hbc := fun σ ↦ add_le_add_left (hbc σ) (a σ)
 
 instance instAdd : Add (α →o β) where
   add a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
 @[simp] theorem add_apply (f g : α →o β) : (f + g) x = f x + g x := by rfl
-@[simp] theorem add_apply2' (f g : α →o States ϖ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
+@[simp] theorem add_apply2' (f g : α →o States Γ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
 
 instance [OfNat β n] : OfNat (α →o β) n := ⟨fun _ ↦ OfNat.ofNat n, by intro; simp⟩
 omit [Add β] [AddLeftMono β] [AddRightMono β] in

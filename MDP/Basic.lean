@@ -14,7 +14,7 @@ actions, equipped with a probability function.
 * `MDP.act`: enabled actions of a state.
 * `MDP.succs`, `MDP.succs_univ`: successors of states.
 * `MDP.prev`, `MDP.prev_univ`: predecessors of states.
-* `MDP.FiniteBranching`: class of MDP's where both `MDP.succs` and `MDP.act` are finite.
+* `MDP.FiniteBranching`: MDP's where both `MDP.succs` and `MDP.act` are finite.
 
 -/
 

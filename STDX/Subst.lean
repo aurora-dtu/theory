@@ -74,12 +74,12 @@ theorem indep_pair {m : α} {x : ι}
 
 namespace Example
 
-structure Context (ϖ : Type*) where
-  types : ϖ → Type*
+structure Context (𝒱 : Type*) where
+  types : 𝒱 → Type*
 
-abbrev Context.Mem (Γ : Context ϖ) := (v : ϖ) → Γ.types v
+abbrev Context.Mem (Γ : Context 𝒱) := (v : 𝒱) → Γ.types v
 
-variable {ϖ α : Type*} {Γ : Context ϖ} [DecidableEq ϖ]
+variable {𝒱 α : Type*} {Γ : Context 𝒱} [DecidableEq 𝒱]
 
 instance : Substitution Γ.Mem Γ.types where
   subst σ := Sigma.uncurry fun x e y ↦ if h : x = y then (h ▸ e) else σ y

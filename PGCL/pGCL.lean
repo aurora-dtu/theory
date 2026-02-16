@@ -3,22 +3,22 @@ import PGCL.ProbExp
 
 open pGCL
 
-variable {𝒱 : Type*} {ϖ : Γ[𝒱]}
+variable {𝒱 : Type*} {Γ : Γ[𝒱]}
 
-inductive pGCL (ϖ : Γ[𝒱]) where
-  | skip : pGCL ϖ
-  | assign : (v : 𝒱) → 𝔼[ϖ, ϖ v] → pGCL ϖ
-  | seq : pGCL ϖ → pGCL ϖ → pGCL ϖ
-  | prob : pGCL ϖ → ProbExp ϖ → pGCL ϖ → pGCL ϖ
-  | nonDet : pGCL ϖ → pGCL ϖ → pGCL ϖ
-  | loop : 𝔼[ϖ, Prop] → pGCL ϖ → pGCL ϖ
-  | tick : 𝔼[ϖ, ENNReal] → pGCL ϖ
-  | observe : 𝔼[ϖ, Prop] → pGCL ϖ
+inductive pGCL (Γ : Γ[𝒱]) where
+  | skip : pGCL Γ
+  | assign : (v : 𝒱) → 𝔼[Γ, Γ v] → pGCL Γ
+  | seq : pGCL Γ → pGCL Γ → pGCL Γ
+  | prob : pGCL Γ → ProbExp Γ → pGCL Γ → pGCL Γ
+  | nonDet : pGCL Γ → pGCL Γ → pGCL Γ
+  | loop : 𝔼[Γ, Prop] → pGCL Γ → pGCL Γ
+  | tick : 𝔼[Γ, ENNReal] → pGCL Γ
+  | observe : 𝔼[Γ, Prop] → pGCL Γ
 deriving Inhabited
 
-noncomputable def pGCL.ite (b : BExpr ϖ) (C₁ C₂ : pGCL ϖ) : pGCL ϖ := .prob C₁ p[b] C₂
+noncomputable def pGCL.ite (b : BExpr Γ) (C₁ C₂ : pGCL Γ) : pGCL Γ := .prob C₁ p[b] C₂
 
-noncomputable instance pGCL.decidableEq [DecidableEq 𝒱] : DecidableEq (pGCL ϖ)
+noncomputable instance pGCL.decidableEq [DecidableEq 𝒱] : DecidableEq (pGCL Γ)
   | a, b => by exact Classical.propDecidable (a = b)
 
 namespace pGCL
@@ -83,7 +83,7 @@ syntax "tick(" cpgcl_aexp ")"  : cpgcl_prog
 syntax "observe(" cpgcl_bexp ")" : cpgcl_prog
 syntax "if " cpgcl_bexp " then " cpgcl_prog " else " cpgcl_prog " end" : cpgcl_prog
 
-def Exp.const (c : 𝒱) : 𝔼[ϖ, ϖ c] := (· c)
+def Exp.const (c : 𝒱) : 𝔼[Γ, Γ c] := (· c)
 
 macro_rules
 -- vars
