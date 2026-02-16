@@ -31,7 +31,7 @@ theorem pGCL.iSup_iSup_EC_eq_wfp [DecidableEq 𝒱] :
   rw [SmallStepSemantics.op]
   simp only [OrderHom.coe_mk]
   classical
-  rw [← MDP.iSup_iSup_EC_eq_lfp_aΦ, iSup_comm]
+  rw [← MDP.iSup_iSup_EC_eq_lfp_Φ𝒜, iSup_comm]
   simp only [iSup_apply]
 
 theorem pGCL.iInf_iSup_EC_eq_wfp [DecidableEq 𝒱] :

@@ -30,7 +30,7 @@ theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
     · obtain ⟨s', _⟩ := s'
       exact (EC_le <| by simp_all; rintro _ _ ⟨_⟩ _; simp_all).trans <| EC_monotone (by omega)
 
-theorem iSup_iSup_EC_eq_lfp_aΦ [DecidableEq State] :
+theorem iSup_iSup_EC_eq_lfp_Φ𝒜 [DecidableEq State] :
     ⨆ n, ⨆ 𝒮, EC c 𝒮 n = lfp (M.Φ 𝒜 c) := by
   apply le_antisymm
   · refine le_lfp _ fun b h ↦ iSup₂_le fun n 𝒮 ↦ ?_
