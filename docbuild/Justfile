@@ -1,3 +1,3 @@
 docs:
-    MATHLIB_NO_CACHE_ON_UPDATE=1 lake update MDP PGCL HeyLo
-    MATHLIB_NO_CACHE_ON_UPDATE=1 lake build MDP:docs PGCL:docs HeyLo:docs
+    MATHLIB_NO_CACHE_ON_UPDATE=1 lake update MDP PGCL HeyVL
+    MATHLIB_NO_CACHE_ON_UPDATE=1 lake build MDP:docs PGCL:docs HeyVL:docs

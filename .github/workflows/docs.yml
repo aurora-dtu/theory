@@ -38,7 +38,7 @@ jobs:
         run: ~/.elan/bin/lake -Kenv=dev exe cache get || true
 
       - name: Build project
-        run: ~/.elan/bin/lake -Kenv=dev build MDP PGCL HeyLo
+        run: ~/.elan/bin/lake -Kenv=dev build MDP PGCL HeyVL
 
       # TODO: it seems like the mathlib items are not added to the index of the generated docs,
       # perhaps due to caching, so we disable it for the moment
@@ -63,7 +63,7 @@ jobs:
       #       MathlibDoc-
 
       - name: Build documentation
-        run: ~/.elan/bin/lake build MDP:docs PGCL:docs HeyLo:docs
+        run: ~/.elan/bin/lake build MDP:docs PGCL:docs HeyVL:docs
         working-directory: docbuild
 
       - name: Upload artifact
