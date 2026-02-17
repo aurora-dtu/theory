@@ -1,81 +1,8 @@
-import HeyLo.Basic
-import HeyLo.Syntax
+import HeyLo.Encoding
 import Mathlib.Tactic.Eval
 
 open Optimization.Notation
 open HeyLo
-
-def HeyLo.opt : HeyLo α → HeyLo α
-  | .Var x t => .Var x t
-  | .Lit .Infinity => .Lit .Infinity
-  | .Lit (.Frac q) => .Lit (.Frac q)
-  | .Lit (.UInt h n) => .Lit (.UInt h n)
-  | .Lit (.Bool b) => .Lit (.Bool b)
-  | .Subst a b c => .Subst a b.opt c.opt
-  | .Ite b l r => .Ite b l.opt r.opt
-  | .Binary .CoImpl l r => .Binary .CoImpl l.opt r.opt
-  | .Binary .Impl l r => .Binary .Impl l.opt r.opt
-  | .Binary .Sup l r => .Binary .Sup l.opt r.opt
-  | .Binary .Inf l r => .Binary .Inf l.opt r.opt
-  | .Binary .Mod l r => .Binary .Mod l.opt r.opt
-  | .Binary (.Div h) l r => .Binary (.Div h) l.opt r.opt
-  | .Binary (.Mul h) l r => .Binary (.Mul h) l.opt r.opt
-  | .Binary (.Sub h) l r => .Binary (.Sub h) l.opt r.opt
-  | .Binary (.Add h) l r => .Binary (.Add h) l.opt r.opt
-  | .Binary (.Gt h) l r => .Binary (.Gt h) l.opt r.opt
-  | .Binary (.Ge h) l r => .Binary (.Ge h) l.opt r.opt
-  | .Binary (.Ne h) l r => .Binary (.Ne h) l.opt r.opt
-  | .Binary (.Le h) l r => .Binary (.Le h) l.opt r.opt
-  | .Binary (.Lt h) l r => .Binary (.Lt h) l.opt r.opt
-  | .Binary .Eq l r => .Binary .Eq l.opt r.opt
-  | .Binary .Or l r => .Binary .Or l.opt r.opt
-  | .Binary .And l r => .Binary .And l.opt r.opt
-  | .Unary (@UnOp.Not .ENNReal) x => .Unary (@UnOp.Not .ENNReal) x.opt
-  | .Unary (@UnOp.Not .Nat) x => .Unary (@UnOp.Not .Nat) x.opt
-  | .Unary (@UnOp.Not .Bool) x => .Unary (@UnOp.Not .Bool) x.opt
-  | .Unary .Non x => .Unary .Non x.opt
-  | .Unary .Iverson x => .Unary .Iverson x.opt
-  | .Unary .Embed x => .Unary .Embed x.opt
-  | .Unary .NatToENNReal x => .Unary .NatToENNReal x.opt
-  | .Call op x => .Call op x
-  | .Quant .Sup x e => .Quant .Sup x e.opt
-  | .Quant .Inf x e => .Quant .Inf x e.opt
-  | .Quant .Exists x e => .Quant .Exists x e.opt
-  | .Quant .Forall x e => .Quant .Forall x e.opt
-
-@[grind =, simp]
-theorem ENNReal.himp_zero_le (x y : ENNReal) : x ⇨ 0 ≤ y ↔ (x = 0 → y = ⊤) := by
-  simp only [himp]; grind [zero_le, nonpos_iff_eq_zero]
-@[grind =, simp]
-theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := by
-  suffices x ⇨ 0 ≤ 0 ↔ (¬x = 0) by simpa
-  simp only [himp_zero_le, zero_ne_top, imp_false]
-@[grind =, simp]
-theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
-  simp only [sdiff]; constructor <;> grind [sdiff, zero_le]
-
-@[simp]
-theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
-    (i[x = 0] : ENNReal) * (⊤ : ENNReal) ⇨ y ≤ z ↔ x = 0 ∧ y ≤ z := by
-  simp [himp]
-  if x = 0 then
-    simp_all only [Iverson.iver_True]
-    grind
-  else
-    simp_all only [Iverson.iver_False, CharP.cast_eq_zero, zero_mul]
-    grind [zero_le]
-
-@[grind =, simp]
-theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [sdiff]
-@[grind =, simp]
-theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < y → x < z) := by
-  simp_all [himp]
-  split_ifs
-  · simp_all
-  · simp_all
-@[grind =, simp]
-theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
-  simp_all [himp]
 
 structure Conditions (E : Encoding) where
   original : spGCL
@@ -160,9 +87,9 @@ theorem ENNReal.two_inv_mul_two : (2 : ENNReal)⁻¹ * 2 = 1 := by
 theorem ENNReal.two_mul_two_inv : (2 : ENNReal) * 2⁻¹ = 1 := by
   rw [mul_comm]; apply ENNReal.inv_mul_cancel <;> simp
 @[grind =, simp]
-theorem ENNReal.two (q : ENNReal) : 2⁻¹ * q * 2 = q := by
+theorem ENNReal.two_inv_mul_two_id (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
-  simp [*]
+  simp
 
 abbrev y : Ident := ⟨"y", .Nat⟩
 abbrev c : Ident := ⟨"c", .Nat⟩

@@ -31,6 +31,41 @@ instance {α : Type*} [Compl α] : Covalidate α := ⟨fun x ↦ xᶜᶜ⟩
 
 noncomputable instance {α β : Type*} [SDiff β] : SDiff (α → β) := inferInstance
 
+theorem ENNReal.covalidate_sdiff {a b : ENNReal} : ▿ (a \ b) = if a ≤ b then 0 else ⊤ := by
+  simp [covalidate, compl, sdiff]
+  split_ifs <;> grind [zero_ne_top, _root_.not_lt_zero]
+
+theorem ENNReal.le_covalidate_sdiff {a b : ENNReal} : x ≤ ▿ (a \ b) ↔ a ≤ b → x = 0 := by
+  simp [ENNReal.covalidate_sdiff]
+  split_ifs <;> simp_all
+theorem ENNReal.le_covalidate_sdiff_of_lt {a b : ENNReal} (h : b < a) : x ≤ ▿ (a \ b) := by
+  simp [ENNReal.le_covalidate_sdiff, h]
+theorem ENNReal.validate_himp_le_of_lt {a b : ENNReal} (h : b < a) : ▵ (a ⇨ b) ≤ x := by
+  simp [validate, hnot, h]
+
+@[grind =, simp]
+theorem ENNReal.himp_zero_le (x y : ENNReal) : x ⇨ 0 ≤ y ↔ (x = 0 → y = ⊤) := by
+  simp only [himp]; grind [zero_le, nonpos_iff_eq_zero]
+@[grind =, simp]
+theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := by
+  suffices x ⇨ 0 ≤ 0 ↔ (¬x = 0) by simpa
+  simp only [himp_zero_le, zero_ne_top, imp_false]
+@[grind =, simp]
+theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
+  simp only [sdiff]; constructor <;> grind [sdiff, zero_le]
+
+@[grind =, simp]
+theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [sdiff]
+@[grind =, simp]
+theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < y → x < z) := by
+  simp_all [himp]
+  split_ifs
+  · simp_all
+  · simp_all
+@[grind =, simp]
+theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
+  simp_all [himp]
+
 noncomputable instance : SDiff ENNReal := inferInstance
 example {φ ψ : ENNReal} : φ ⇨ ψ = if φ ≤ ψ then ⊤ else ψ := by simp [himp]
 example {φ ψ : ENNReal} : φ ↜ ψ = (if ψ ≤ φ then 0 else ψ) := by simp [sdiff]
@@ -108,7 +143,27 @@ instance instLawfulIversonBool {α : Type*} : LawfulIverson (α → Bool) (α �
     (f : α → Bool) (x : ι) (y : α → γ x) : i[f][x ↦ y] = i[f[x ↦ y]] := by
   rfl
 
+variable {α : Type*}
+@[simp] theorem iver_True : i[fun (_ : α) ↦ True] = 1 := by ext; simp
+@[simp] theorem iver_True_compl : i[(fun (_ : α) ↦ True)ᶜ] = 0 := by ext; simp
+@[simp] theorem iver_False : i[fun (_ : α) ↦ False] = 0 := by ext; simp
+@[simp] theorem iver_False_compl : i[(fun (_ : α) ↦ False)ᶜ] = 1 := by ext; simp
+
+@[grind =_, simp] theorem iver_bool_eq_true {b : Bool} : i[b = true] = i[b] := by simp [iver]
+@[simp] theorem iver_bool_eq_false {b : Bool} : i[b = false] = i[¬b] := by simp [iver]
+
 end Pi
+
+@[simp]
+theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
+    (i[x = 0] : ENNReal) * (⊤ : ENNReal) ⇨ y ≤ z ↔ x = 0 ∧ y ≤ z := by
+  simp [himp]
+  if x = 0 then
+    simp_all only [Iverson.iver_True]
+    grind
+  else
+    simp_all only [Iverson.iver_False]
+    grind [zero_le]
 
 
 /-! # Expressions & States -/
