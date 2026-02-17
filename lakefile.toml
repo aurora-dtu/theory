@@ -37,3 +37,6 @@ name = "STDX"
 
 [[lean_lib]]
 name = "HeyVL"
+
+[[lean_lib]]
+name = "Paper"

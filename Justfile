@@ -1,5 +1,5 @@
 docs:
-    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs MDP:docs HeyVL:docs
+    DOCGEN_SRC="vscode" lake -R -Kenv=dev build PGCL:docs MDP:docs HeyVL:docs Paper:docs
 
 watch-docs:
     watchexec -e lean just docs

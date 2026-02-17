@@ -305,7 +305,7 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (Γ:=Γ)) where
       nth_rw 1 [← wp_fp]
       rfl
 
-example {C : pGCL Γ} : wp[O]⟦@C⟧ = (𝕊 cost_t cost_p).op O C := by rw [← instET.et_eq_op]
+theorem wp_eq_op {C : pGCL Γ} : wp[O]⟦@C⟧ = (𝕊 cost_t cost_p).op O C := by rw [← instET.et_eq_op]
 
 /-- info: 'pGCL.instET' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
@@ -367,6 +367,6 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp O (Γ:=Γ)) wh
 #guard_msgs in
 #print axioms instET'
 
-example {C : pGCL Γ} : wfp[O]⟦@C⟧ = (𝕊 cost_t' cost_p').op O C := by rw [instET'.et_eq_op]
+theorem wfp_eq_op {C : pGCL Γ} : wfp[O]⟦@C⟧ = (𝕊 cost_t' cost_p').op O C := by rw [instET'.et_eq_op]
 
 end pGCL

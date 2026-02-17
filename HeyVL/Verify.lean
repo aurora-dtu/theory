@@ -6,6 +6,9 @@ import Mathlib.Tactic.Eval
 open Optimization.Notation
 open HeyLo
 
+/-- A HeyVL program C verifies if `vp⟦C⟧ ⊤ = ⊤` -/
+def HeyVL.Verifies (C : HeyVL) : Prop := (vp⟦@C⟧ ⊤).sem = ⊤
+
 structure Conditions (E : Encoding) where
   original : spGCL
   O : Optimization
@@ -50,6 +53,39 @@ macro_rules
     } : Conditions pgclEncoding[$E])
   )
 
+theorem HeyVL.vp_sem_eq (S : HeyVL) (h : φ.sem = ψ.sem) : (vp⟦@S⟧ φ).sem = (vp⟦@S⟧ ψ).sem := by
+  induction S generalizing φ ψ with (simp_all [vp]; try grind)
+  | Assign x μ =>
+    ext σ
+    obtain ⟨⟨vs⟩, hμ⟩ := μ
+    simp [Distribution.toExpr, Distribution.map]
+    clear hμ
+    unfold Function.comp
+    simp
+    induction vs with
+    | nil => simp
+    | cons v vs ih => simp_all
+
+theorem Conditions.wlp_valid (C : Conditions E)
+    (h₁ : ⟦@C.post⟧' ≤ 1)
+    (hI : ∀ I ∈ C.original.invs, ⟦@I⟧' ≤ 1)
+    (h : heyvl {
+        assume(@C.pre);
+        @(C.original.HeyVL C.O .wlp (C.original.fv ∪ C.post.fv)).2;
+        assert(@C.post)
+      }.Verifies) :
+    C.pre.sem ≤ C.original.pGCL.wlp C.O C.post.sem := by
+  simp only [HeyVL.Verifies, Ty.expr, Ty.lit, HeyVL.vp, sem_himp_apply, himp_eq_top_iff] at h
+  apply le_trans _ (spGCL.vp_le_wlp _ _)
+  · grw [h]
+    simp [spGCL.vp]
+    rw [HeyVL.vp_sem_eq]
+    ext
+    simp
+    simp [sem]
+  · apply h₁
+  · apply hI
+
 def Conditions.sound (C : Conditions E) : Prop :=
   match E with
   | .wp => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
@@ -93,8 +129,10 @@ theorem ENNReal.two_inv_mul_two_id (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
   simp
 
-abbrev y : Ident := ⟨"y", .Nat⟩
-abbrev c : Ident := ⟨"c", .Nat⟩
+abbrev NatLog.y : Ident := ⟨"y", .Nat⟩
+abbrev NatLog.c : Ident := ⟨"c", .Nat⟩
+
+open NatLog
 
 def NatLog := vc[𝒟, wp]
   { ↑c + [0 < y] * ↑(y + nlog2 y) }
