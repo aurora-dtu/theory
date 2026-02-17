@@ -8,7 +8,7 @@ syntax "paper_thm[" num "]" ppHardSpace term : command
 syntax docComment "paper_thm[" num "]" ppHardSpace term : command
 
 def Link {α : Sort*} (_ : α) : Prop := True
-def LinkThm (_ : Sort*) : Type := Unit
+def LinkThm (α : Sort*) {_ : α} : Prop := True
 
 axiom paperAx {α : Sort*} : α
 
@@ -24,6 +24,17 @@ macro_rules
   let name : TSyntax `ident := mkIdent (.mkSimple s!"link{Nat.toSubscriptString n.getNat}")
   `(
     def $name : Link $t := True.intro
+  )
+| `($c:docComment paper_thm[$n] $t) =>
+  let name : TSyntax `ident := mkIdent (.mkSimple s!"thm{Nat.toSubscriptString n.getNat}")
+  `(
+    $c:docComment
+    def $name : @LinkThm _ $t := True.intro
+  )
+| `(paper_thm[$n] $t) =>
+  let name : TSyntax `ident := mkIdent (.mkSimple s!"thm{Nat.toSubscriptString n.getNat}")
+  `(
+    def $name : @LinkThm _ $t := True.intro
   )
 
 end Paper

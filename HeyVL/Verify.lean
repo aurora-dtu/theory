@@ -71,7 +71,7 @@ theorem Conditions.wlp_valid (C : Conditions E)
     (hI : ∀ I ∈ C.original.invs, ⟦@I⟧' ≤ 1)
     (h : heyvl {
         assume(@C.pre);
-        @(C.original.HeyVL C.O .wlp (C.original.fv ∪ C.post.fv)).2;
+        @(C.original.enc C.O .wlp (C.original.fv ∪ C.post.fv)).2;
         assert(@C.post)
       }.Verifies) :
     C.pre.sem ≤ C.original.pGCL.wlp C.O C.post.sem := by

@@ -172,9 +172,7 @@ namespace pGCL
 
 notation "Γ[" Γ "]" => Γ → Type*
 def States {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
-
 variable {𝒱 : Type*} {Γ : Γ[𝒱]}
-
 notation "𝔼[" Γ "," α "]" => States Γ → α
 
 instance States.instSubstitution [DecidableEq 𝒱] : Substitution (States Γ) Γ where

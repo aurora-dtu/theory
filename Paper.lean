@@ -4,6 +4,22 @@ import PGCL.OperationalSemantics
 import PGCL.ProofRules
 import MDP.SupSup
 
+/-!
+
+# Glossary of Lean theorems and definitions
+
+This file contains links to all references, definitions, lemmas and theorems from the paper.
+
+They are listed roughly in the order they appear in the paper. This file should serve as a jumping
+off point to navigate and explore the formalization, and not as a reference to _how_ things are
+defined. We invite the reader to click on the names in each definition to jump to their original
+definition. In Visual Studio Code one can Ctrl/CMD+Click on symbols to jump to their definition.
+
+The names of the definitions on this file bear no semantic meaning, and are purely to nominally
+distinguish them for documentation generation.
+
+-/
+
 namespace Paper
 
 open OmegaCompletePartialOrder
@@ -36,9 +52,9 @@ paper_link[7] ωScottContinuous (α:=α) (β:=β)
 paper_link[8] ωScottContinuous (α:=α) (β:=OrderDual β)
 
 /-- Kleene fixed point theorem for `lfp` -/
-paper_link[9] fixedPoints.lfp_eq_sSup_iterate (α:=α)
+paper_thm[9] fixedPoints.lfp_eq_sSup_iterate (α:=α)
 /-- Kleene fixed point theorem for `gfp` -/
-paper_link[10] fixedPoints.gfp_eq_sInf_iterate (α:=α)
+paper_thm[10] fixedPoints.gfp_eq_sInf_iterate (α:=α)
 
 paper_link[11] MeasurableSpace
 paper_link[12] MeasureTheory.IsProbabilityMeasure μ
@@ -71,7 +87,7 @@ paper_link[3] MC.Path'
 paper_link[4] MarkovChain.Path'.pref (M:=MC)
 paper_link[5] MarkovChain.Path.Cyl (M:=MC)
 paper_link[6] MC.Pr
-paper_link[7] MC.Pr_cyl
+paper_thm[7] MC.Pr_cyl
 paper_link[8] MC.embed
 
 /-!
@@ -92,7 +108,7 @@ paper_link[12] M.Path
 paper_link[13] M.Scheduler
 paper_link[14] M.inducedMC'
 
-paper_link[15] M.inducedMC'_cyl π h
+paper_thm[15] M.inducedMC'_cyl π h
 
 /-!
 
@@ -105,20 +121,20 @@ variable {α β : Type*} [CompleteLattice α] [CompleteLattice β]
 paper_link[16] Pi.instCompleteLattice (α:=α) (β:=fun _ ↦ β)
 
 paper_link[17] M.Φ
-paper_link[18] MDP.Φ_𝒜_ωScottContinuous (M:=M) (c:=c)
-paper_link[19] M.iSup_iSup_EC_eq_lfp_Φ𝒜 (c:=c)
+paper_thm[18] MDP.Φ_𝒜_ωScottContinuous (M:=M) (c:=c)
+paper_thm[19] M.iSup_iSup_EC_eq_lfp_Φ𝒜 (c:=c)
 
 variable [M.FiniteBranching]
 
-paper_link[20] MDP.Φ_𝒟_ωScottContinuous (M:=M) (c:=c)
+paper_thm[20] MDP.Φ_𝒟_ωScottContinuous (M:=M) (c:=c)
 
-paper_link[21] M.iSup_iInf_EC_eq_lfp_Φ𝒟 (c:=c)
+paper_thm[21] M.iSup_iInf_EC_eq_lfp_Φ𝒟 (c:=c)
 
 paper_link[22] M.MScheduler
 paper_link[23] M.Φℒ
-paper_link[24] M.lfp_Φℒ_eq_lfp_Φ (c:=c)
+paper_thm[24] M.lfp_Φℒ_eq_lfp_Φ (c:=c)
 
-paper_link[25] M.iInf_iSup_EC_eq_lfp_Φ𝒟 (c:=c)
+paper_thm[25] M.iInf_iSup_EC_eq_lfp_Φ𝒟 (c:=c)
 
 end Section4
 
@@ -174,7 +190,7 @@ section
 variable {O : Optimization} {f} {g} [O.ΦContinuous (pGCL.𝕊 (Γ:=Γ) f g).mdp]
 
 paper_link[12] (pGCL.𝕊 (Γ:=Γ) f g).op
-paper_link[13] (pGCL.𝕊 f g).op_le_seq (O:=O) (C:=C) (C':=C')
+paper_thm[13] (pGCL.𝕊 f g).op_le_seq (O:=O) (C:=C) (C':=C')
 
 
 /-!
@@ -196,11 +212,11 @@ paper_link[18] cwp (Γ:=Γ)
 -/
 
 paper_link[19] (pGCL.𝕊 (Γ:=Γ) f g).ς
-paper_link[20] (pGCL.𝕊 (Γ:=Γ) f g).lfp_ς_eq_op (O:=O)
-paper_link[21] wp_eq_op (Γ:=Γ) (C:=C) (O:=O)
+paper_thm[20] (pGCL.𝕊 (Γ:=Γ) f g).lfp_ς_eq_op (O:=O)
+paper_thm[21] wp_eq_op (Γ:=Γ) (C:=C) (O:=O)
 paper_link[22] wfp (Γ:=Γ)
-paper_link[23] wfp_eq_op (Γ:=Γ) (C:=C) (O:=O)
-paper_link[24] wlp_sound (Γ:=Γ) (C:=C) (O:=O)
+paper_thm[23] wfp_eq_op (Γ:=Γ) (C:=C) (O:=O)
+paper_thm[24] wlp_sound (Γ:=Γ) (C:=C) (O:=O)
 
 end
 
@@ -212,14 +228,14 @@ end
 
 variable [CompleteLattice α]
 
-paper_link[25] OrderHom.lfp_le_of_iter (α:=α) (f:=f) (Δ:=Δ)
-paper_link[26] OrderHom.le_gfp_of_iter (α:=α) (f:=f) (Δ:=Δ)
-paper_link[27] pGCL.ParkKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
-paper_link[28] pGCL.ParkKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
+paper_thm[25] OrderHom.lfp_le_of_iter (α:=α) (f:=f) (Δ:=Δ)
+paper_thm[26] OrderHom.le_gfp_of_iter (α:=α) (f:=f) (Δ:=Δ)
+paper_thm[27] pGCL.ParkKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
+paper_thm[28] pGCL.ParkKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
 
 paper_link[29] States.EQ (Γ:=Γ)
-paper_link[30] pGCL.IdleKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
-paper_link[31] pGCL.IdleKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
+paper_thm[30] pGCL.IdleKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
+paper_thm[31] pGCL.IdleKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
 
 end Section5
 
@@ -261,10 +277,12 @@ paper_link[9] HeyVL.Verifies
 
 -/
 
-paper_link[10] spGCL.wp_le_vp (C:=C) (φ:=φ) (O:=O)
-paper_link[11] spGCL.vp_le_wlp (C:=C) (φ:=φ) (O:=O)
+paper_thm[10] spGCL.enc (C:=C) (O:=O)
 
-paper_link[12] Conditions.wlp_valid (C:=C)
+paper_thm[11] spGCL.wp_le_vp (C:=C) (φ:=φ) (O:=O)
+paper_thm[12] spGCL.vp_le_wlp (C:=C) (φ:=φ) (O:=O)
+
+paper_thm[13] Conditions.wlp_valid (C:=C)
 
 end Section6
 
