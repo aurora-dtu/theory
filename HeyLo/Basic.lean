@@ -667,7 +667,7 @@ theorem HeyVL.Cohavocs_mods : (HeyVL.Cohavocs xs).mods = ∅ := by
 theorem spGCL.pGCL_mods (C : spGCL) : C.pGCL.mods = ↑C.mods := by
   induction C with simp_all [mods, pGCL, pGCL.mods, pGCL.ite]
 
-inductive Encoding where | wlp' | wp
+inductive Encoding where | wlp | wp
 
 /-- Generate a fresh variables given some global.
 
@@ -681,41 +681,41 @@ macro_rules
 def spGCL.HeyVL (C : spGCL) (O : Optimization) (E : Encoding) :
     Globals → Globals × HeyVL := fun G ↦
   match C with
-  | spGCL {while @b inv(@I) {@C}} =>
+  | spgcl {while @b inv(@I) {@C}} =>
     let (G, C) := C.HeyVL O E G
     match E with
     | .wp => (G, heyvl {
       coassert(@I) ; cohavocs(@C.mods) ; covalidate ; coassume(@I) ;
       if (@b) { @C ; coassert(@I) ; coassume(⊤) } })
-    | .wlp' => (G, heyvl {
+    | .wlp => (G, heyvl {
       assert(@I) ; havocs(@C.mods) ; validate ; assume(@I) ;
       if (@b) { @C ; assert(@I) ; assume(0) } })
-  | spGCL {{@C₁} [@p] {@C₂}} =>
+  | spgcl {{@C₁} [@p] {@C₂}} =>
     let (G, C₁) := C₁.HeyVL O E G ; let (G, C₂) := C₂.HeyVL O E G
     let_fresh choice : .Bool ← G
     (G, heyvl { choice :≈ flip(@p); if (choice) {@C₁} else {@C₂} })
-  | spGCL {skip} => (G, heyvl {skip})
-  | spGCL {@x := @e} => (G, heyvl {@x :≈ @(.pure e)})
-  | spGCL {@C₁ ; @C₂} =>
+  | spgcl {skip} => (G, heyvl {skip})
+  | spgcl {@x := @e} => (G, heyvl {@x :≈ @(.pure e)})
+  | spgcl {@C₁ ; @C₂} =>
     let (G, C₂) := C₂.HeyVL O E G
     let (G, C₁) := C₁.HeyVL O E G
     (G, heyvl{@C₁ ; @C₂})
-  | spGCL {{@C₁} [] {@C₂}} =>
+  | spgcl {{@C₁} [] {@C₂}} =>
     let (G, C₁) := C₁.HeyVL O E G
     let (G, C₂) := C₂.HeyVL O E G
     match O with
     | 𝒜 => (G, heyvl {if (⊔) {@C₁} else {@C₂}})
     | 𝒟 => (G, heyvl {if (⊓) {@C₁} else {@C₂}})
-  | spGCL {if @b then @C₁ else @C₂ end} =>
+  | spgcl {if @b then @C₁ else @C₂ end} =>
     let (G, C₁) := C₁.HeyVL O E G
     let (G, C₂) := C₂.HeyVL O E G
     (G, heyvl {if (@b) {@C₁} else {@C₂}})
-  | spGCL {tick(@r)} =>
+  | spgcl {tick(@r)} =>
     match E with
     | .wp => (G, heyvl { reward(@r) })
     -- NOTE: we include `r` as a subexpression such that `fv` is the same in both cases
-    | .wlp' => (G, heyvl { reward(0 * @r) })
-  | spGCL {observe(@r)} => (G, heyvl { assert(@r.embed) })
+    | .wlp => (G, heyvl { reward(0 * @r) })
+  | spgcl {observe(@r)} => (G, heyvl { assert(@r.embed) })
 
 @[grind ., grind! ., simp]
 theorem spGCL.HeyVL_G_mono {C : spGCL} : G ⊆ (C.HeyVL O E G).1 := by
@@ -980,9 +980,9 @@ theorem pGCL.wlp_le_one [DecidableEq 𝒱] {Γ : Γ[𝒱]} {C : pGCL Γ} {φ} : 
 
 private lemma spGCL.vp_le_wlp_aux.loop
     (ih : ∀ {φ : 𝔼r} {G : Globals}, C.fv ∪ φ.fv ⊆ G →
-      φ.sem ≤ 1 → ((C.HeyVL O Encoding.wlp' G).2.vp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem)
+      φ.sem ≤ 1 → ((C.HeyVL O Encoding.wlp G).2.vp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem)
     (hG : (loop b I C).fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1) (hI : I.sem ≤ 1 ∧ ∀ a ∈ C.invs, a.sem ≤ 1) :
-    (((loop b I C).HeyVL O Encoding.wlp' G).2.vp φ).sem ≤ wlp[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
+    (((loop b I C).HeyVL O Encoding.wlp G).2.vp φ).sem ≤ wlp[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
   simp only [Ty.expr, HeyVL, HeyVL.vp, sem_inf_apply, Finset.sort_nodup, HeyVL.vp_havocs,
     sem_validate, sem_himp_apply, HeyVL.if_vp_sem, sem_not_apply, Exp.validate_subst,
     Exp.himp_subst, Exp.add_subst, Exp.mul_subst, Exp.iver_subst, pGCL]
@@ -1000,7 +1000,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
     simp_all only [Ty.expr, Ty.lit, hnot_eq_compl, Exp.not_subst, iInf_apply, Exp.validate_apply,
       Pi.himp_apply, Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
       Pi.compl_apply, compl_iff_not]
-    let Ξ := HeyVL.Subs.of (C.HeyVL O .wlp' G).2.mods.sort (by simp) σ'
+    let Ξ := HeyVL.Subs.of (C.HeyVL O .wlp G).2.mods.sort (by simp) σ'
     have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
       ext x
       simp +contextual [Ξ]
@@ -1011,7 +1011,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
     apply ENNReal.validate_himp_le_of_lt
     simp [HeyVL.vp, HeyVL.Skip, σ_eq_σ']
     replace ih :
-          ((C.HeyVL O .wlp' G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
+          ((C.HeyVL O .wlp G).2.vp (I ⊓ (0 ⇨ φ))).sem σ'
         ≤ wlp[O]⟦@C.pGCL⟧ I.sem σ' := by
       specialize ih (φ:=I ⊓ (0 ⇨ φ)) (G:=G) (by simp [HeyLo.fv]; grind) (by simp; grind) σ'
       grw [ih]; simp
@@ -1021,7 +1021,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
 set_option maxHeartbeats 700000 in
 private lemma  spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv ⊆ G)
     (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
-    ((C.HeyVL O .wlp' G).2.vp φ).sem ≤ wlp O C.pGCL φ.sem := by
+    ((C.HeyVL O .wlp G).2.vp φ).sem ≤ wlp O C.pGCL φ.sem := by
   induction C generalizing G φ with
   | skip =>
     intro σ
@@ -1100,7 +1100,7 @@ private lemma  spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.f
         nonpos_iff_eq_zero, true_or]
 
 theorem spGCL.vp_le_wlp {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
-    (C.vp O .wlp' φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp_aux (by rfl) hφ hI
+    (C.vp O .wlp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp_aux (by rfl) hφ hI
 
 /-- info: 'spGCL.vp_le_wlp' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in
