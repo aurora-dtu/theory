@@ -1,12 +1,7 @@
-import Mathlib.Algebra.Order.Floor.Extended
-import Mathlib.Analysis.SpecialFunctions.Log.ENNRealLog
-import Mathlib.Control.LawfulFix
-import Mathlib.Control.Traversable.Instances
+import Mathlib.Analysis.Normed.Group.Real
 import Mathlib.Data.Fintype.Order
-import Mathlib.Data.NNRat.Order
+import Mathlib.Data.Prod.Lex
 import Mathlib.Data.String.Basic
-import Mathlib.Tactic.DeriveTraversable
-import Mathlib.Tactic.Eval
 import PGCL.Exp
 
 open pGCL
@@ -106,8 +101,6 @@ inductive BinOp : Ty → Ty → Type where
   /-- The `←` operator (co-implication). -/
   | CoImpl : BinOp ENNReal ENNReal
 deriving Lean.ToExpr, DecidableEq
-
-#check eval% @BinOp.Lt .ENNReal .yes
 
 inductive UnOp : Ty → Ty → Type where
   /-- The `!` operator (negation). -/

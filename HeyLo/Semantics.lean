@@ -1,9 +1,5 @@
-import HeyLo.Syntax
-import HeyLo.Vars
 import HeyLo.vp
-import Mathlib.Data.Finset.Sort
-import Mathlib.Data.Nat.Lattice
-import PGCL.IdleInduction
+import PGCL.Fix
 
 attribute [grind =] Finset.empty_union
 
@@ -120,20 +116,23 @@ theorem HeyLo.Var_sem_subst :
     simp [sem, Substitution.subst_singleton, Substitution.subst]
     grind
 
-def Substitution.applied (σ : States fun (x : Ident) ↦ x.type.lit) (xs : List ((v : Ident) × 𝔼'[v.type.lit])) :
+def Substitution.applied (σ : States fun (x : Ident) ↦ x.type.lit)
+    (xs : List ((v : Ident) × 𝔼'[v.type.lit])) :
     States fun (x : Ident) ↦ x.type.lit :=
   match xs with
   | [] => σ
   | x::xs => Substitution.applied σ[x.1 ↦ x.2 σ] xs
 
-theorem BExpr.subst_applied {b : BExpr fun (x : Ident) ↦ x.type.lit} {xs : List ((v : Ident) × 𝔼'[v.type.lit])} :
+theorem BExpr.subst_applied {b : BExpr fun (x : Ident) ↦ x.type.lit}
+    {xs : List ((v : Ident) × 𝔼'[v.type.lit])} :
     b[..xs] = fun σ ↦ b (Substitution.applied σ xs) := by
   ext σ
   induction xs generalizing σ with
   | nil => simp [Substitution.applied]
   | cons x xs ih => simp_all [Substitution.applied]
 
-theorem BExpr.subst_apply {b : BExpr fun (x : Ident) ↦ x.type.lit} {xs : List ((v : Ident) × 𝔼'[v.type.lit])} :
+theorem BExpr.subst_apply {b : BExpr fun (x : Ident) ↦ x.type.lit}
+    {xs : List ((v : Ident) × 𝔼'[v.type.lit])} :
     b[..xs] σ = b (Substitution.applied σ xs) := by
   rw [subst_applied]
 

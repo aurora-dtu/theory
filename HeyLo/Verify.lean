@@ -1,4 +1,6 @@
 import HeyLo.Encoding
+import Mathlib.Algebra.CharP.Defs
+import Mathlib.Data.Nat.Log
 import Mathlib.Tactic.Eval
 
 open Optimization.Notation

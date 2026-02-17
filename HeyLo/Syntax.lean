@@ -1,6 +1,5 @@
 import HeyLo.HeyVL
 import HeyLo.spGCL
-import Lean.PrettyPrinter.Delaborator
 
 namespace HeyLo
 

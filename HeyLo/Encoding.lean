@@ -1,8 +1,5 @@
 import HeyLo.Semantics
-import HeyLo.Vars
-import HeyLo.vp
 import Mathlib.Data.Finset.Sort
-import Mathlib.Data.Nat.Lattice
 import PGCL.IdleInduction
 
 attribute [grind =] Finset.empty_union
@@ -323,7 +320,7 @@ private lemma spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv
       apply hφ
     else
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
-        Iverson.iver_False, CharP.cast_eq_zero, zero_mul, BExpr.probOf_apply, Pi.one_apply, le_refl,
+        Iverson.iver_False, Nat.cast_zero, zero_mul, BExpr.probOf_apply, Pi.ofNat_apply, le_refl,
         nonpos_iff_eq_zero, true_or]
 
 theorem spGCL.vp_le_wlp {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :

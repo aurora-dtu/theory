@@ -1,8 +1,5 @@
-import HeyLo.Syntax
-import HeyLo.vp
-import Mathlib.Data.Finset.Sort
-import Mathlib.Data.Nat.Lattice
-import PGCL.IdleInduction
+import HeyLo.HeyVL
+import HeyLo.spGCL
 
 attribute [grind =] Finset.empty_union
 
@@ -196,18 +193,5 @@ theorem HeyLo.Distribution.toExpr_fv {μ : Distribution .ENNReal} : μ.toExpr.fv
     simp only [List.map_cons, List.sum_cons, HeyLo.fv]
     grind [List.toFinset_cons, Finset.biUnion_insert]
 
-@[grind =, simp]
-theorem HeyVL.fv_vp {P : HeyVL} : (P.vp φ).fv = P.fv ∪ φ.fv := by
-  induction P generalizing φ with (try simp_all [vp, fv, HeyLo.fv]) <;> try grind [fv, HeyLo.fv]
-  | Assign x e =>
-    simp only [Distribution.fv, Distribution.map, Array.toList_map]
-    ext v
-    simp
-    constructor
-    · grind
-    · rintro (⟨⟨_⟩⟩ | ⟨q, p, h₁, h₂⟩)
-      · simp_all only [true_or, and_true, Distribution.exists_in_values]
-      · grind
-      · simp_all only [true_or, or_true, and_true, Distribution.exists_in_values]
 @[grind =, simp]
 theorem HeyLo.fv_inf {X Y : 𝔼r} : (X ⊓ Y).fv = X.fv ∪ Y.fv := rfl
