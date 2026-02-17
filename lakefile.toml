@@ -1,7 +1,7 @@
 name = "pgcl"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["HeyLo"]
+defaultTargets = ["HeyVL"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -36,4 +36,4 @@ name = "MDP"
 name = "STDX"
 
 [[lean_lib]]
-name = "HeyLo"
+name = "HeyVL"

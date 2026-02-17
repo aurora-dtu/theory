@@ -1,4 +1,4 @@
-import HeyLo.Semantics
+import HeyVL.Semantics
 import Mathlib.Data.Finset.Sort
 import PGCL.IdleInduction
 

@@ -1,5 +1,5 @@
-import HeyLo.Syntax
-import HeyLo.Vars
+import HeyVL.Syntax
+import HeyVL.Vars
 
 open HeyLo
 

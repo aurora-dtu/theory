@@ -1,4 +1,4 @@
-import HeyLo.Encoding
+import HeyVL.Encoding
 import Mathlib.Algebra.CharP.Defs
 import Mathlib.Data.Nat.Log
 import Mathlib.Tactic.Eval

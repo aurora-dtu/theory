@@ -1,5 +1,5 @@
-import HeyLo.HeyVL
-import HeyLo.spGCL
+import HeyVL.HeyVL
+import HeyVL.spGCL
 
 attribute [grind =] Finset.empty_union
 
