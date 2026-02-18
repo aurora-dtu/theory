@@ -102,6 +102,19 @@ theorem HeyLo.substs_inf {A B : 𝔼r} : (A ⊓ B).sem[..xs] = A.sem[..xs] ⊓ B
 
 end
 
+@[simp]
+theorem Distribution.map_toExpr_apply (x : Ident) (μ : Distribution x.type) (f) :
+      ⟦@(μ.map f).toExpr⟧' σ
+    = (μ.values.map (fun (a, b) ↦ ⟦@a⟧' σ * ⟦@(f b)⟧' σ)).sum := by
+  obtain ⟨⟨vs⟩, hμ⟩ := μ
+  simp [Distribution.toExpr, Distribution.map]
+  clear hμ
+  unfold Function.comp
+  simp
+  induction vs with
+  | nil => simp
+  | cons v vs ih => simp_all
+
 @[grind =, simp]
 theorem HeyLo.Var_sem_subst :
       (HeyLo.Var n t).sem[x ↦ v]

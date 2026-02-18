@@ -149,7 +149,7 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     · grind
   | loop b I C ih =>
     simp only [Ty.lit, pGCL, enc, HeyVL.vp, sem_sup_apply, Ty.expr, Finset.sort_nodup,
-      HeyVL.vp_cohavocs, sem_covalidate, Exp.covalidate_subst]
+      HeyVL.vp_cohavocs]
     intro σ
     if inv : IdleInvariant wp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
@@ -168,8 +168,7 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
 
         specialize h₁ x (by contrapose! h; exact C.enc_mods (by grind))
         simp_all only
-      simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.covalidate_apply, Exp.substs_help_apply,
-        le_sup_iff]
+      simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.substs_help_apply, le_sup_iff]
       right
       apply le_iSup_of_le Ξ
       simp [σ_eq_σ']
@@ -207,9 +206,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
       φ.sem ≤ 1 → ((C.enc O Encoding.wlp G).2.vp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem)
     (hG : (loop b I C).fv ∪ φ.fv ⊆ G) (hφ : φ.sem ≤ 1) (hI : I.sem ≤ 1 ∧ ∀ a ∈ C.invs, a.sem ≤ 1) :
     (((loop b I C).enc O Encoding.wlp G).2.vp φ).sem ≤ wlp[O]⟦@(loop b I C).pGCL⟧ φ.sem := by
-  simp only [Ty.expr, enc, HeyVL.vp, sem_inf_apply, Finset.sort_nodup, HeyVL.vp_havocs,
-    sem_validate, sem_himp_apply, HeyVL.if_vp_sem, sem_not_apply, Exp.validate_subst,
-    Exp.himp_subst, Exp.add_subst, Exp.mul_subst, Exp.iver_subst, pGCL]
+  simp only [Ty.expr, enc, HeyVL.vp, sem_inf_apply, Finset.sort_nodup, HeyVL.vp_havocs, pGCL]
   intro σ
   if inv : IdleCoinvariant wlp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
     simp
@@ -221,9 +218,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
     simp [Ψ] at h₂
     simp_all only [Pi.inf_apply, inf_le_iff]
     right
-    simp_all only [Ty.expr, Ty.lit, hnot_eq_compl, Exp.not_subst, iInf_apply, Exp.validate_apply,
-      Pi.himp_apply, Exp.substs_help_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-      Pi.compl_apply, compl_iff_not]
+    simp_all only [Ty.expr, Ty.lit, iInf_apply, Exp.substs_help_apply]
     let Ξ := HeyVL.Subs.of (C.enc O .wlp G).2.mods.sort (by simp) σ'
     have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
       ext x

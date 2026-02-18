@@ -12,12 +12,12 @@ def HeyVL.vp (C : HeyVL) (φ : HeyLo .ENNReal) : HeyLo .ENNReal :=
   | heyvl {assert(@ψ)} => ψ ⊓ φ
   | heyvl {assume(@ψ)} => ψ ⇨ φ
   | heyvl {havoc(@x)} => heylo {⨅ x, @φ}
-  | heyvl {validate} => ▵ φ
+  | heyvl {validate} => ￢￢φ
   | heyvl {if (⊔) {@S₁} else {@S₂}} => S₁.vp φ ⊔ S₂.vp φ
   | heyvl {coassert(@ψ)} => ψ ⊔ φ
   | heyvl {coassume(@ψ)} => ψ ↜ φ
   | heyvl {cohavoc(@x)} => heylo {⨆ x, @φ}
-  | heyvl {covalidate} => ▿ φ
+  | heyvl {covalidate} => φᶜᶜ
 
 syntax "vp⟦" cheyvl "⟧" : term
 syntax "vp⟦" cheyvl "⟧(" cheylo ")" : term

@@ -6,14 +6,14 @@ open pGCL
 variable {𝒱 : Type*} {Γ : Γ[𝒱]}
 
 inductive pGCL (Γ : Γ[𝒱]) where
-  | skip : pGCL Γ
-  | assign : (v : 𝒱) → 𝔼[Γ, Γ v] → pGCL Γ
-  | seq : pGCL Γ → pGCL Γ → pGCL Γ
-  | prob : pGCL Γ → ProbExp Γ → pGCL Γ → pGCL Γ
-  | nonDet : pGCL Γ → pGCL Γ → pGCL Γ
-  | loop : 𝔼[Γ, Prop] → pGCL Γ → pGCL Γ
-  | tick : 𝔼[Γ, ENNReal] → pGCL Γ
-  | observe : 𝔼[Γ, Prop] → pGCL Γ
+  | skip : pGCL Γ                                 -- skip
+  | assign : (v : 𝒱) → 𝔼[Γ, Γ v] → pGCL Γ         -- v := x
+  | seq : pGCL Γ → pGCL Γ → pGCL Γ                -- C₁ ; C₂
+  | prob : pGCL Γ → ProbExp Γ → pGCL Γ → pGCL Γ   -- C₁ [p] C₂
+  | nonDet : pGCL Γ → pGCL Γ → pGCL Γ             -- C₁ [] C₂
+  | loop : 𝔼[Γ, Prop] → pGCL Γ → pGCL Γ           -- while b { C' }
+  | tick : 𝔼[Γ, ENNReal] → pGCL Γ                 -- tick(r)
+  | observe : 𝔼[Γ, Prop] → pGCL Γ                 -- observe(b)
 deriving Inhabited
 
 noncomputable def pGCL.ite (b : BExpr Γ) (C₁ C₂ : pGCL Γ) : pGCL Γ := .prob C₁ p[b] C₂

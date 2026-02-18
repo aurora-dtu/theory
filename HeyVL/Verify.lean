@@ -55,16 +55,7 @@ macro_rules
 
 theorem HeyVL.vp_sem_eq (S : HeyVL) (h : φ.sem = ψ.sem) : (vp⟦@S⟧ φ).sem = (vp⟦@S⟧ ψ).sem := by
   induction S generalizing φ ψ with (simp_all [vp]; try grind)
-  | Assign x μ =>
-    ext σ
-    obtain ⟨⟨vs⟩, hμ⟩ := μ
-    simp [Distribution.toExpr, Distribution.map]
-    clear hμ
-    unfold Function.comp
-    simp
-    induction vs with
-    | nil => simp
-    | cons v vs ih => simp_all
+  | Assign => ext; simp [h]
 
 theorem Conditions.wlp_valid (C : Conditions E)
     (h₁ : ⟦@C.post⟧' ≤ 1)
@@ -135,8 +126,8 @@ abbrev NatLog.c : Ident := ⟨"c", .Nat⟩
 open NatLog
 
 def NatLog := vc[𝒟, wp]
-  { ↑c + [0 < y] * ↑(y + nlog2 y) }
-    while 0 < y inv(↑c + [0 < y] * ↑(y + nlog2 y)) {
+  { ↑c + [0 < y] * ↑(y + nlog2(y)) }
+    while 0 < y inv(↑c + [0 < y] * ↑(y + nlog2(y))) {
       { y := y / 2 } [1/2] { y := y - 1 } ; c := c + 1
     }
   { ↑c }
