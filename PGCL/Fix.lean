@@ -79,7 +79,7 @@ theorem Exp.zero_himp {a : 𝔼[Γ, ENNReal]} :
     (0 ⇨ a) = ⊤ := by simp [himp]; rfl
 
 @[grind =]
-theorem States.subst_comm [DecidableEq 𝒱] {σ : States Γ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :
+theorem State.subst_comm [DecidableEq 𝒱] {σ : State Γ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :
     σ[x₁ ↦ v₁][x₂ ↦ v₂] = σ[x₂ ↦ v₂][x₁ ↦ v₁] := by ext; grind
 
 namespace Exp
@@ -139,30 +139,30 @@ end Exp
 @[simp] theorem BExpr.not_coe_bool : (BExpr.coe_prop (Γ:=Γ) a)ᶜ = BExpr.coe_prop ¬a := by
   ext; simp only [Pi.compl_apply, coe_prop, compl_iff_not]
 
-namespace States
+namespace State
 
 open scoped Classical in
 noncomputable
-def cofix (σ₀ : States Γ) {S : Set 𝒱} (σ : States (Γ · : ↑Sᶜ → _)) : States Γ :=
+def cofix (σ₀ : State Γ) {S : Set 𝒱} (σ : State (Γ · : ↑Sᶜ → _)) : State Γ :=
   fun v ↦ if h : v ∈ S then σ₀ v else σ ⟨v, h⟩
 
 @[grind =, simp]
-theorem cofix_apply_mem {S : Set 𝒱} (h : v ∈ S) (σ₀ : States Γ) (σ' : States (Γ · : ↑Sᶜ → _)) :
+theorem cofix_apply_mem {S : Set 𝒱} (h : v ∈ S) (σ₀ : State Γ) (σ' : State (Γ · : ↑Sᶜ → _)) :
     σ₀.cofix σ' v = σ₀ v := by simp [h, cofix]
 
-end States
+end State
 
 open scoped Classical in
 noncomputable
-def Exp.fix (X : 𝔼[Γ, α]) (S : Set 𝒱) (σ₀ : States Γ) : 𝔼[(Γ · : ↑Sᶜ → _), α] :=
+def Exp.fix (X : 𝔼[Γ, α]) (S : Set 𝒱) (σ₀ : State Γ) : 𝔼[(Γ · : ↑Sᶜ → _), α] :=
   fun σ ↦ X (σ₀.cofix σ)
 
 @[grind =, simp]
 theorem Exp.fix_empty (φ : 𝔼[Γ, α]) : Exp.fix φ ∅ σ₀ σ = φ (σ ⟨·, id⟩) := by
-  simp only [fix]; congr; ext; grind [States.cofix]
+  simp only [fix]; congr; ext; grind [State.cofix]
 @[grind =, simp]
 theorem Exp.fix_compl_empty (φ : 𝔼[Γ, α]) : Exp.fix φ ∅ᶜ σ₀ σ = φ σ₀ := by
-  simp only [fix]; congr; ext; grind [States.cofix]
+  simp only [fix]; congr; ext; grind [State.cofix]
 @[grind ., simp]
 theorem Exp.fix_compl_empty_eq (φ ψ : 𝔼[Γ, α]) : Exp.fix φ ∅ᶜ = Exp.fix ψ ∅ᶜ ↔ φ = ψ := by
   constructor
@@ -174,7 +174,7 @@ theorem Exp.fix_compl_empty_eq (φ ψ : 𝔼[Γ, α]) : Exp.fix φ ∅ᶜ = Exp.
 
 open scoped Classical in
 noncomputable
-def ProbExp.fix (X : ProbExp Γ) (S : Set 𝒱) (σ₀ : States Γ) : ProbExp (Γ · : ↑Sᶜ → _) :=
+def ProbExp.fix (X : ProbExp Γ) (S : Set 𝒱) (σ₀ : State Γ) : ProbExp (Γ · : ↑Sᶜ → _) :=
   ⟨Exp.fix X S σ₀, by intro σ; simp [Exp.fix]⟩
 
 @[simp] theorem ProbExp.fix_apply {φ : ProbExp Γ} : φ.fix S σ₀ σ = φ (σ₀.cofix σ) := rfl
@@ -191,11 +191,11 @@ def mods : pGCL Γ → Set 𝒱
   | pgcl {observe(@ _)} => ∅
 
 open scoped Classical in
-noncomputable def fix (C : pGCL Γ) (S : Set 𝒱) (σ₀ : States Γ) : pGCL (Γ · : ↑Sᶜ → _) :=
+noncomputable def fix (C : pGCL Γ) (S : Set 𝒱) (σ₀ : State Γ) : pGCL (Γ · : ↑Sᶜ → _) :=
   match C with
   | pgcl {skip} => pgcl {skip}
   | pgcl {@x := @A} =>
-    let q : (States fun (x : ↑Sᶜ) ↦ Γ x) → Γ x := Exp.fix A S σ₀
+    let q : (State fun (x : ↑Sᶜ) ↦ Γ x) → Γ x := Exp.fix A S σ₀
     if hx : _ then pgcl {@⟨x, hx⟩ := @q} else pgcl {skip}
   | pgcl {@C₁ ; @C₂} => pgcl {@(C₁.fix S σ₀) ; @(C₂.fix S σ₀)}
   | pgcl {{@C₁} [@p] {@C₂}} =>
@@ -230,36 +230,36 @@ theorem Exp.subst_fix {φ : 𝔼[Γ, α]} {x : 𝒱} {e : 𝔼[Γ, Γ x]} {S : S
   simp only [fix_apply, subst_apply]
   congr! with v
   ext
-  grind [States.cofix]
+  grind [State.cofix]
 
-example {φ : 𝔼[Γ, ENNReal]} {x : 𝒱} {σ₀ : States Γ}
-    {σ : States (𝒱:=↑({x} : Set 𝒱)ᶜᶜ) (Γ ·)} :
+example {φ : 𝔼[Γ, ENNReal]} {x : 𝒱} {σ₀ : State Γ}
+    {σ : State (𝒱:=↑({x} : Set 𝒱)ᶜᶜ) (Γ ·)} :
     Exp.fix φ ({x}ᶜ : Set 𝒱) σ₀ σ = φ σ₀[x ↦ σ ⟨x, by simp⟩] := by
   simp only [Exp.fix_apply]
   congr
   ext y
-  grind [States.cofix]
+  grind [State.cofix]
 
 theorem wp_le_of_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (X : 𝔼[Γ, ENNReal]) :
     Exp.fix (wp[O]⟦@C⟧ φ) S σ₀ ≤ Exp.fix X S σ₀ → wp[O]⟦@C⟧ φ σ₀ ≤ X σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
-  convert h <;> ext <;> simp [States.cofix]
+  convert h <;> ext <;> simp [State.cofix]
 
 theorem le_wlp_of_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (X : 𝔼[Γ, ENNReal]) :
     Exp.fix X S σ₀ ≤ Exp.fix (wlp[O]⟦@C⟧ φ) S σ₀ → X σ₀ ≤ wlp[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
-  convert h <;> ext <;> simp [States.cofix]
+  convert h <;> ext <;> simp [State.cofix]
 
 theorem le_wlp'_of_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (X : ProbExp Γ) :
     X.fix S σ₀ ≤ (wlp'[O]⟦@C⟧ φ).fix S σ₀ → X σ₀ ≤ wlp'[O]⟦@C⟧ φ σ₀ := by
   intro h
   replace h := h fun x ↦ σ₀ x
   simp_all
-  convert h <;> ext <;> simp [States.cofix]
+  convert h <;> ext <;> simp [State.cofix]
 
 theorem wp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
     Exp.fix (wp[O]⟦@C⟧ φ) S σ₀ = wp[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
@@ -299,7 +299,7 @@ theorem wlp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mo
       simp [hv]
       grind
     else
-      simp [States.cofix, hv]
+      simp [State.cofix, hv]
   | seq C₁ C₂ ih₁ ih₂ =>
     ext
     simp

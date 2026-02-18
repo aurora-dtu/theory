@@ -120,6 +120,8 @@ variable {α β : Type*} [CompleteLattice α] [CompleteLattice β]
 
 paper_link[16] Pi.instCompleteLattice (α:=α) (β:=fun _ ↦ β)
 
+-- TODO: note ECost vs EC, paper different
+
 paper_link[17] M.Φ
 paper_thm[18] MDP.Φ_𝒜_ωScottContinuous (M:=M) (c:=c)
 paper_thm[19] M.iSup_iSup_EC_eq_lfp_Φ𝒜 (c:=c)
@@ -156,7 +158,7 @@ open pGCL
 
 variable {𝒱 : Type*} [DecidableEq 𝒱] {Γ : Γ[𝒱]}
 
-paper_link[1] pGCL.States (𝒱:=𝒱)
+paper_link[1] pGCL.State (𝒱:=𝒱)
 paper_link[2] Substitution
 
 paper_link[3] pGCL (𝒱:=𝒱)
@@ -233,7 +235,7 @@ paper_thm[26] OrderHom.le_gfp_of_iter (α:=α) (f:=f) (Δ:=Δ)
 paper_thm[27] pGCL.ParkKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
 paper_thm[28] pGCL.ParkKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C)
 
-paper_link[29] States.EQ (Γ:=Γ)
+paper_link[29] State.EQ (Γ:=Γ)
 paper_thm[30] pGCL.IdleKInduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
 paper_thm[31] pGCL.IdleKCoinduction (Γ:=Γ) (I:=I) (φ:=φ) (b:=b) (O:=O) (C:=C) (σ₀:=σ₀)
 

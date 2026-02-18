@@ -17,12 +17,12 @@ noncomputable instance Act.instFintype : Fintype Act where
 inductive Termination where | fault | term
 
 @[reducible]
-def Conf₀ (Γ : Γ[𝒱]) := pGCL Γ × States Γ
+def Conf₀ (Γ : Γ[𝒱]) := pGCL Γ × State Γ
 @[reducible]
-def Conf₁ (Γ : Γ[𝒱]) := (pGCL Γ ⊕ Termination) × States Γ
+def Conf₁ (Γ : Γ[𝒱]) := (pGCL Γ ⊕ Termination) × State Γ
 
 @[reducible]
-def Conf' (Γ : Γ[𝒱]) := Conf (pGCL Γ) (States Γ) Termination
+def Conf' (Γ : Γ[𝒱]) := Conf (pGCL Γ) (State Γ) Termination
 
 namespace Conf
 
@@ -168,9 +168,9 @@ theorem tsum_after_eq'' (C₂ : pGCL Γ) {f g : (ENNReal × Conf₁ Γ) → ENNR
   (hg₂' : ∀ p σ, f (p, conf₁[↯, σ]) = 0 → g (p, conf₁[↯, σ]) = 0)
   (hg₃ : ∀ p C σ, ¬g (p, conf₁[@C, σ]) = 0 → ∃ a, ¬f (p, a) = 0 ∧ C₂.after a = conf₁[@C, σ])
   (hf : ∀ (a : ENNReal),
-    (∀ (C : pGCL Γ) (σ : States Γ),
+    (∀ (C : pGCL Γ) (σ : State Γ),
         ¬f (a, Sum.inl C, σ) = 0 → g (a, C₂.after (Sum.inl C, σ)) = f (a, Sum.inl C, σ)) ∧
-      ∀ (t : Termination) (σ : States Γ),
+      ∀ (t : Termination) (σ : State Γ),
         ¬f (a, Sum.inr t, σ) = 0 → g (a, C₂.after (Sum.inr t, σ)) = f (a, Sum.inr t, σ)) :
     (∑' s, g s) = ∑' s, f s :=
   tsum_eq_tsum_of_ne_zero_bij (fun ⟨(p, C), _⟩ ↦ (p, C₂.after C))

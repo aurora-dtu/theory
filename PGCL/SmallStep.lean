@@ -44,7 +44,7 @@ notation c " ⤳[" α "," p "] " c' => SmallStep c α p c'
 
 namespace SmallStep
 
-variable {c : Conf₀ Γ} {c' : Conf₁ Γ} {σ : States Γ}
+variable {c : Conf₀ Γ} {c' : Conf₁ Γ} {σ : State Γ}
 
 @[simp] theorem p_pos (h : c ⤳[α,p] c') : 0 < p := by induction h <;> simp_all
 @[simp] theorem p_ne_zero (h : c ⤳[α,p] c') : ¬p = 0 :=

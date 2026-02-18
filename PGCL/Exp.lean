@@ -166,21 +166,21 @@ theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
     grind [zero_le]
 
 
-/-! # Expressions & States -/
+/-! # Expressions & State -/
 
 namespace pGCL
 
-notation "Γ[" Γ "]" => Γ → Type*
-def States {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
+notation  "Γ[" Γ "]" => Γ → Type*
+def State {𝒱 : Type*} (Γ : Γ[𝒱]) := (s : 𝒱) → Γ s
 variable {𝒱 : Type*} {Γ : Γ[𝒱]}
-notation "𝔼[" Γ "," α "]" => States Γ → α
+notation "𝔼[" Γ "," α "]" => State Γ → α
 
-instance States.instSubstitution [DecidableEq 𝒱] : Substitution (States Γ) Γ where
+instance State.instSubstitution [DecidableEq 𝒱] : Substitution (State Γ) Γ where
   subst σ := fun ⟨v, t⟩ α ↦ if h : v = α then cast (congrArg Γ h) t else σ α
 
-@[ext] theorem States.ext {σ₁ σ₂ : States Γ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
+@[ext] theorem State.ext {σ₁ σ₂ : State Γ} (h : ∀ v, σ₁ v = σ₂ v) : σ₁ = σ₂ := _root_.funext h
 
-@[grind =, simp] theorem States.subst_apply [DecidableEq 𝒱] {σ : States Γ} :
+@[grind =, simp] theorem State.subst_apply [DecidableEq 𝒱] {σ : State Γ} :
     σ[x ↦ v] y = if h : x = y then cast (congrArg Γ h) v else σ y := rfl
 
 namespace Exp
@@ -301,15 +301,15 @@ namespace OrderHom
 
 variable {α β : Type*} [Preorder α] [Preorder β] [Add β] [AddLeftMono β] [AddRightMono β]
 
-instance : AddLeftMono (States Γ → ENNReal) where
+instance : AddLeftMono (State Γ → ENNReal) where
   elim a _ _ hbc := fun σ ↦ add_le_add_right (hbc σ) (a σ)
-instance : AddRightMono (States Γ → ENNReal) where
+instance : AddRightMono (State Γ → ENNReal) where
   elim a _ _ hbc := fun σ ↦ add_le_add_left (hbc σ) (a σ)
 
 instance instAdd : Add (α →o β) where
   add a b := ⟨fun x ↦ a x + b x, fun x y h ↦ by simp; gcongr⟩
 @[simp] theorem add_apply (f g : α →o β) : (f + g) x = f x + g x := by rfl
-@[simp] theorem add_apply2' (f g : α →o States Γ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
+@[simp] theorem add_apply2' (f g : α →o State Γ → ENNReal) : (f + g) x y = f x y + g x y := by rfl
 
 instance [OfNat β n] : OfNat (α →o β) n := ⟨fun _ ↦ OfNat.ofNat n, by intro; simp⟩
 omit [Add β] [AddLeftMono β] [AddRightMono β] in

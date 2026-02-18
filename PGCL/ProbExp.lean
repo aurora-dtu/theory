@@ -6,7 +6,7 @@ def ProbExp (Γ : Γ[𝒱]) := {e : 𝔼[Γ, ENNReal] // e ≤ 1}
 
 namespace ProbExp
 
-instance instFunLike : FunLike (ProbExp Γ) (States Γ) ENNReal where
+instance instFunLike : FunLike (ProbExp Γ) (State Γ) ENNReal where
   coe := Subtype.val
   coe_injective' := Subtype.val_injective
 
@@ -31,7 +31,7 @@ namespace ProbExp
 
 variable {𝒱 : Type*} {Γ : Γ[𝒱]}
 
-variable (p : ProbExp Γ) (σ : States Γ)
+variable (p : ProbExp Γ) (σ : State Γ)
 
 instance instLE : LE (ProbExp Γ) where
   le a b := ∀ x, a x ≤ b x

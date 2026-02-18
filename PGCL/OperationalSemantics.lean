@@ -11,7 +11,7 @@ theorem ProbExp.pick_same {p : ProbExp Γ} : p σ * x + (1 - p σ) * x = x := by
   simp [← add_mul]
 
 @[simp]
-noncomputable def cost_t : 𝔼[Γ, ENNReal] →o Termination × States Γ → ENNReal :=
+noncomputable def cost_t : 𝔼[Γ, ENNReal] →o Termination × State Γ → ENNReal :=
   ⟨fun X c ↦ match c with
   | (.term, σ) => X σ
   | (.fault, _) => 0, fun _ _ _ _ ↦ by
@@ -20,7 +20,7 @@ noncomputable def cost_t : 𝔼[Γ, ENNReal] →o Termination × States Γ → E
     · rfl⟩
 
 @[simp]
-noncomputable def cost_t' : 𝔼[Γ, ENNReal] →o Termination × States Γ → ENNReal :=
+noncomputable def cost_t' : 𝔼[Γ, ENNReal] →o Termination × State Γ → ENNReal :=
   ⟨fun X c ↦ match c with
   | (.term, σ) => X σ
   | (.fault, σ) => 1, fun _ _ _ _ ↦ by
@@ -29,17 +29,17 @@ noncomputable def cost_t' : 𝔼[Γ, ENNReal] →o Termination × States Γ → 
     · rfl⟩
 
 @[simp]
-noncomputable def cost_p : pGCL Γ × States Γ → ENNReal
+noncomputable def cost_p : pGCL Γ × State Γ → ENNReal
   | conf₀[tick(@r), σ] => r σ
   | conf₀[@c' ; @_, σ] => cost_p conf₀[@c', σ]
   | _ => 0
 
 @[simp]
-noncomputable def cost_p' : pGCL Γ × States Γ → ENNReal := 0
+noncomputable def cost_p' : pGCL Γ × State Γ → ENNReal := 0
 
 noncomputable instance 𝕊
-    (cT : 𝔼[Γ, ENNReal] →o Termination × States Γ → ENNReal) (cP : pGCL Γ × States Γ → ENNReal) :
-    SmallStepSemantics (pGCL Γ) (States Γ) Termination Act where
+    (cT : 𝔼[Γ, ENNReal] →o Termination × State Γ → ENNReal) (cP : pGCL Γ × State Γ → ENNReal) :
+    SmallStepSemantics (pGCL Γ) (State Γ) Termination Act where
   r := SmallStep
   relation_p_pos := SmallStep.p_ne_zero
   succs_sum_to_one := SmallStep.sums_to_one
@@ -47,10 +47,10 @@ noncomputable instance 𝕊
   cost_t := cT
   cost_p := cP
 
-noncomputable instance : SmallStepSemantics (pGCL Γ) (States Γ) Termination Act := 𝕊 cost_t cost_p
+noncomputable instance : SmallStepSemantics (pGCL Γ) (State Γ) Termination Act := 𝕊 cost_t cost_p
 
-variable (cT : 𝔼[Γ, ENNReal] →o Termination × States Γ → ENNReal)
-variable (cP : pGCL Γ × States Γ → ENNReal)
+variable (cT : 𝔼[Γ, ENNReal] →o Termination × State Γ → ENNReal)
+variable (cP : pGCL Γ × State Γ → ENNReal)
 
 noncomputable abbrev 𝒪 := (𝕊 cT cP (Γ:=Γ)).mdp
 
@@ -67,7 +67,7 @@ noncomputable instance : (𝕊 cost_t cost_p (Γ:=Γ)).FiniteBranching where
 
 variable {f : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]}
 
-variable {C : pGCL Γ} {σ : States Γ}
+variable {C : pGCL Γ} {σ : State Γ}
 
 @[simp]
 theorem act_eq_SmallStep_act :
@@ -89,11 +89,11 @@ variable {b : BExpr Γ} {O : Optimization}
 
 open scoped Optimization.Notation
 
-def cP' (f : pGCL Γ × States Γ → ENNReal) : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] :=
+def cP' (f : pGCL Γ × State Γ → ENNReal) : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] :=
   fun C ↦ ⟨fun X σ ↦ f (C, σ), fun a b h σ ↦ by simp⟩
 
 omit [DecidableEq 𝒱] in
-@[grind =, simp] theorem cP'_apply {f : pGCL Γ × States Γ → ENNReal} :
+@[grind =, simp] theorem cP'_apply {f : pGCL Γ × State Γ → ENNReal} :
     cP' f C X = fun σ ↦ f (C, σ) := rfl
 
 @[simp]theorem ς.skip :
@@ -311,7 +311,7 @@ theorem wp_eq_op {C : pGCL Γ} : wp[O]⟦@C⟧ = (𝕊 cost_t cost_p).op O C := 
 #guard_msgs in
 #print axioms instET
 
-noncomputable instance : SmallStepSemantics (pGCL Γ) (States Γ) Termination Act := 𝕊 cost_t' cost_p'
+noncomputable instance : SmallStepSemantics (pGCL Γ) (State Γ) Termination Act := 𝕊 cost_t' cost_p'
 open scoped Classical in
 noncomputable instance : (𝕊 cost_t' cost_p' (Γ:=Γ)).FiniteBranching where
   finite := by simp [r, ← SmallStep.succs_univ_fin'_eq_r]

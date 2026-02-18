@@ -13,18 +13,18 @@ theorem wlp'_apply_eq_wlp_apply {C : pGCL Γ} :
     wlp'[O]⟦@C⟧ X σ = wlp[O]⟦@C⟧ X σ := by
   simp [wlp]
 
-def States.EQ (V : Set 𝒱) (σ₀ : States Γ) : Set (States Γ) := {σ | ∀ v ∈ V, σ v = σ₀ v}
+def State.EQ (V : Set 𝒱) (σ₀ : State Γ) : Set (State Γ) := {σ | ∀ v ∈ V, σ v = σ₀ v}
 
 /-- An _Idle invariant_ is _Park invariant_ that holds for states with a set of fixed variables. -/
 def IdleInvariant (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (b : BExpr Γ) (φ : 𝔼[Γ, ENNReal])
-    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : States Γ) : Prop :=
+    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : State Γ) : Prop :=
   ∀ σ ∈ σ₀.EQ V, Ψ[g] b φ I σ ≤ I σ
 
 /-- _Idle induction_ is _Park induction_, but the engine is running (i.e. an initial state is
 given), and as a consequence only states that vary over the modified variables need to be
 considered for the inductive invariant. -/
 theorem IdleInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I : 𝔼[Γ, ENNReal]}
-    {σ₀ : States Γ} (h : IdleInvariant wp[O]⟦@C⟧ b φ I C.modsᶜ σ₀) :
+    {σ₀ : State Γ} (h : IdleInvariant wp[O]⟦@C⟧ b φ I C.modsᶜ σ₀) :
     wp[O]⟦while @b { @C }⟧ φ σ₀ ≤ I σ₀ := by
   apply wp_le_of_fix (S:=C.modsᶜ)
   rw [wp_fix _ _ _ (by simp; rfl)]
@@ -35,19 +35,19 @@ theorem IdleInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I :
   simp [IdleInvariant, Ψ] at h
   rw [← C.wp_fix I C.modsᶜ (by simp)]
   convert h (σ₀.cofix σ') ?_
-  simp +contextual [States.EQ]
+  simp +contextual [State.EQ]
 
 /-- An _Idle coinvariant_ is _Park coinvariant_ that holds for states with a set of fixed variables.
 -/
 def IdleCoinvariant (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (b : BExpr Γ) (φ : 𝔼[Γ, ENNReal])
-    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : States Γ) : Prop :=
+    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : State Γ) : Prop :=
   ∀ σ ∈ σ₀.EQ V, I σ ≤ Ψ[g] b φ I σ
 
 /-- _Idle coinduction_ is _Park coinduction_, but the engine is running (i.e. an initial state is
 given), and as a consequence only states that vary over the modified variables need to be
 considered for the coinductive invariant. -/
 theorem IdleCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I : 𝔼[Γ, ENNReal]}
-    {σ₀ : States Γ} (h : IdleCoinvariant wlp[O]⟦@C⟧ b φ I C.modsᶜ σ₀) (hI : I ≤ 1) (hφ : φ ≤ 1) :
+    {σ₀ : State Γ} (h : IdleCoinvariant wlp[O]⟦@C⟧ b φ I C.modsᶜ σ₀) (hI : I ≤ 1) (hφ : φ ≤ 1) :
     I σ₀ ≤ wlp[O]⟦while @b { @C }⟧ φ σ₀ := by
   apply le_wlp_of_fix (S:=C.modsᶜ)
   rw [wlp_fix _ _ _ (by simp; rfl)]
@@ -64,16 +64,16 @@ theorem IdleCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I
   convert h (σ₀.cofix σ') ?_
   · simp [Iverson.iver]; split <;> simp_all [wlp, ProbExp.ofExp]
     apply hφ
-  · simp +contextual [States.EQ]
+  · simp +contextual [State.EQ]
 
 /-- A _Idle k-invariant_. -/
 def IdleKInvariant (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (b : BExpr Γ) (φ : 𝔼[Γ, ENNReal]) (k : ℕ)
-    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : States Γ) : Prop :=
+    (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : State Γ) : Prop :=
     ∀ σ ∈ σ₀.EQ V, (Ψ[g] b φ) ((Ψ[g] b φ · ⊓ I)^[k] I) σ ≤ I σ
 
 /-- _Idle k-induction_. -/
 theorem IdleKInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I : 𝔼[Γ, ENNReal]} (k : ℕ)
-     {σ₀ : States Γ} (h : IdleKInvariant wp[O]⟦@C⟧ b φ k I C.modsᶜ σ₀) :
+     {σ₀ : State Γ} (h : IdleKInvariant wp[O]⟦@C⟧ b φ k I C.modsᶜ σ₀) :
     wp[O]⟦while @b { @C }⟧ φ σ₀ ≤ I σ₀ := by
   apply wp_le_of_fix (S:=C.modsᶜ)
   rw [wp_fix _ _ _ (by simp; rfl)]
@@ -101,16 +101,16 @@ theorem IdleKInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I 
   simp [this]
   rw [← wp_fix _ _ _ (by simp)]
   convert h (σ₀.cofix σ') ?_
-  · simp +contextual [States.EQ]
+  · simp +contextual [State.EQ]
 
 /-- A _Idle k-coinvariant_. -/
 def IdleKCoinvariant (g : ProbExp Γ →o ProbExp Γ) (b : BExpr Γ) (φ : ProbExp Γ) (k : ℕ)
-    (I : ProbExp Γ) (V : Set 𝒱) (σ₀ : States Γ) : Prop :=
+    (I : ProbExp Γ) (V : Set 𝒱) (σ₀ : State Γ) : Prop :=
     ∀ σ ∈ σ₀.EQ V, I σ ≤ (pΨ[g] b φ) ((pΨ[g] b φ · ⊔ I)^[k] I) σ
 
 /-- _Idle k-coinduction_. -/
 theorem IdleKCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : ProbExp Γ} {I : ProbExp Γ} (k : ℕ)
-     {σ₀ : States Γ} (h : IdleKCoinvariant wlp'[O]⟦@C⟧ b φ k I C.modsᶜ σ₀) :
+     {σ₀ : State Γ} (h : IdleKCoinvariant wlp'[O]⟦@C⟧ b φ k I C.modsᶜ σ₀) :
     I σ₀ ≤ wlp'[O]⟦while @b { @C }⟧ φ σ₀ := by
   apply le_wlp'_of_fix (S:=C.modsᶜ)
   rw [wlp'_fix _ _ _ (by simp; rfl)]
@@ -141,11 +141,11 @@ theorem IdleKCoinduction {b : BExpr Γ} {C : pGCL Γ} {φ : ProbExp Γ} {I : Pro
   simp [this]
   rw [← wlp'_fix _ _ _ (by simp)]
   convert h (σ₀.cofix σ') ?_
-  · simp +contextual [States.EQ]
+  · simp +contextual [State.EQ]
 
 /-- A _Idle k-coinvariant_. -/
 def IdleKCoinvariant'' (g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]) (b : BExpr Γ) (φ : 𝔼[Γ, ENNReal])
-    (k : ℕ) (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : States Γ) : Prop :=
+    (k : ℕ) (I : 𝔼[Γ, ENNReal]) (V : Set 𝒱) (σ₀ : State Γ) : Prop :=
     ∀ σ ∈ σ₀.EQ V, I σ ≤ (Ψ[g] b φ) ((Ψ[g] b φ · ⊔ I)^[k] I) σ
 
 def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL Γ}
@@ -193,7 +193,7 @@ def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL Γ}
 
 /-- _Idle k-coinduction_. -/
 theorem IdleKCoinduction'' {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I : 𝔼[Γ, ENNReal]}
-    (k : ℕ) {σ₀ : States Γ} (h : IdleKCoinvariant'' wlp[O]⟦@C⟧ b φ k I C.modsᶜ σ₀)
+    (k : ℕ) {σ₀ : State Γ} (h : IdleKCoinvariant'' wlp[O]⟦@C⟧ b φ k I C.modsᶜ σ₀)
     (hI : I ≤ 1) (hφ : φ ≤ 1) :
     I σ₀ ≤ wlp[O]⟦while @b { @C }⟧ φ σ₀ := by
   convert IdleKCoinduction k (IdleKCoinvariant''.toIdleKCoinvariant h hI hφ)

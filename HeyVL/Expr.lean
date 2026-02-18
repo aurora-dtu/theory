@@ -413,7 +413,7 @@ theorem Array.map_mul_sum {α β : Type*} [MonoidWithZero β] [AddMonoid β] [Le
 
 structure HeyLo.Distribution (α : Ty) where
   values : Array (𝔼r × HeyLo α)
-  prop : ∀ (σ : States Ty.Γ), (values.map (·.fst.sem σ)).sum = 1
+  prop : ∀ (σ : State Ty.Γ), (values.map (·.fst.sem σ)).sum = 1
 deriving DecidableEq
 
 attribute [simp] Distribution.prop

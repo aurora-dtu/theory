@@ -358,7 +358,7 @@ theorem Path.Cyl_subset_cylinder (π : M.Path) : embed ⁻¹' π.Cyl ⊆ cylinde
       grind
     simp [this]
     -- NOTE: this would be a nice proof
-    -- have : f ((embed f).take i) = (embed f).take (i + 1) := by sorry
+    -- have : f ((embed f).take i) = (embed f).take (i + 1) := by ...
     -- simp [this]; simp [Path'.take]
     by_cases h' : j < i + 1
     · have :

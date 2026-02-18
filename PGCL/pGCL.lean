@@ -307,7 +307,7 @@ def tickUnexpander : Unexpander
 #guard_msgs in
 #check pgcl { tick(1) }
 
-/-- info: fun r ↦ pgcl {tick(@r)} : (States ?_ → ENNReal) → pGCL ?_ -/
+/-- info: fun r ↦ pgcl {tick(@r)} : (State ?_ → ENNReal) → pGCL ?_ -/
 #guard_msgs in
 #check fun r ↦ pgcl { tick(@r) }
 

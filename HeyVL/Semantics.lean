@@ -129,9 +129,9 @@ theorem HeyLo.Var_sem_subst :
     simp [sem, Substitution.subst_singleton, Substitution.subst]
     grind
 
-def Substitution.applied (σ : States fun (x : Ident) ↦ x.type.lit)
+def Substitution.applied (σ : State fun (x : Ident) ↦ x.type.lit)
     (xs : List ((v : Ident) × 𝔼'[v.type.lit])) :
-    States fun (x : Ident) ↦ x.type.lit :=
+    State fun (x : Ident) ↦ x.type.lit :=
   match xs with
   | [] => σ
   | x::xs => Substitution.applied σ[x.1 ↦ x.2 σ] xs
@@ -270,7 +270,7 @@ theorem HeyVL.Subs.tail_1_eq_get (S : Subs (x :: xs) hn) :
   grind
 
 @[grind =, simp]
-theorem HeyVL.Subs.subst_help'_apply (S : Subs xs hn) (σ : States fun (x : Ident) ↦ x.type.lit) :
+theorem HeyVL.Subs.subst_help'_apply (S : Subs xs hn) (σ : State fun (x : Ident) ↦ x.type.lit) :
     σ[..S.help'] y = if h : y ∈ xs then S.get y h else σ y := by
   induction xs generalizing y with
   | nil => simp [HeyVL.Subs.help']
@@ -314,7 +314,7 @@ theorem HeyLo.sem_substs_apply (m : HeyLo α) :
 theorem HeyLo.sem_substs_apply' (m : HeyLo α) (Ξ : HeyVL.Subs xs hxs) :
     m.sem[..Ξ.help] σ = m.sem σ[..Ξ.help'] := by
   cases α <;> simp
-theorem Substitution.applied_subst (σ : States fun (x : Ident) ↦ x.type.lit)
+theorem Substitution.applied_subst (σ : State fun (x : Ident) ↦ x.type.lit)
     (xs : List ((v : Ident) × 𝔼'[v.type.lit])) (v : 𝔼'[_]) :
       (Substitution.applied σ xs)[x ↦ v (Substitution.applied σ xs)]
     = Substitution.applied σ (xs ++ [⟨x, v⟩]) := by
@@ -323,11 +323,11 @@ theorem Substitution.applied_subst (σ : States fun (x : Ident) ↦ x.type.lit)
   | cons y xs ih =>
     simp_all [applied]
 
-def HeyVL.Subs.of (xs : List Ident) (hn : xs.Nodup) (σ : States fun (x : Ident) ↦ x.type.lit) :
+def HeyVL.Subs.of (xs : List Ident) (hn : xs.Nodup) (σ : State fun (x : Ident) ↦ x.type.lit) :
     HeyVL.Subs xs hn := ⟨xs.map fun x ↦ ⟨x, σ x⟩, by simp, by simp⟩
 @[grind =, simp]
 theorem HeyVL.Subs.of_get (xs : List Ident) (hn : xs.Nodup)
-    (σ : States fun (x : Ident) ↦ x.type.lit) {y} {hy} :
+    (σ : State fun (x : Ident) ↦ x.type.lit) {y} {hy} :
     (Subs.of xs hn σ).get y hy = σ y := by simp [Subs.of, Subs.get]; grind
 
 set_option maxHeartbeats 700000 in
