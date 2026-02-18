@@ -135,7 +135,7 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     · clear ih₁; grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [spGCL.fv] at hG
-    simp only [pGCL, wp.nonDet_apply, Optimization.opt₂, enc]
+    simp only [pGCL, wp.nonDet_apply, Optimization.opt, enc]
     cases O
     · simp only [HeyVL.vp, sem_sup_apply]
       grw [← ih₁, ← ih₂] <;> grind
@@ -270,7 +270,7 @@ private lemma spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv
       BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply, le_refl]
     all_goals grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
-    simp only [Ty.expr, enc, pGCL, wlp.nonDet_apply, Optimization.opt₂]
+    simp only [Ty.expr, enc, pGCL, wlp.nonDet_apply, Optimization.opt]
     simp [spGCL.fv] at hG
     have : C₁.fv ∪ φ.fv ⊆ G := by grind
     cases O

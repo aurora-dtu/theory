@@ -32,45 +32,45 @@ abbrev dual : Optimization → Optimization
 @[grind =, simp] theorem 𝓐_dual : Optimization.Angelic.dual = 𝒟 := by rfl
 @[grind =, simp] theorem 𝒟_dual : Optimization.Demonic.dual = 𝒜 := by rfl
 
-section opt₂
+section opt
 
 variable [Lattice α]
 
-def opt₂ (a b : α) : α :=
+def opt (a b : α) : α :=
   match O with
     | 𝒜 => a ⊔ b
     | 𝒟 => a ⊓ b
 
 @[simp]
-theorem opt₂_apply (f g : γ → α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
+theorem opt_apply (f g : γ → α) : O.opt f g x = O.opt (f x) (g x) := by
+  cases O <;> simp [opt]
 @[simp]
-theorem opt₂_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt₂ f g x = O.opt₂ (f x) (g x) := by
-  cases O <;> simp [opt₂]
+theorem opt_OrderHom_apply [Preorder γ] (f g : γ →o α) : O.opt f g x = O.opt (f x) (g x) := by
+  cases O <;> simp [opt]
 
 @[gcongr]
-theorem opt₂_le {a b c d : α} (hac : a ≤ c) (hbd : b ≤ d) : O.opt₂ a b ≤ O.opt₂ c d := by
-  cases O <;> simp [opt₂] <;> constructor
+theorem opt_le {a b c d : α} (hac : a ≤ c) (hbd : b ≤ d) : O.opt a b ≤ O.opt c d := by
+  cases O <;> simp [opt] <;> constructor
   · exact le_sup_of_le_left hac
   · exact le_sup_of_le_right hbd
   · exact inf_le_of_left_le hac
   · exact inf_le_of_right_le hbd
 
 @[grind =, simp]
-theorem 𝒜_opt₂ {a b : α} : (𝒜 : Optimization).opt₂ a b = a ⊔ b := rfl
+theorem 𝒜_opt {a b : α} : (𝒜 : Optimization).opt a b = a ⊔ b := rfl
 @[grind =, simp]
-theorem 𝒟_opt₂ {a b : α} : (𝒟 : Optimization).opt₂ a b = a ⊓ b := rfl
+theorem 𝒟_opt {a b : α} : (𝒟 : Optimization).opt a b = a ⊓ b := rfl
 
 open OmegaCompletePartialOrder
 
-theorem opt₂_ωScottContinuous {α β : Type*} [Order.Frame α] [Order.Frame β]
+theorem opt_ωScottContinuous {α β : Type*} [Order.Frame α] [Order.Frame β]
     (O : Optimization)
     {f : α →o β} {g : α →o β} (hf : ωScottContinuous f) (hg : ωScottContinuous g) :
-    ωScottContinuous (O.opt₂ f g) := by
+    ωScottContinuous (O.opt f g) := by
   cases O
-  · simp only [𝒜_opt₂]
+  · simp only [𝒜_opt]
     exact CompleteLattice.ωScottContinuous.sup hf hg
-  · simp only [𝒟_opt₂]
+  · simp only [𝒟_opt]
     refine ωScottContinuous.of_monotone_map_ωSup ?_
     simp [ωSup]
     constructor
@@ -83,7 +83,7 @@ theorem opt₂_ωScottContinuous {α β : Type*} [Order.Frame α] [Order.Frame �
       · intro _ _ _ _; simp only; gcongr
       · intro _ _ _ _; simp only; gcongr
 
-end opt₂
+end opt
 
 variable [CompleteLattice α]
 
@@ -105,8 +105,8 @@ theorem sOpt_eq_iOpt (S : Set ι) (f : ι → α) : O.sOpt S f = O.iOpt fun (a :
 theorem sOpt_singleton {f : ι → α} : O.sOpt {i} f = f i := by
   simp [sOpt]; split <;> rfl
 @[simp]
-theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt₂ (f a) (f b) := by
-  simp [sOpt, opt₂]; split <;> simp
+theorem sOpt_pair {f : ι → α} : O.sOpt {a, b} f = O.opt (f a) (f b) := by
+  simp [sOpt, opt]; split <;> simp
   · apply le_antisymm
     · simp
     · simp

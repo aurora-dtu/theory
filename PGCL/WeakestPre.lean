@@ -88,7 +88,7 @@ noncomputable def wp (O : Optimization) : pGCL Γ → 𝔼[Γ, ENNReal] →o �
     ⟨fun X ↦ p * C₁.wp O X + (1 - p) * C₂.wp O X,
      fun a b hab ↦ by simp only; gcongr⟩
   | pgcl {{@C₁}[]{@C₂}} =>
-    ⟨O.opt₂ (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
+    ⟨O.opt (C₁.wp O) (C₂.wp O), fun a b hab ↦ by simp only [Optimization.opt_apply]; gcongr⟩
   | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Ψ[wp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(@e)} => ⟨(e + ·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(@b)} => ⟨(i[b] * ·), fun _ _ h ↦ by simp; gcongr⟩
@@ -126,7 +126,7 @@ variable {X : 𝔼[Γ, ENNReal]}
 @[simp] theorem wp.prob_apply :
     wp[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wp O X + (1 - p) * C₂.wp O X
 := rfl
-@[simp] theorem wp.nonDet_apply : wp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wp O X) (C₂.wp O X) := by
+@[simp] theorem wp.nonDet_apply : wp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt (C₁.wp O X) (C₂.wp O X) := by
   ext; simp [wp]
 @[simp] theorem wp.tick_apply : wp[O]⟦tick(@e)⟧ X = e + X := rfl
 @[simp] theorem wp.observe_apply :
@@ -228,7 +228,7 @@ def wp.continuous (C : pGCL Γ) : ωScottContinuous (C.wp O) := by
   | skip => exact ωScottContinuous_iff_map_ωSup_of_orderHom.mpr (congrFun rfl)
   | assign => exact ωScottContinuous_iff_map_ωSup_of_orderHom.mpr (congrFun rfl)
   | seq C₁ C₂ ih₁ ih₂ => simp only [wp, coe_mk]; exact ωScottContinuous.comp ih₁ ih₂
-  | nonDet C₁ C₂ ih₁ ih₂ => exact O.opt₂_ωScottContinuous ih₁ ih₂
+  | nonDet C₁ C₂ ih₁ ih₂ => exact O.opt_ωScottContinuous ih₁ ih₂
   | prob C₁ p C₂ ih₁ ih₂ =>
     replace ih₁ := ωScottContinuous.map_ωSup_of_orderHom ih₁
     replace ih₂ := ωScottContinuous.map_ωSup_of_orderHom ih₂
@@ -265,8 +265,8 @@ theorem wp_le_one (C : pGCL Γ) (X : 𝔼[Γ, ENNReal]) (hX : X ≤ 1) : wp[O]�
   | nonDet C₁ C₂ ih₁ ih₂ =>
     simp [st]
     cases O
-    · simp [Optimization.opt₂]; exact ⟨ih₁ X hX, ih₂ X hX⟩
-    · simp [Optimization.opt₂]; exact inf_le_of_right_le (ih₂ X hX)
+    · simp [Optimization.opt]; exact ⟨ih₁ X hX, ih₂ X hX⟩
+    · simp [Optimization.opt]; exact inf_le_of_right_le (ih₂ X hX)
   | tick => simp [st, hX]
   | observe b =>
     simp [st]; intro σ; specialize hX σ; apply le_trans _ hX; simp

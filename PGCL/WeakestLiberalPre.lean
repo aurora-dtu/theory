@@ -68,7 +68,7 @@ noncomputable def wfp' (O : Optimization) : pGCL Γ → ProbExp Γ →o ProbExp 
   | pgcl {{@C₁} [@p] {@C₂}} =>
     ⟨fun X ↦ p * C₁.wfp' O X + (1 - p) * C₂.wfp' O X,
      fun a b hab ↦ by simp; gcongr⟩
-  | pgcl {{@C₁} [] {@C₂}} => O.opt₂ (C₁.wfp' O) (C₂.wfp' O)
+  | pgcl {{@C₁} [] {@C₂}} => O.opt (C₁.wfp' O) (C₂.wfp' O)
   | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (pΨ[wfp' O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(@b)} => ⟨fun X ↦ p[b] ⇨ X, fun _ _ h ↦ by simp only; gcongr⟩
@@ -93,7 +93,7 @@ noncomputable def wfp (O : Optimization) : pGCL Γ → 𝔼[Γ, ENNReal] →o �
     ⟨fun X ↦ p * C₁.wfp O X + (1 - p) * C₂.wfp O X,
      fun a b hab ↦ by simp only; gcongr⟩
   | pgcl {{@C₁}[]{@C₂}} =>
-    ⟨O.opt₂ (C₁.wfp O) (C₂.wfp O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
+    ⟨O.opt (C₁.wfp O) (C₂.wfp O), fun a b hab ↦ by simp only [Optimization.opt_apply]; gcongr⟩
   | pgcl {while @b {@C'}} => ⟨fun X ↦ lfp (Ψ[wfp O C'] b X), fun _ _ _ ↦ by simp; gcongr⟩
   | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(@b)} => ⟨fun X ↦ p[b] * X + (1 - p[b]), fun _ _ h ↦ by simp; gcongr⟩
@@ -115,7 +115,7 @@ theorem wfp'_eq_wfp {C : pGCL Γ} : wfp'[O]⟦@C⟧ X = wfp[O]⟦@C⟧ X := by
   | prob C₁ p C₂ ih₁ ih₂ => ext; simp [wfp', wfp, ← ih₁, ← ih₂]
   | observe b => ext σ; simp [wfp', wfp, himp]; if h : b σ then simp [h, eq_comm] else simp [h]
   | nonDet C₁ C₂ ih₁ ih₂ =>
-    simp [wfp', wfp, ← ih₁, ← ih₂]; ext; simp [Optimization.opt₂]
+    simp [wfp', wfp, ← ih₁, ← ih₂]; ext; simp [Optimization.opt]
     cases O <;> simp
   | loop b C' ih =>
     simp [wfp', wfp]
@@ -158,7 +158,7 @@ noncomputable def wlp' (O : Optimization) : pGCL Γ → ProbExp Γ →o ProbExp 
     ⟨fun X ↦ p * C₁.wlp' O X + (1 - p) * C₂.wlp' O X,
      fun a b hab ↦ by simp only; gcongr⟩
   | pgcl {{@C₁}[]{@C₂}} =>
-    ⟨O.opt₂ (C₁.wlp' O) (C₂.wlp' O), fun a b hab ↦ by simp only [Optimization.opt₂_apply]; gcongr⟩
+    ⟨O.opt (C₁.wlp' O) (C₂.wlp' O), fun a b hab ↦ by simp only [Optimization.opt_apply]; gcongr⟩
   | pgcl {while @b {@C'}} => ⟨fun X ↦ gfp (pΨ[wlp' O C'] b X), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {tick(@e)} => ⟨(·), fun _ _ h ↦ by simp; gcongr⟩
   | pgcl {observe(@b)} => ⟨fun X ↦ p[b] * X, fun _ _ h ↦ by simp; gcongr⟩
@@ -193,7 +193,7 @@ theorem wlp'_loop (φ  : BExpr Γ) (C' : pGCL Γ) :
 @[simp] theorem wlp'.prob_apply :
     wlp'[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wlp' O X + (1 - p) * C₂.wlp' O X
 := rfl
-@[simp] theorem wlp'.nonDet_apply : wlp'[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wlp' O X) (C₂.wlp' O X) := by
+@[simp] theorem wlp'.nonDet_apply : wlp'[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt (C₁.wlp' O X) (C₂.wlp' O X) := by
   ext; simp [wlp']
 @[simp] theorem wlp'.tick_apply : wlp'[O]⟦tick(@e)⟧ X = X := rfl
 @[simp] theorem wlp'.observe_apply :
@@ -230,8 +230,8 @@ variable {X : 𝔼[Γ, ENNReal]}
     wlp[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wlp O X + (1 - p) * C₂.wlp O X := by
   ext; simp [wlp]
 @[simp] theorem wlp.nonDet_apply :
-    wlp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt₂ (C₁.wlp O X) (C₂.wlp O X) := by
-  ext; simp [wlp]; cases O <;> simp [Optimization.opt₂]
+    wlp[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt (C₁.wlp O X) (C₂.wlp O X) := by
+  ext; simp [wlp]; cases O <;> simp [Optimization.opt]
 @[simp] theorem wlp.tick_apply : wlp[O]⟦tick(@e)⟧ X = X ⊓ 1 := by
   simp [wlp]; rfl
 @[simp] theorem wlp.observe_apply :
@@ -275,7 +275,7 @@ theorem wlp_sound (C : pGCL Γ) (X : ProbExp Γ) : wlp'[O]⟦@C⟧ X = 1 - wfp'[
     ext σ
     simp [wfp', ih₁, ih₂]
     cases O
-    · simp [Optimization.opt₂, Optimization.dual]
+    · simp [Optimization.opt, Optimization.dual]
       simp [Optimization.dual] at ih₁ ih₂
       set f := wfp'[𝒟]⟦@C₁⟧ (1 - X) σ
       set g := wfp'[𝒟]⟦@C₂⟧ (1 - X) σ
@@ -294,7 +294,7 @@ theorem wlp_sound (C : pGCL Γ) (X : ProbExp Γ) : wlp'[O]⟦@C⟧ X = 1 - wfp'[
           right
           gcongr
           apply le_min (le_of_not_ge hfg) (by rfl)
-    · simp [Optimization.opt₂, Optimization.dual]
+    · simp [Optimization.opt, Optimization.dual]
       simp [Optimization.dual] at ih₁ ih₂
       set f := wfp'[𝒜]⟦@C₁⟧ (1 - X) σ
       set g := wfp'[𝒜]⟦@C₂⟧ (1 - X) σ
@@ -360,8 +360,8 @@ def wfp.continuous (C : pGCL Γ) : ωScottContinuous (C.wfp O) := by
   | nonDet C₁ C₂ ih₁ ih₂ =>
     intro c; ext σ
     cases O
-    · simp_all [wfp, Optimization.opt₂, ← iSup_sup_eq]
-    simp_all [wfp, Optimization.opt₂]
+    · simp_all [wfp, Optimization.opt, ← iSup_sup_eq]
+    simp_all [wfp, Optimization.opt]
     refine Eq.symm (iSup_inf_of_monotone ?_ ?_)
     · intro a b hab; apply (wfp _ _).mono (c.mono hab)
     · intro a b hab; apply (wfp _ _).mono (c.mono hab)

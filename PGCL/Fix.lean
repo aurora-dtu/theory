@@ -265,7 +265,7 @@ theorem wp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mod
     Exp.fix (wp[O]⟦@C⟧ φ) S σ₀ = wp[O]⟦@(C.fix S σ₀)⟧ (Exp.fix φ S σ₀) := by
   symm
   induction C generalizing φ with simp_all [fix, mods] <;> try rfl
-  | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
+  | nonDet => cases O <;> simp [Optimization.opt] <;> rfl
   | loop b C ih =>
     ext σ
     simp only [wp_loop_eq_iter, iSup_apply, Exp.fix_apply]
@@ -308,7 +308,7 @@ theorem wlp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mo
       ext; simp
     simp [this] at ih₁
     simp [ih₁]
-  | nonDet => cases O <;> simp [Optimization.opt₂] <;> rfl
+  | nonDet => cases O <;> simp [Optimization.opt] <;> rfl
   | loop b C ih =>
     ext σ
     simp only [wlp_loop_eq_iter, iInf_apply, Exp.iInf_fix]

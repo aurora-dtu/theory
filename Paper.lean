@@ -213,8 +213,8 @@ paper_link[18] cwp (Γ:=Γ)
 
 -/
 
-paper_link[19] (pGCL.𝕊 (Γ:=Γ) f g).ς
-paper_thm[20] (pGCL.𝕊 (Γ:=Γ) f g).lfp_ς_eq_op (O:=O)
+paper_link[19] (pGCL.𝕊 (Γ:=Γ) f g).ξ
+paper_thm[20] (pGCL.𝕊 (Γ:=Γ) f g).lfp_ξ_eq_op (O:=O)
 paper_thm[21] wp_eq_op (Γ:=Γ) (C:=C) (O:=O)
 paper_link[22] wfp (Γ:=Γ)
 paper_thm[23] wfp_eq_op (Γ:=Γ) (C:=C) (O:=O)

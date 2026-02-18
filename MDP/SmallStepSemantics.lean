@@ -289,7 +289,7 @@ theorem Φ_term_eq :
   simp [Optimization.act, Optimization.sOpt, act]
   split <;> simp
 
-noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
+noncomputable def ξ (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P → 𝔼[S] →o 𝔼[S] :=
   ⟨fun Y ↦ (fun C ↦ ⟨fun X σ ↦ 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (fun s' ↦
     match s' with
     | .prog C' σ' => Y C' X σ'
@@ -310,11 +310,11 @@ noncomputable def ς (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
     · apply hab
     · rfl⟩
 
-theorem ς_apply : 𝕊.ς O Y C X = fun σ ↦ 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
+theorem ξ_apply : 𝕊.ξ O Y C X = fun σ ↦ 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
     | .prog C' σ' => Y C' X σ'
     | .term t σ' => 𝕊.cost_t X (t, σ')
     | .bot => 0) := rfl
-theorem ς_apply' : 𝕊.ς O Y C X σ = 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
+theorem ξ_apply' : 𝕊.ξ O Y C X σ = 𝕊.Φ' O (𝕊.cost X) (.prog C σ) (match · with
     | .prog C' σ' => Y C' X σ'
     | .term t σ' => 𝕊.cost_t X (t, σ')
     | .bot => 0) := rfl
@@ -415,13 +415,13 @@ theorem op_eq_iSup_succ_Φ [i : Optimization.ΦContinuous O 𝕊.mdp] :
   rw [fixedPoints.lfp_eq_sSup_iterate _ (i.Φ_continuous _)]
   rw [← iSup_iterate_succ]
   simp
-theorem ς_op_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.ς O (𝕊.op O) = 𝕊.op O := by
+theorem ξ_op_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.ξ O (𝕊.op O) = 𝕊.op O := by
   ext C X σ
   simp [op, op]
   rw [← map_lfp]
-  simp [ς_apply, OrderHom.coe_mk, cost, op]
+  simp [ξ_apply, OrderHom.coe_mk, cost, op]
 
-theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.ς O b ≤ b) :
+theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →o 𝔼[S]) (h : 𝕊.ξ O b ≤ b) :
     𝕊.op O ≤ b := by
   rw [op_eq_iSup_Φ, iSup_le_iff]
   intro n
@@ -429,7 +429,7 @@ theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →
   | zero => intros _ _ _; simp
   | succ 𝕊 ih =>
     refine le_trans (fun C X σ ↦ ?_) h
-    simp [Function.iterate_succ', ς_apply, -Function.iterate_succ, cost]
+    simp [Function.iterate_succ', ξ_apply, -Function.iterate_succ, cost]
     gcongr with α
     rcases α with (_ | α)
     · rfl
@@ -438,12 +438,12 @@ theorem op_isLeast [Optimization.ΦContinuous O 𝕊.mdp] (b : P → 𝔼[S] →
       · apply ih
       · split_ifs <;> simp
 
-theorem lfp_ς_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : lfp (𝕊.ς O) = 𝕊.op O :=
-  (lfp_le_fixed _ 𝕊.ς_op_eq_op).antisymm (le_lfp _ 𝕊.op_isLeast)
+theorem lfp_ξ_eq_op [Optimization.ΦContinuous O 𝕊.mdp] : lfp (𝕊.ξ O) = 𝕊.op O :=
+  (lfp_le_fixed _ 𝕊.ξ_op_eq_op).antisymm (le_lfp _ 𝕊.op_isLeast)
 
 attribute [-simp] Φ_simp in
-theorem ς_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContinuous (𝕊.ς O) := by
-  simp only [ς, ← Φ_simp, coe_mk]
+theorem ξ_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContinuous (𝕊.ξ O) := by
+  simp only [ξ, ← Φ_simp, coe_mk]
   refine ωScottContinuous.of_apply₂ fun C ↦ ?_
   refine ωScottContinuous.of_monotone_map_ωSup ?_
   simp only [ωSup, OrderHom.ωSup_coe, Chain.map_coe, Pi.evalOrderHom_coe, apply_coe,
@@ -464,13 +464,13 @@ theorem ς_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContin
     congr!
     split <;> simp
 
-theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (𝕊.ς O)^[n] ⊥ := by
-  rw [← lfp_ς_eq_op, fixedPoints.lfp_eq_sSup_iterate _ ς_continuous]
+theorem op_eq_iter [Optimization.ΦContinuous O 𝕊.mdp] : 𝕊.op O = ⨆ n, (𝕊.ξ O)^[n] ⊥ := by
+  rw [← lfp_ξ_eq_op, fixedPoints.lfp_eq_sSup_iterate _ ξ_continuous]
 
 class ET {P S T A : Type*} [Nonempty A] (𝕊 : SmallStepSemantics P S T A)
     (O : Optimization) [O.ΦContinuous 𝕊.mdp] (et : P → 𝔼[S] →o 𝔼[S]) where
   et_le_op : et ≤ 𝕊.op O
-  et_prefixed_point : 𝕊.ς O et ≤ et
+  et_prefixed_point : 𝕊.ξ O et ≤ et
 
 variable {et : P → 𝔼[S] →o 𝔼[S]} [Optimization.ΦContinuous O 𝕊.mdp] [i' : 𝕊.ET O et]
 
@@ -489,13 +489,13 @@ theorem op_le_seq
       𝕊.cost_t (𝕊.op O C' X) (t, σ) ≤ (𝕊.op O C' X) σ)
     (after_inj : ∀ x, Function.Injective (after x)) :
       𝕊.op O C ∘ 𝕊.op O C' ≤ 𝕊.op O (seq C C') := by
-  nth_rw 1 [← lfp_ς_eq_op]
-  apply lfp_induction (ς O) (p:=fun f ↦ ∀ C C', f C ∘ op O C' ≤ op O (seq C C'))
+  nth_rw 1 [← lfp_ξ_eq_op]
+  apply lfp_induction (ξ O) (p:=fun f ↦ ∀ C C', f C ∘ op O C' ≤ op O (seq C C'))
   · simp only [ge_iff_le]
     intro f h₁ h₂
-    nth_rw 2 [← ς_op_eq_op]
+    nth_rw 2 [← ξ_op_eq_op]
     intro C C' X σ
-    simp [ς, Optimization.act, h_seq_act]
+    simp [ξ, Optimization.act, h_seq_act]
     gcongr
     · exact ge_of_eq (h_cost_seq C C' σ)
     intro a
