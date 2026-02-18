@@ -164,25 +164,25 @@ theorem iSup_ECℒ_eq_lfp_Φℒ (ℒ : 𝔏[M]) [M.FiniteBranching] :
   | zero => simp [Φℒ, Φf]; rfl
   | succ n ih => simp [Φℒ_step_ECℒ, ih, Function.iterate_succ']
 
-noncomputable def ℒ' [M.FiniteBranching] (c : M.Costs) : 𝔏[M] := ⟨⟨
+noncomputable def optℒ [M.FiniteBranching] (c : M.Costs) : 𝔏[M] := ⟨⟨
   fun π ↦ (M.act π.last).toFinset.argmin (M.act₀_nonempty _) (Φf π.last · (lfp (Φ 𝒟 c))), by simp⟩,
   by constructor; simp [Scheduler.IsMarkovian]⟩
 
-noncomputable def ℒ'_spec [M.FiniteBranching] (c : M.Costs) (s : State) :
-  ⨅ α : M.act s, M.Φf s α (lfp (Φ 𝒟 c)) = (Φf s · (lfp (Φ 𝒟 c))) (ℒ' c {s})
+noncomputable def optℒ_spec [M.FiniteBranching] (c : M.Costs) (s : State) :
+  ⨅ α : M.act s, M.Φf s α (lfp (Φ 𝒟 c)) = (Φf s · (lfp (Φ 𝒟 c))) (optℒ c {s})
 := by
   convert Finset.argmin_spec (M.act s).toFinset (act₀_nonempty M s) (Φf s · (lfp (Φ 𝒟 c))) |>.right
   simp [Finset.inf'_eq_inf, Finset.inf_eq_iInf, iInf_subtype]
 
 omit [DecidableEq State] in
-theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp (Φ 𝒟 c) := by
+theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (optℒ c) c = lfp (Φ 𝒟 c) := by
   apply le_antisymm
   · apply lfp_le
     nth_rw 2 [← map_lfp]
     simp only [Φℒ, Φ, coe_mk, Optimization.sOpt_eq_iOpt]
     congr! 2 with s
     simp [Optimization.iOpt]
-    have := M.ℒ'_spec c s
+    have := M.optℒ_spec c s
     simp only [iInf_subtype] at this ⊢
     exact this.symm
   · refine lfp_le _ fun s ↦ ?_
@@ -192,7 +192,7 @@ theorem lfp_Φℒ_eq_lfp_Φ [M.FiniteBranching] : M.lfp_Φℒ (ℒ' c) c = lfp (
 attribute [-simp] Function.iterate_succ in
 theorem iSup_iInf_EC_eq_iInf_iSup_EC [M.FiniteBranching] :
     ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 n = ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n := by
-  apply le_antisymm (iSup_iInf_le_iInf_iSup _) (iInf_le_of_le ↑(M.ℒ' c) _)
+  apply le_antisymm (iSup_iInf_le_iInf_iSup _) (iInf_le_of_le ↑(M.optℒ c) _)
   simp [iSup_ECℒ_eq_lfp_Φℒ, iSup_iInf_EC_eq_lfp_Φ𝒟, lfp_Φℒ_eq_lfp_Φ]
 
 theorem iInf_iSup_EC_eq_iInf_iSup_ECℒ [M.FiniteBranching] :

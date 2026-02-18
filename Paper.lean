@@ -119,24 +119,27 @@ paper_thm[15] M.inducedMC'_cyl π h
 variable {α β : Type*} [CompleteLattice α] [CompleteLattice β]
 
 paper_link[16] Pi.instCompleteLattice (α:=α) (β:=fun _ ↦ β)
+/-- This definition is used in the paper, be in the formalization we use `EC`. See below. -/
+noncomputable def _root_.MDP.ECost (M : MDP S A) (𝒮 : M.Scheduler) (c : M.Costs) (s : S) : ENNReal :=
+  ⨆ n, ∑' (π : Path[M,s,=n]), π.val.Prob 𝒮 * π.val.Cost c
 
--- TODO: note ECost vs EC, paper different
+paper_link[17] M.EC
 
-paper_link[17] M.Φ
-paper_thm[18] MDP.Φ_𝒜_ωScottContinuous (M:=M) (c:=c)
-paper_thm[19] M.iSup_iSup_EC_eq_lfp_Φ𝒜 (c:=c)
+paper_link[18] M.Φ
+paper_thm[19] MDP.Φ_𝒜_ωScottContinuous (M:=M) (c:=c)
+paper_thm[20] M.iSup_iSup_EC_eq_lfp_Φ𝒜 (c:=c)
 
 variable [M.FiniteBranching]
 
-paper_thm[20] MDP.Φ_𝒟_ωScottContinuous (M:=M) (c:=c)
+paper_thm[21] MDP.Φ_𝒟_ωScottContinuous (M:=M) (c:=c)
 
-paper_thm[21] M.iSup_iInf_EC_eq_lfp_Φ𝒟 (c:=c)
+paper_thm[22] M.iSup_iInf_EC_eq_lfp_Φ𝒟 (c:=c)
 
-paper_link[22] M.MScheduler
-paper_link[23] M.Φℒ
-paper_thm[24] M.lfp_Φℒ_eq_lfp_Φ (c:=c)
+paper_link[23] M.MScheduler
+paper_link[24] M.Φℒ
+paper_thm[25] M.lfp_Φℒ_eq_lfp_Φ (c:=c)
 
-paper_thm[25] M.iInf_iSup_EC_eq_lfp_Φ𝒟 (c:=c)
+paper_thm[26] M.iInf_iSup_EC_eq_lfp_Φ𝒟 (c:=c)
 
 end Section4
 
