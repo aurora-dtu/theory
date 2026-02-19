@@ -31,7 +31,7 @@ open Counterexample.A in
 theorem exists_iSup_iInf_EC_lt_lfp_Φ :
     ∃ (State : Type) (Act : Type) (M : MDP State Act) (c : M.Costs) (s : State),
       ⨆ n, ⨅ 𝒮, M.EC c 𝒮 n s < OrderHom.lfp (M.Φ 𝒟 c) s :=
-  ⟨_, _, _, M.cost, State.init, iSup_iInf_EC_lt_lfp_dΦ⟩
+  ⟨_, _, _, M.cost, State.init, iSup_iInf_EC_lt_lfp_Φ𝒟⟩
 
 open Counterexample.C in
 /-- There exists a (necessarily infinite branching) MDP such that the optimal cost given by `⨅⨆`
