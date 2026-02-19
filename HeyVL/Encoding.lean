@@ -19,12 +19,12 @@ def spGCL.enc (C : spGCL) (O : Optimization) (E : Encoding) :
   | spgcl {while @b inv(@I) {@C}} =>
     let (G, C) := C.enc O E G
     match E with
-    | .wp => (G, heyvl {
-      coassert(@I) ; cohavocs(@C.mods) ; covalidate ; coassume(@I) ;
-      if (@b) { @C ; coassert(@I) ; coassume(⊤) } })
     | .wlp => (G, heyvl {
       assert(@I) ; havocs(@C.mods) ; validate ; assume(@I) ;
       if (@b) { @C ; assert(@I) ; assume(0) } })
+    | .wp => (G, heyvl {
+      coassert(@I) ; cohavocs(@C.mods) ; covalidate ; coassume(@I) ;
+      if (@b) { @C ; coassert(@I) ; coassume(⊤) } })
   | spgcl {{@C₁} [@p] {@C₂}} =>
     let (G, C₁) := C₁.enc O E G ; let (G, C₂) := C₂.enc O E G
     let_fresh choice : .Bool ← G
