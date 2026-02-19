@@ -10,12 +10,12 @@ def HeyVL.vp (C : HeyVL) (φ : HeyLo .ENNReal) : HeyLo .ENNReal :=
   | heyvl {@S₁ ; @S₂} => S₁.vp (S₂.vp φ)
   | heyvl {if (⊓) {@S₁} else {@S₂}} => S₁.vp φ ⊓ S₂.vp φ
   | heyvl {assert(@ψ)} => ψ ⊓ φ
-  | heyvl {assume(@ψ)} => ψ ⇨ φ
+  | heyvl {assume(@ψ)} => ψ ⇨ φ -- HeyLo implication
   | heyvl {havoc(@x)} => heylo {⨅ x, @φ}
   | heyvl {validate} => ￢￢φ
   | heyvl {if (⊔) {@S₁} else {@S₂}} => S₁.vp φ ⊔ S₂.vp φ
   | heyvl {coassert(@ψ)} => ψ ⊔ φ
-  | heyvl {coassume(@ψ)} => ψ ↜ φ
+  | heyvl {coassume(@ψ)} => ψ ↜ φ -- HeyLo coimplication
   | heyvl {cohavoc(@x)} => heylo {⨆ x, @φ}
   | heyvl {covalidate} => φᶜᶜ
 
