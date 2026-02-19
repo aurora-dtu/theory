@@ -120,8 +120,6 @@ theorem Φ_𝒟_ωScottContinuous : ωScottContinuous (M.Φ 𝒟 c) := by
   congr
   refine Eq.symm (Set.Finite.iSup_biInf_of_monotone M.actFinite ?_)
   intro α hα _ _ _; simp only; gcongr
-@[deprecated]
-alias dΦ_ωScottContinuous := Φ_𝒟_ωScottContinuous
 
 instance : Optimization.ΦContinuous 𝒟 M where
   Φ_continuous := fun _ ↦ Φ_𝒟_ωScottContinuous

@@ -73,15 +73,24 @@ macro_rules
 | `(conf₁[⇓ $t, $σ]) => `((conf₁[⇓, $σ] : Conf₁' $t))
 | `(conf₁[$c:cpgcl_prog, $σ]) => `((Sum.inl pgcl {$c}, $σ))
 
-#check fun σ ↦ conf[↯, σ]
-#check fun σ ↦ conf[⇓, σ]
-#check fun σ ↦ conf[skip, σ]
+/-- info: fun σ ↦ Conf.term Termination.fault σ : (σ : ?m.1) → Conf (?m.5 σ) ?m.1 Termination -/
+#guard_msgs in #check fun σ ↦ conf[↯, σ]
+/-- info: fun σ ↦ Conf.term Termination.term σ : (σ : ?m.1) → Conf (?m.5 σ) ?m.1 Termination -/
+#guard_msgs in #check fun σ ↦ conf[⇓, σ]
+/-- info: fun σ ↦ Conf.prog (pgcl {skip}) σ : (σ : ?m.1) → Conf (pGCL (?m.8 σ)) ?m.1 (?m.9 σ) -/
+#guard_msgs in #check fun σ ↦ conf[skip, σ]
 
-#check fun σ ↦ conf₀[skip, σ]
+/-- info: fun σ ↦ (pgcl {skip}, σ) : (σ : ?m.1) → pGCL (?m.7 σ) × ?m.1 -/
+#guard_msgs in #check fun σ ↦ conf₀[skip, σ]
 
-#check fun σ ↦ conf₁[↯, σ]
-#check fun σ ↦ conf₁[⇓, σ]
-#check fun σ ↦ conf₁[skip ; skip, σ]
+/-- info: fun σ ↦ (Sum.inr Termination.fault, σ) : (σ : ?m.1) → (?m.6 σ ⊕ Termination) × ?m.1 -/
+#guard_msgs in #check fun σ ↦ conf₁[↯, σ]
+/-- info: fun σ ↦ (Sum.inr Termination.term, σ) : (σ : ?m.1) → (?m.6 σ ⊕ Termination) × ?m.1 -/
+#guard_msgs in #check fun σ ↦ conf₁[⇓, σ]
+/--
+info: fun σ ↦ (Sum.inl (pgcl {skip ; skip}), σ) : (σ : ?m.1) → (pGCL (?m.13 σ) ⊕ ?m.14 σ) × ?m.1
+-/
+#guard_msgs in #check fun σ ↦ conf₁[skip ; skip, σ]
 
 end Syntax
 
@@ -112,7 +121,8 @@ theorem after_eq_seq_iff : pGCL.after C₂ c = conf₁[@C₁ ; @C₂, σ] ↔ c 
 @[grind =, simp] theorem after_fault : after C₂ conf₁[↯, σ] = conf₁[↯, σ] := by simp [after]
 @[grind =, simp] theorem after_eq_right : after C₂ a = conf₁[@C₂,σ] ↔ a = conf₁[⇓, σ] := by
   simp [after]; split <;> simp
-@[grind ., simp] theorem after_neq_term : ¬after C₂ c' = conf₁[⇓, σ] := by simp [after]; split <;> simp
+@[grind ., simp] theorem after_neq_term : ¬after C₂ c' = conf₁[⇓, σ] := by
+  simp [after]; split <;> simp
 
 omit [DecidableEq 𝒱] in
 theorem tsum_after_eq (C₂ : pGCL Γ) {f g : Conf₁ Γ → ENNReal}

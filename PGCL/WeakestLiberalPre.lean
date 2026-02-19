@@ -193,8 +193,8 @@ theorem wlp'_loop (φ  : BExpr Γ) (C' : pGCL Γ) :
 @[simp] theorem wlp'.prob_apply :
     wlp'[O]⟦{@C₁}[@p]{@C₂}⟧ X = p * C₁.wlp' O X + (1 - p) * C₂.wlp' O X
 := rfl
-@[simp] theorem wlp'.nonDet_apply : wlp'[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt (C₁.wlp' O X) (C₂.wlp' O X) := by
-  ext; simp [wlp']
+@[simp] theorem wlp'.nonDet_apply :
+    wlp'[O]⟦{@C₁}[]{@C₂}⟧ X = O.opt (C₁.wlp' O X) (C₂.wlp' O X) := by ext; simp [wlp']
 @[simp] theorem wlp'.tick_apply : wlp'[O]⟦tick(@e)⟧ X = X := rfl
 @[simp] theorem wlp'.observe_apply :
     wlp'[O]⟦observe(@b)⟧ X = p[b] * X := rfl

@@ -344,9 +344,10 @@ theorem wlp'_fix_apply (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mo
     simp_all
     rfl
 
-theorem wlp'_fix_apply' (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (hφ : φ ≤ 1) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) (σ) :
+theorem wlp'_fix_apply' (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (hφ : φ ≤ 1) (S) (hS : C.mods ⊆ Sᶜ) (σ) :
       Exp.fix (wlp'[O]⟦@C⟧ ⟨φ, hφ⟩) S σ₀ σ
-    = wlp'[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ := wlp'_fix_apply _ _ _ hS _
+    = wlp'[O]⟦@(C.fix S σ₀)⟧ ⟨Exp.fix φ S σ₀, by intro; simp; apply hφ⟩ σ :=
+  wlp'_fix_apply _ _ _ hS _
 
 theorem wlp'_fix (C : pGCL Γ) (φ : ProbExp Γ) (S : Set 𝒱) (hS : C.mods ⊆ Sᶜ) :
     (wlp'[O]⟦@C⟧ φ).fix S σ₀ = wlp'[O]⟦@(C.fix S σ₀)⟧ (φ.fix S σ₀) := by

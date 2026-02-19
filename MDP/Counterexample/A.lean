@@ -43,7 +43,7 @@ the `⨅⨆` order will be `⊤`.
 
 This leads to `iSup_iInf_EC_lt_iInf_iSup_EC`.
 
-Additionally we can show the same for `MDP.lfp_dΦ` giving us `iSup_iInf_EC_lt_lfp_dΦ`.
+Additionally we can show the same for `MDP.lfp_Φ𝒟` giving us `iSup_iInf_EC_lt_lfp_Φ𝒟`.
 
 -/
 
@@ -155,16 +155,16 @@ theorem iSup_iInf_ECℒ_eq_top : ⨆ n, ⨅ ℒ : 𝔏[M], M.EC M.cost ℒ n .in
   apply (iInf_le_of_le ⟨⟨(if ·.last = .init then n + 1 else 0), by simp⟩,
       by constructor; intro; simp_all⟩ (by simp [DFunLike.coe])).antisymm bot_le
 
-open OrderHom
+open OrderHom Optimization.Notation
 
-theorem lfp_dΦ_node_eq_add :
-    lfp (dΦ M.cost) (.node i α) = lfp (dΦ M.cost) (.node (i + j) α) := by
+theorem lfp_Φ𝒟_node_eq_add :
+    lfp (Φ 𝒟 M.cost) (.node i α) = lfp (Φ 𝒟 M.cost) (.node (i + j) α) := by
   induction j with simp_all
   | succ j ih =>
     nth_rw 1 [← map_lfp]
     simp only [Φ, M.cost, M.act_eq, Φf, coe_mk, reduceCtorEq, ↓reduceIte,
       Optimization.sOpt_singleton]
-    split_ifs <;> (rw [← map_lfp]; simp_all [Φ, Φf, iInf_subtype, -map_lfp])
+    split_ifs <;> (rw [← map_lfp]; simp_all [Φ, Φf, -map_lfp])
     · split_ifs
       · simp only [top_add]
       · omega
@@ -172,19 +172,19 @@ theorem lfp_dΦ_node_eq_add :
       ofRelation_P, tsum_p, node_iff, and_true, true_and, tsum_ite_eq, reduceCtorEq,
       not_false_eq_true, forall_const, iInf_iInf_eq_left, one_mul]; rfl
 
-theorem lfp_dΦ_node_zero_eq_top : lfp (dΦ M.cost) (.node 0 α) = ⊤ := by
-  rw [lfp_dΦ_node_eq_add (j:=α), ← map_lfp]; simp [Φ, Φf, -map_lfp]
+theorem lfp_Φ𝒟_node_zero_eq_top : lfp (Φ 𝒟 M.cost) (.node 0 α) = ⊤ := by
+  rw [lfp_Φ𝒟_node_eq_add (j:=α), ← map_lfp]; simp [Φ, Φf, -map_lfp]
 
-theorem lfp_dΦ_node_eq_top : lfp (dΦ M.cost) (.node α β) = ⊤ := by
-  convert_to lfp (dΦ M.cost) (.node (0 + α) β) = ⊤
+theorem lfp_Φ𝒟_node_eq_top : lfp (Φ 𝒟 M.cost) (.node α β) = ⊤ := by
+  convert_to lfp (Φ 𝒟 M.cost) (.node (0 + α) β) = ⊤
   · simp
-  · exact lfp_dΦ_node_eq_add.symm.trans lfp_dΦ_node_zero_eq_top
+  · exact lfp_Φ𝒟_node_eq_add.symm.trans lfp_Φ𝒟_node_zero_eq_top
 
-@[simp] theorem lfp_dΦ_eq_top : lfp (dΦ M.cost) .init = ⊤ := by
+@[simp] theorem lfp_Φ𝒟_eq_top : lfp (Φ 𝒟 M.cost) .init = ⊤ := by
   rw [← map_lfp]; simp [Φ, Φf, -map_lfp]
   exact fun α ↦ ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 α, by simp⟩, by
     simp_all only [M, ofRelation_P, tsum_p, init_iff, and_true, tsum_ite_eq, one_mul]
-    convert lfp_dΦ_node_eq_top with h h'
+    convert lfp_Φ𝒟_node_eq_top with h h'
     simp [Φ, Φf]
     congr!
     simp only [M, ofRelation_P, tsum_p]⟩
@@ -196,7 +196,7 @@ theorem iSup_iInf_ECℒ_lt_iInf_iSup_ECℒ :
     ⨆ n, ⨅ ℒ : 𝔏[M], M.EC M.cost ℒ n .init < ⨅ ℒ : 𝔏[M], ⨆ n, M.EC M.cost ℒ n .init := by
   simp
 
-theorem iSup_iInf_EC_lt_lfp_dΦ :
-    ⨆ n,  ⨅ 𝒮, M.EC M.cost 𝒮 n .init < lfp (dΦ M.cost) .init := by simp
+theorem iSup_iInf_EC_lt_lfp_Φ𝒟 :
+    ⨆ n,  ⨅ 𝒮, M.EC M.cost 𝒮 n .init < lfp (Φ 𝒟 M.cost) .init := by simp
 
 end MDP.Counterexample.A

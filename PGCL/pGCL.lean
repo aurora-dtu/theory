@@ -119,7 +119,8 @@ macro_rules
 | `(pgcl { observe($b) }) => `(pGCL.observe pgcl_bexp {$b})
 | `(pgcl { if $b then $C₁ else $C₂ end }) => `(pGCL.ite pgcl_bexp {$b} pgcl {$C₁} pgcl {$C₂})
 
-#check (pgcl_bexp { x ≤ y } : BExpr (fun (_ : String) ↦ ENNReal))
+/-- info: BExpr.le (Exp.const "x") (Exp.const "y") : BExpr fun x ↦ ENNReal -/
+#guard_msgs in #check (pgcl_bexp { x ≤ y } : BExpr (fun (_ : String) ↦ ENNReal))
 
 set_option linter.style.setOption false
 set_option pp.mvars false

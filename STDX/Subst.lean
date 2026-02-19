@@ -27,12 +27,20 @@ def substsUnexpander : Unexpander
 | `($(_) $m $xs:term) => `($m[..$xs])
 | _ => throw ()
 
-#check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12]
-#check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12, "b" ↦ 13]
-#check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12]["b" ↦ 13] = x["a" ↦ 12, "b" ↦ 13]
-#check fun (x : Std.HashMap String ℕ) ↦ x["b" ↦ 13]["a" ↦ 12]
-#check fun (x : Std.HashMap String ℕ) ↦ x[..[Sigma.mk "a" 12]]
-#check fun (x : Std.HashMap String ℕ) (xs : List ((_ : String) × ℕ)) ↦ x[..xs]
+/-- info: fun x ↦ x["a" ↦ 12] : Std.HashMap String ℕ → Std.HashMap String ℕ -/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12]
+/-- info: fun x ↦ x["a" ↦ 12, "b" ↦ 13] : Std.HashMap String ℕ → Std.HashMap String ℕ -/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12, "b" ↦ 13]
+/-- info: fun x ↦ x["a" ↦ 12]["b" ↦ 13] = x["a" ↦ 12, "b" ↦ 13] : Std.HashMap String ℕ → Prop -/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) ↦ x["a" ↦ 12]["b" ↦ 13] = x["a" ↦ 12, "b" ↦ 13]
+/-- info: fun x ↦ x["b" ↦ 13]["a" ↦ 12] : Std.HashMap String ℕ → Std.HashMap String ℕ -/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) ↦ x["b" ↦ 13]["a" ↦ 12]
+/-- info: fun x ↦ x["a" ↦ 12] : Std.HashMap String ℕ → Std.HashMap String ℕ -/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) ↦ x[..[Sigma.mk "a" 12]]
+/--
+info: fun x xs ↦ x[..xs] : Std.HashMap String ℕ → List ((_ : String) × ℕ) → Std.HashMap String ℕ
+-/
+#guard_msgs in #check fun (x : Std.HashMap String ℕ) (xs : List ((_ : String) × ℕ)) ↦ x[..xs]
 
 variable {α ι : Type*} {β : ι → Type*} [Substitution α β]
 

@@ -152,5 +152,3 @@ theorem ENNReal_iOpt_mul [Nonempty ι] {f : ι → ENNReal} {a : ENNReal} (ha : 
   cases O <;> simp [ENNReal.iSup_mul, ENNReal.iInf_mul, ha]
 
 end Optimization
-
-#min_imports
