@@ -64,7 +64,8 @@ Section 5, Definition 24: (pGCL.𝕊 (Γ:=Γ) f g).op
 Section 5, Lemma 25: (pGCL.𝕊 f g).op_le_seq (O:=O) (C:=C) (C':=C')
 Section 5, Definition 26: (pGCL.𝕊 (Γ:=Γ) f g).ξ
 Section 5, Lemma 27: (pGCL.𝕊 (Γ:=Γ) f g).lfp_ξ_eq_op (O:=O)
-Section 5, Lemma 28: True -- TODO
+variable {et} [(𝕊 f g).ET O et] in
+Section 5, Lemma 28: SmallStepSemantics.ET.et_eq_op (𝕊:=pGCL.𝕊 f g) (et:=et) (O:=O)
 Section 5, Lemma 29: pGCL.ξ.seq (Γ:=Γ) (C₁:=C₁) (C₂:=C₂) (O:=O)
 Section 5, Theorem 30: wp_eq_op (Γ:=Γ) (C:=C) (O:=O)
 Section 5, Definition 31: wfp (Γ:=Γ)
