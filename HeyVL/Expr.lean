@@ -380,15 +380,44 @@ variable [DecidableEq 𝒱]
 @[grind =, simp]
 theorem HeyLo.sem_subst {X : HeyLo α} : X[x ↦ v].sem = X.sem[x ↦ v.sem] := rfl
 @[grind =, simp]
-theorem UnOp.sem_subst {op : UnOp α β} {a : α.expr} : (op.sem a)[x ↦ v] = op.sem a[x ↦ v] := by
-  cases op <;> try rfl
-  · cases α <;> rfl
+theorem UnOp.sem_subst {op : UnOp α β} {a : α.expr} : (op.sem a)[..subs] = op.sem a[..subs] := by
+  induction subs with simp_all [Substitution.substs_cons_substs]
+  | cons =>
+    cases op <;> try rfl
+    cases α <;> simp [UnOp.sem] <;> rfl
 @[grind =, simp]
 theorem BinOp.sem_subst {op : BinOp α β} {a : α.expr} :
-    (op.sem a b)[x ↦ v] = op.sem a[x ↦ v] b[x ↦ v] := by
-  cases op <;> try rfl
-  all_goals cases α <;> try rfl
-  all_goals cases ‹Ty.Bool.Compare›
+    (op.sem a b)[..subs] = op.sem a[..subs] b[..subs] := by
+  induction subs with simp_all [Substitution.substs_cons_substs]
+  | cons =>
+    cases op <;> try rfl
+    all_goals cases α <;> try rfl
+    all_goals cases ‹Ty.Bool.Compare›
+@[simp]
+theorem HeyLo.lit_sem_subst {l : HeyLo.Literal α}:
+    (HeyLo.Lit l).sem[..subs] = (HeyLo.Lit l).sem := by
+  induction subs with simp_all [Substitution.substs_cons_substs]
+  | cons x xs ih =>
+    simp_all
+    obtain ⟨x, v⟩ := x
+    ext
+    cases l <;> simp [sem]
+    split <;> simp
+@[simp]
+theorem HeyLo.call_sem_subst {f : Fun α β} :
+    (HeyLo.Call f arg).sem[..subs] = f.sem arg.sem[..subs] := by
+  induction subs with simp_all [Substitution.substs_cons_substs]
+  | nil => simp [sem]
+  | cons x xs ih => ext; cases f <;> simp [Fun.sem]
+open scoped Classical in
+@[simp]
+theorem HeyLo.ite_sem_subst {a b : HeyLo α}:
+    (HeyLo.Ite c a b).sem[..s] = fun σ ↦ if c.sem[..s] σ then a.sem[..s] σ else b.sem[..s] σ := by
+  induction s with simp_all [Substitution.substs_cons_substs]
+  | nil =>
+    cases α <;> simp_all [sem]
+    ext; split <;> simp_all
+  | cons => all_goals cases α <;> try rfl
 @[grind =, simp]
 theorem HeyLo.sem_Forall_apply {c : 𝔼b} :
     (HeyLo.Quant QuantOp.Forall x c).sem σ ↔ ∀ (v : x.type.lit), c.sem σ[x ↦ v] := by
@@ -397,6 +426,92 @@ theorem HeyLo.sem_Forall_apply {c : 𝔼b} :
 theorem HeyLo.sem_Exists_apply {c : 𝔼b} :
     (HeyLo.Quant QuantOp.Exists x c).sem σ ↔ ∃ (v : x.type.lit), c.sem σ[x ↦ v] := by
   simp [sem]
+
+abbrev HeyLo.Substs : Type := List ((x : Ident) × HeyLo x.type)
+
+def HeyLo.castTy {α β : Ty} (a : HeyLo α) (h : α = β) : HeyLo β :=
+  have : HeyLo α = HeyLo β := by grind
+  _root_.cast this a
+
+def HeyLo.Substs.find? (subs : Substs) (x : Ident) : Option (HeyLo x.type) :=
+  List.findSome? (fun (y : (x : Ident) × HeyLo x.type) ↦ if h : y.1 == x then some (y.2.castTy (by
+    obtain ⟨y, v⟩ := y
+    have : y = x := by grind
+    subst_eqs
+    rfl)) else none) subs
+
+def HeyLo.performSubstWith (a : HeyLo α) (x : Ident) (v : HeyLo x.type) : HeyLo α :=
+  match a with
+  | .Binary op l r => .Binary op (l.performSubstWith x v) (r.performSubstWith x v)
+  | .Lit l => .Lit l
+  | .Subst y w m => .Subst x v (.Subst y w m)
+  | .Quant op a m => .Subst x v (.Quant op a m)
+  | .Call f arg => .Call f (arg.performSubstWith x v)
+  | .Ite b l r => .Ite (b.performSubstWith x v) (l.performSubstWith x v) (r.performSubstWith x v)
+  | .Var y α => if h : x.name = y ∧ x.type = α then v.castTy h.right else .Var y α
+  | .Unary op m => .Unary op (m.performSubstWith x v)
+
+theorem HeyLo.performSubstWith_sem {m : HeyLo α} :
+    (m.performSubstWith x v).sem = m.sem[x ↦ v.sem] := by
+  induction m generalizing x v with simp [performSubstWith, *]
+  | Call f arg ih => ext; cases f <;> simp [sem, Fun.sem, *]
+  | Unary | Binary => simp_all [sem]
+  | Subst y w m ihx ihy =>
+    simp_all [sem]
+  | Var =>
+    split_ifs with h
+    · simp_all [castTy]
+      obtain ⟨_, ⟨_⟩⟩ := h
+      simp_all [sem, Substitution.subst, Substitution.subst_singleton, Ident.ext_iff]
+    · ext σ
+      simp_all [sem, Substitution.subst, Substitution.subst_singleton, Ident.ext_iff]
+  | Quant op y hY ih =>
+    simp_all [sem]
+  | Ite c a b ihc iha ihb =>
+    rename_i β
+    ext σ
+    if c.sem (σ[x ↦ v.sem σ]) then
+      cases β <;> simp_all [sem]
+    else
+      cases β <;> simp_all [sem]
+
+def HeyLo.performSubst : HeyLo α → HeyLo α
+| .Binary op l r => .Binary op l.performSubst r.performSubst
+| .Lit l => .Lit l
+| .Subst x v m => m.performSubst.performSubstWith x v
+| .Quant op x m => .Quant op x m.performSubst
+| .Call f x => .Call f x.performSubst
+| .Ite b l r => .Ite b.performSubst l.performSubst r.performSubst
+| .Var x α => .Var x α
+| .Unary op m => .Unary op m.performSubst
+
+theorem HeyLo.performSubst_sem {a : HeyLo α} :
+    a.performSubst.sem = a.sem := by
+  induction a with simp [performSubst, sem, *]
+  | Ite c a b ihc iha ihb =>
+    rename_i β
+    ext σ
+    if c.sem σ then
+      simp_all
+      cases β <;> simp [sem, *]
+    else
+      simp_all
+      cases β <;> simp [sem, *]
+  | Subst x v m =>
+    simp_all [performSubstWith_sem]
+
+def HeyLo.opt : HeyLo α → HeyLo α
+  | .Unary UnOp.Not (.Lit (.Bool b)) => .Lit (.Bool ¬b)
+  | .Unary UnOp.Embed (.Lit (.Bool true)) => .Lit (Literal.Frac 1)
+  | .Unary UnOp.Embed (.Lit (.Bool false)) => .Lit (Literal.Frac 0)
+  | .Binary op l r => .Binary op l.opt r.opt
+  | .Lit l => .Lit l
+  | .Subst x v m => .Subst x v.opt m.opt
+  | .Quant op x m => .Quant op x m.opt
+  | .Call f x => .Call f x.opt
+  | .Ite b l r => .Ite b.opt l.opt r.opt
+  | .Var x α => .Var x α
+  | .Unary op m => .Unary op m.opt
 
 theorem Array.flatMap_sum {α β : Type*} {A : Array α} {f : α → Array β} [AddMonoid β] :
     (A.flatMap f).sum = (A.map (fun a ↦ (f a).sum)).sum := by
