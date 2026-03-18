@@ -169,13 +169,15 @@ noncomputable instance : CompleteLattice (ProbExp Γ) where
   le_sup_left a b σ := by split; split; simp
   le_sup_right a b σ := by split; split; simp
   sup_le := fun ⟨a, ha⟩ ⟨b, hb⟩ ⟨c, hc⟩ _ _ ↦ by simp_all
-  inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ↦ ⟨a ⊓ b, by intro σ; simp; left; exact ha σ⟩
+  inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ↦ ⟨a ⊓ b, by intro σ; simp; exact inf_le_of_right_le (hb σ)⟩
   inf_le_left a b σ := by split; split; simp
   inf_le_right a b σ := by split; split; simp
   le_inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ⟨c, hc⟩ _ _ ↦ by simp_all
   sSup S := ⟨⨆ x ∈ S, x.val, by simp⟩
-  le_sSup := by intro S ⟨a, ha⟩ ha'; simp; apply le_iSup₂_of_le ⟨a, ha⟩ ha'; rfl
-  sSup_le := by intro S ⟨a, ha⟩ ha'; simp_all; apply ha'
+  isLUB_sSup S := by
+    constructor
+    · intro ⟨a, ha⟩ ha'; simp_all; apply le_iSup₂_of_le ⟨a, ha⟩ ha'; rfl
+    · intro ⟨a, ha⟩ ha'; simp_all; apply ha'
   sInf S := ⟨if S = ∅ then 1 else ⨅ x ∈ S, x.val, by
     split_ifs with h
     · simp
@@ -187,32 +189,38 @@ noncomputable instance : CompleteLattice (ProbExp Γ) where
       specialize hb ⟨q, hq'⟩ hq
       simp_all
       apply hb.trans hq'⟩
-  sInf_le S a ha := by
-    have : S ≠ ∅ := ne_of_mem_of_not_mem' ha id
-    simp [this]
-    obtain ⟨a, ha'⟩ := a
-    simp_all
-    apply iInf₂_le_of_le ⟨a, ha'⟩ ha; rfl
-  le_sInf S a ha := by
-    obtain ⟨a, ha'⟩ := a
-    split_ifs
-    · simp_all
-    · simp_all
-      apply ha
+  isGLB_sInf S := by
+    constructor
+    · intro ⟨a, ha⟩ ha' ha''
+      have : S ≠ ∅ := ne_of_mem_of_not_mem' ha' id
+      simp_all
+      apply iInf₂_le_of_le ⟨a, ha⟩ ha'; rfl
+    · intro ⟨a, ha⟩ ha'; simp_all
+      split_ifs
+      · simp_all
+      · simp_all
+        apply ha'
   le_top := by simp
   bot_le := by simp
 
 @[simp]
 theorem sSup_apply (S : Set (ProbExp Γ)) : sSup S x = ⨆ s ∈ S, s x := by
   rw [sSup]
-  simp only [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice,
-    CompleteLattice.toCompleteSemilatticeSup, coe_apply, iSup_apply]
+  unfold ConditionallyCompleteLattice.toConditionallyCompletePartialOrder
+  simp only [ConditionallyCompletePartialOrderSup.toSupSet, ConditionallyCompleteLattice.toSupSet,
+    CompleteLattice.toConditionallyCompleteLattice, CompleteSemilatticeSup.toSupSet,
+    CompleteLattice.toCompleteSemilatticeSup, CompleteLattice.toSupSet, instCompleteLattice,
+    coe_apply, iSup_apply]
   rfl
 @[simp]
 theorem sInf_apply (S : Set (ProbExp Γ)) (hS : S.Nonempty) : sInf S x = ⨅ s ∈ S, s x := by
   rw [sInf]
-  simp only [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice,
-    CompleteLattice.toCompleteSemilatticeInf, coe_apply]
+  unfold ConditionallyCompleteLattice.toConditionallyCompletePartialOrder
+  simp only [ConditionallyCompletePartialOrderInf.toInfSet,
+    ConditionallyCompletePartialOrder.toConditionallyCompletePartialOrderInf,
+    ConditionallyCompleteLattice.toInfSet, CompleteLattice.toConditionallyCompleteLattice,
+    CompleteSemilatticeInf.toInfSet, CompleteLattice.toCompleteSemilatticeInf,
+    CompleteLattice.toInfSet, instCompleteLattice, coe_apply]
   have : ¬S = ∅ := Set.nonempty_iff_ne_empty.mp hS
   simp_all only [↓reduceIte, iInf_apply]
   rfl

@@ -1,7 +1,6 @@
 import HeyVL.Encoding
 import Mathlib.Algebra.CharP.Defs
 import Mathlib.Data.Nat.Log
-import Mathlib.Tactic.Eval
 
 open Optimization.Notation
 open HeyLo
@@ -14,12 +13,6 @@ structure Conditions (E : Encoding) where
   O : Optimization
   post : 𝔼r
   pre : 𝔼r
-  encoding : 𝔼r
-  prop : original.vp O E post = encoding
-  fv : Globals
-  fv_prop : fv = original.fv ∪ post.fv ∪ pre.fv
-  invs : List 𝔼r
-  invs_prop : invs = original.invsList
 
 declare_syntax_cat pgclEncoding
 syntax ident : pgclEncoding
@@ -32,10 +25,6 @@ macro_rules
 | `(pgclEncoding[wlp]) => `(Encoding.wlp)
 | `(vc[$O, $E] { $P } $C { $Q }) =>
   `(
-    let C' :=
-      eval% (spGCL.vp spgcl {$C} $O pgclEncoding[$E] heylo {$Q})
-    let invs :=
-      eval% (spGCL.invsList spgcl {$C})
     let P := heylo {$P}
     let C := spgcl {$C}
     let Q := heylo {$Q}
@@ -44,12 +33,6 @@ macro_rules
       O := $O
       pre := P
       post := Q
-      fv := C.fv ∪ P.fv ∪ Q.fv
-      fv_prop := by decide
-      invs := invs
-      invs_prop := by decide +native
-      encoding := C'
-      prop := by decide +native
     } : Conditions pgclEncoding[$E])
   )
 
@@ -82,17 +65,9 @@ def Conditions.sound (C : Conditions E) : Prop :=
   | .wp => wp[C.O]⟦@C.original.pGCL⟧ C.post.sem ≤ C.pre.sem
   | .wlp => C.pre.sem ≤ wlp[C.O]⟦@C.original.pGCL⟧ C.post.sem
 
-def Conditions.show_wp (C : Conditions .wp) (h : C.encoding.sem ≤ C.pre.sem) : C.sound := by
-  simp [sound]
-  apply le_trans spGCL.wp_le_vp
-  simpa [C.prop]
-
-def Conditions.show_wlp' (C : Conditions .wlp) (h : C.pre.sem ≤ C.encoding.sem)
-    (hpost : C.post.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) : C.sound := by
-  simp [sound]
-  apply le_trans _ (spGCL.vp_le_wlp hpost _)
-  · simpa [C.prop]
-  · grind [cases Conditions]
+@[simp]
+theorem ENNReal.compl_compl_le : ∀ {a b : ENNReal}, (~~a ≤ b ↔ a = 0 ∨ b = ⊤) := by
+  simp [compl]; grind [zero_le]
 
 @[grind =, simp]
 theorem Nat.log2_div_2 (n : ℕ) : Nat.log2 (n / 2) = Nat.log2 n - 1 := by
@@ -119,3 +94,38 @@ theorem ENNReal.two_mul_two_inv : (2 : ENNReal) * 2⁻¹ = 1 := by
 theorem ENNReal.two_inv_mul_two_id (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
   simp
+
+syntax "cbv_le" : tactic
+macro_rules
+| `(tactic|cbv_le) => `(tactic|apply le_of_eq_of_le (by cbv) (le_of_le_of_eq _ (by symm; cbv)))
+
+syntax "vc_simp" : tactic
+
+@[simp]
+theorem Set.mem_fun_exists {α β : Type*} {a : α} {q : β → α} :
+    Membership.mem (self:=Set.instMembership) (fun (x : α) ↦ ∃ y, q y = x) a ↔ (∃ y, q y = a) := by
+  rw [Set.instMembership]
+  simp [Set.Mem]
+
+macro_rules
+| `(tactic|vc_simp) =>
+  let σ := Lean.mkIdent (Lean.Name.mkSimple "σ")
+  `(tactic|
+    simp [Conditions.sound];
+    apply le_trans spGCL.wp_le_vp;
+    cbv_le;
+    intro $σ:ident;
+    simp only [Ty.lit, CharP.cast_eq_zero, Nat.cast_add, Nat.cast_id, Nat.cast_ofNat,
+      pGCL.State.subst_apply, ↓dreduceDIte, cast_eq, Ident.mk.injEq, String.reduceEq, and_true,
+      UInt8.ofBitVec_ofNat, reduceCtorEq, and_false, sup_le_iff, Std.le_refl, iSup_le_iff,
+      Subtype.forall, Set.mem_fun_exists, forall_exists_index, forall_apply_eq_imp_iff,
+      Pi.substs_cons, Substitution.substs_nil, Nat.cast_one, one_div, ENNReal.inv_le_one,
+      Nat.one_le_ofNat, inf_of_le_left, Iverson.iver_True, one_mul, Nat.div_pos_iff, Nat.ofNat_pos,
+      true_and, Nat.log2_div_2, ENNReal.natCast_sub, sdiff_top, bot_eq_zero', zero_le,
+      sup_of_le_left, add_zero, top_himp, compl_iff_not, not_true_eq_false, Iverson.iver_False,
+      zero_mul, tsub_pos_iff_lt, ENNReal.zero_himp, le_top, ENNReal.one_sub_inv_two,
+      Bool.false_eq_true, not_false_eq_true, inf_of_le_right, not_lt, nonpos_iff_eq_zero,
+      ↓reduceDIte, ENNReal.compl_compl_le, ENNReal.sdiff_zero_eq_zero, ENNReal.add_eq_top,
+      ENNReal.natCast_ne_top, ENNReal.mul_eq_top, ne_eq, Nat.cast_eq_zero, or_self, add_eq_zero,
+      not_and, false_and, or_false, forall_const];
+    )

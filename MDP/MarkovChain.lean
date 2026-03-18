@@ -111,6 +111,11 @@ theorem Path'.take_length {π : M.Path'} (i : ℕ) :
 
 def Path.pref (π : M.Path) : Finset M.Path := Finset.univ.map ⟨π.take, π.take_inj⟩
 
+@[simp]
+theorem Path.mem_pref {π : M.Path} :
+    π' ∈ π.pref ↔ ∃ i, π' = π.take i := by
+  simp [pref]; grind
+
 @[grind ., simp]
 theorem Path.take_mem_pref {π : M.Path} {i} (hi) : π.take ⟨i, hi⟩ ∈ π.pref := by
   simp [take, pref]
@@ -125,6 +130,11 @@ theorem Path'.take_take {π : M.Path'} {i} (hi) : (π.take j).take ⟨i, hi⟩ =
 
 def Path'.pref (π' : M.Path') : Set M.Path := Set.range π'.take
 def Path.Cyl (π : M.Path) : Set M.Path' := {π' | π ∈ π'.pref}
+
+@[simp]
+theorem Path'.mem_pref {π : M.Path'} :
+    π' ∈ π.pref ↔ ∃ i, π' = π.take i := by
+  simp [pref]; grind
 
 @[simp]
 instance : MeasurableSpace M.Path' := MeasurableSpace.generateFrom (Set.range Path.Cyl)
@@ -184,7 +194,9 @@ theorem Path.pmf'_apply {π : M.Path} {π' : M.Path} :
     have h₁ : ‖π'‖ - 2 + 1 = ‖π'‖ - 1 := by grind
     have h₂ : ‖π‖ = ‖π'‖ - 1 := by grind
     simp [h₁]
-    rw [tsum_eq_single (π'.states[‖π'‖ - 1]'(by grind))] <;> grind
+    rw [tsum_eq_single (π'.states[‖π'‖ - 1]'(by grind))]
+    · grind
+    · simp; grind
   · simp_all; grind
 
 def Path.ofLength_countable (n : ℕ) : Countable {π : M.Path | ‖π‖ = n} := by
@@ -327,6 +339,9 @@ noncomputable def embedInv (π' : M.Path') : (π : M.Path) → π.succs :=
 def Path.theSet (π : M.Path) : Set ((i : ↥π.pref) → i.val.succs) :=
   {f | ∀ π', π'.val ≠ π → (f π').val ∈ π.pref}
 
+theorem Path.mem_theSet {π : M.Path} {f} :
+  f ∈ π.theSet ↔ ∀ π', π'.val ≠ π → (f π').val ∈ π.pref := by rfl
+
 @[measurability]
 theorem Path.theSet_measurable (π : M.Path) : MeasurableSet π.theSet :=
   DiscreteMeasurableSpace.forall_measurableSet _
@@ -398,8 +413,10 @@ theorem Path.Cyl_eq_cylinder (π : M.Path) : embed ⁻¹' π.Cyl = cylinder π.p
     simp [Path'.take]
     ext i ha hb
     · simp; grind
-    · simp_all [Path.pref, theSet]
-      simp_all only [mk_length, Stream'.length_take]
+    · simp only [mem_theSet, ne_eq, Finset.restrict, mem_pref, Subtype.forall, forall_exists_index,
+      forall_eq_apply_imp_iff] at h
+      simp_all only [Stream'.take_get, Stream'.get]
+      simp_all only [mk_length, Stream'.length_take, Order.lt_add_one_iff]
       suffices (embed f).take i = π.take ⟨i, by omega⟩ by
         simp_all [Path.eq_iff]
         have : ((embed f).take i).states[i] = (π.take ⟨i, hb⟩).states[i] := by grind
@@ -415,7 +432,7 @@ theorem Path.Cyl_eq_cylinder (π : M.Path) : embed ⁻¹' π.Cyl = cylinder π.p
         obtain ⟨⟨j, hj⟩, h⟩ := h
         have : j = i + 1 := by have := Path.length_eq_of_eq h; simp at this; omega
         subst_eqs
-        rw [h]; clear h
+        rw [← h]; clear h
         rw [← ih _ (by omega)]; clear ih
         simp [embed, Path'.take]
         ext j h₁ h₂
@@ -456,7 +473,6 @@ instance : IsProbabilityMeasure (Pr (M:=M)) := by
 theorem Path.Cyl_measurable (π : M.Path) : MeasurableSet π.Cyl :=
   MeasurableSpace.measurableSet_generateFrom (Set.mem_range_self π)
 
-set_option maxHeartbeats 500000 in
 open scoped Classical in
 open Path in
 theorem Pr_cyl_help (π : M.Path) :
@@ -471,19 +487,14 @@ theorem Pr_cyl_help (π : M.Path) :
                         by simp [Path.take, Path.pref]; use ⟨i, by omega⟩; simp; omega⟩
   · grind only [← Finset.mem_attach]
   · grind only [take, = List.length_take, = min_def]
-  · simp only [pref, Finset.mem_attach, eq_iff, take, pmf'_apply, mk_length, List.length_take,
-    states_length_eq_length, inf_eq_left, List.getElem_take, ne_eq, dite_eq_left_iff, not_forall,
-    exists_prop, Finset.mem_univ, true_and, forall_exists_index, forall_const, Subtype.forall,
-    Finset.mem_map, Function.Embedding.coeFn_mk, Subtype.mk.injEq]
-    intro π' ⟨i, hi⟩ h h' h''
-    have := congrArg List.length h
-    simp only [List.length_take, states_length_eq_length] at this
-    replace hi : i < ‖π‖ - 1 := by grind
-    have : π' = π.take ⟨i, by omega⟩ := by grind [Path.take]
-    subst_eqs
-    split_ifs at h''
-    · use ⟨i, by grind⟩; grind only [take, = take_length, = min_def]
-    · grind only [= take_length, take, = List.take_take, = min_def, = List.take_length]
+  · simp +contextual only [Finset.mem_attach, ne_eq, dite_eq_left_iff, not_forall, exists_prop,
+    Finset.mem_univ, forall_exists_index, forall_const, Subtype.forall, mem_pref, Subtype.mk.injEq,
+    take_length]
+    rintro _ ⟨i, hi⟩ ⟨_⟩ h h'
+    use ⟨i, by grind⟩
+    contrapose h'
+    simp only [take_length, pmf'_apply]
+    grind
   · intro ⟨i, hi⟩ h
     grind only [take, = List.length_take, = List.take_add, = min_def, = List.getElem_append,
       pmf'_apply, = take_length, = List.take_take, = List.getElem_take]
@@ -496,9 +507,9 @@ theorem Pr_cyl (π : M.Path) :
   rw [Measure.map_apply (by measurability) (by measurability)]
   simp [lifted, Path.Cyl_eq_cylinder]
   rw [Measure.infinitePi_cylinder _ (by measurability), Path.theSet_eq_pi, Measure.pi_pi]
-  simp only [Finset.univ_eq_attach, Path.measure, instMeasurableSpacePath, pmf_toMeasure_apply,
-    pmf'_toMeasure_apply, Set.mem_image, Set.mem_setOf_eq, Subtype.exists, exists_and_left,
-    exists_prop, exists_eq_right_right]
+  simp only [Finset.univ_eq_attach, Path.measure, pmf_toMeasure_apply, pmf'_toMeasure_apply,
+    Set.mem_image, Set.mem_setOf_eq, Subtype.exists, exists_and_left, exists_prop,
+    exists_eq_right_right]
   simp_all only [succs, Set.mem_setOf_eq, and_self, and_true, Nat.reduceSubDiff,
     add_tsub_cancel_right]
   rw [← Pr_cyl_help]
@@ -518,11 +529,9 @@ theorem Pr_cyl (π : M.Path) :
   · have : ‖x‖ < ‖π‖ := by grind
     rw [tsum_eq_single (π.take ⟨‖x‖, by grind⟩)]
     · grind [succs]
-    · simp only [ne_eq, pref, Finset.mem_map, Finset.mem_univ, Function.Embedding.coeFn_mk,
-      true_and, dite_eq_right_iff, ite_eq_right_iff, forall_and_index]
+    · simp only [ne_eq, dite_eq_right_iff, ite_eq_right_iff, forall_and_index]
       grind
-  · simp only [pref, Finset.mem_map, Finset.mem_univ, Function.Embedding.coeFn_mk, true_and,
-    ENNReal.tsum_eq_zero, dite_eq_right_iff, ite_eq_right_iff, forall_and_index]
+  · simp only [ENNReal.tsum_eq_zero, dite_eq_right_iff, ite_eq_right_iff, forall_and_index]
     grind
 
 end MarkovChain

@@ -151,23 +151,16 @@ namespace Path_eq
 theorem succs_univ_disjoint : Path[M,s,=n].PairwiseDisjoint Path.succs_univ := by
   simp [Set.PairwiseDisjoint_iff, mem_iff, and_imp]
   intro x a b _ _ _ _ ha hb
-  rw [←Path.mem_succs_univ_prev <| ha, ←Path.mem_succs_univ_prev <| hb]
+  rw [← Path.mem_succs_univ_prev <| ha, ← Path.mem_succs_univ_prev <| hb]
 
 theorem eq_biUnion_succs_univ : Path[M,s,=n+2] = ⋃ π : Path[M,s,=n+1], π.val.succs_univ := by
   ext π
   simp
   constructor
   · exact fun _ ↦ ⟨π.prev, by simp_all⟩
-  · intro ⟨_, ⟨_, _⟩, h⟩
-    simp [Path.succs_univ] at h
-    obtain ⟨_, _⟩ := h
-    subst_eqs
-    have : ¬‖π‖ = 1 := by omega
-    simp_all
+  · intro ⟨_, ⟨_, _⟩, _⟩; grind [Path.succs_univ]
 
 theorem eq_succs_univ_biUnion : Path[M,s,=n+2] = ⋃ s', Path[M,s─s',=n] := by
-  ext π
-  simp
-  grind [Path.mem_succs_univ]
+  grind [mem_iff, Set.iUnion_coe_set, Set.mem_iUnion, Path.mem_succs_univ]
 
 end MDP.Path_eq

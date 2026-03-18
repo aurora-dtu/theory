@@ -8,20 +8,23 @@ variable (π : M.Path)
 instance : Membership State M.Path where
   mem π s := ∃ i : Fin ‖π‖, π[i] = s
 
-@[simp] theorem mem_states_iff_mem : s ∈ π.states ↔ s ∈ π := by
-  simp [instMembership, List.mem_iff_getElem, Fin.exists_iff]
-
+@[grind =]
 theorem mem_iff_getElem : s ∈ π ↔ ∃ i : Fin _, π[i] = s := Eq.to_iff rfl
 
+@[simp] theorem mem_states_iff_mem : s ∈ π.states ↔ s ∈ π := by
+  simp [mem_iff_getElem]
+  simp only [List.mem_iff_getElem, Fin.exists_iff]
+  grind
+
 @[simp] theorem getElem_mem (i : Fin ‖π‖) :
-    π[i] ∈ π := by simp [instMembership]
+    π[i] ∈ π := by grind
 @[simp] theorem getElem_nat_mem (i : ℕ) (hi : i < ‖π‖) :
-    π[i] ∈ π := by simp [instMembership]; use ⟨i, hi⟩
+    π[i] ∈ π := by simp [mem_iff_getElem]; use ⟨i, hi⟩
 @[simp] theorem last_mem (π : M.Path) :
     π.last ∈ π := by simp_all
 
 instance [DecidableEq State] (s : State) : Decidable (∀ s' ∈ π, s' = s) :=
-  if h : π.states.all (· = s) then .isTrue (by simp_all [instMembership])
+  if h : π.states.all (· = s) then .isTrue (by simp_all [mem_iff_getElem])
   else .isFalse (by simp_all)
 
 instance [DecidableEq State] (s : State) : Decidable (s ∈ π) :=
@@ -33,7 +36,7 @@ theorem mem_extend (s : M.succs_univ π.last) (s' : State) : s' ∈ π.extend s 
 
 @[simp]
 theorem mem_singleton (s s' : State) : s ∈ (instSingleton  (M:=M)).singleton s' ↔ s = s' := by
-  simp [instMembership]
+  simp [mem_iff_getElem]
   constructor <;> simp_all
   exact fun _ ↦ instNonemptyOfInhabited
 

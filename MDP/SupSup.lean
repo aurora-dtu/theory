@@ -31,7 +31,7 @@ theorem tsum_succs_univ_iSup_iSup_EC_comm [DecidableEq State] :
       exact (EC_le <| by simp_all; rintro _ _ ⟨_⟩ _; simp_all).trans <| EC_monotone (by omega)
 
 theorem iSup_iSup_EC_eq_lfp_Φ𝒜 [DecidableEq State] :
-    ⨆ n, ⨆ 𝒮, EC c 𝒮 n = lfp (M.Φ 𝒜 c) := by
+    ⨆ n, ⨆ 𝒮, M.EC c 𝒮 n = lfp (M.Φ 𝒜 c) := by
   apply le_antisymm
   · refine le_lfp _ fun b h ↦ iSup₂_le fun n 𝒮 ↦ ?_
     induction n generalizing 𝒮 b with
@@ -60,7 +60,7 @@ theorem iSup_iSup_EC_eq_lfp_Φ𝒜 [DecidableEq State] :
     gcongr
     apply EC_le (by simp_all)
 
-theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ n ≤ ⨆ n, ⨆ 𝒮, EC c 𝒮 n :=
+theorem iSup_iSup_ECℒ_le_iSup_iSup_EC : ⨆ n, ⨆ ℒ : 𝔏[M], M.EC c ℒ n ≤ ⨆ n, ⨆ 𝒮, M.EC c 𝒮 n :=
   iSup₂_mono' fun n ℒ ↦ ⟨n, ℒ, by rfl⟩
 
 end MDP

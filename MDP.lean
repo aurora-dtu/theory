@@ -32,22 +32,22 @@ variable [DecidableEq State]
 /-- For finitely branching `MDP`, the optimal expected cost is equivalent under all of the following
   definitions:
 
-* `⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 n`: Consider a potentially history dependent scheduler under bounded
+* `⨆ n, ⨅ 𝒮 : 𝔖[M], M.EC c 𝒮 n`: Consider a potentially history dependent scheduler under bounded
   length, and then push the length to the limit.
-* `⨆ n, ⨅ ℒ : 𝔏[M], EC c ℒ n`: Like the previous but limit to history independent (`Markovian`)
+* `⨆ n, ⨅ ℒ : 𝔏[M], M.EC c ℒ n`: Like the previous but limit to history independent (`Markovian`)
   schedulers.
-* `⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n`: Push the lengths of paths to the limit, and then consider a
+* `⨅ 𝒮 : 𝔖[M], ⨆ n, M.EC c 𝒮 n`: Push the lengths of paths to the limit, and then consider a
   potentially history dependent scheduler.
-* `⨅ ℒ : 𝔏[M], ⨆ n, EC c ℒ n`: Like the previous but limit to history independent (`Markovian`)
+* `⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n`: Like the previous but limit to history independent (`Markovian`)
   schedulers.
 * `lfp (Φ 𝒟 c)`: The least fixed point of the Bellman operator `M.dΦ`.
 -/
 theorem iInf_iSup_EC_comm_lfp_Φ𝒟_all_eq [M.FiniteBranching] :
   let S: Set (State → ENNReal) := {
-    ⨆ n, ⨅ 𝒮 : 𝔖[M], EC c 𝒮 n,
-    ⨆ n, ⨅ ℒ : 𝔏[M], EC c ℒ n,
-    ⨅ 𝒮 : 𝔖[M], ⨆ n, EC c 𝒮 n,
-    ⨅ ℒ : 𝔏[M], ⨆ n, EC c ℒ n,
+    ⨆ n, ⨅ 𝒮 : 𝔖[M], M.EC c 𝒮 n,
+    ⨆ n, ⨅ ℒ : 𝔏[M], M.EC c ℒ n,
+    ⨅ 𝒮 : 𝔖[M], ⨆ n, M.EC c 𝒮 n,
+    ⨅ ℒ : 𝔏[M], ⨆ n, M.EC c ℒ n,
     OrderHom.lfp (Φ 𝒟 c)
   }
   ∀ v₁ v₂ : S, v₁ = v₂

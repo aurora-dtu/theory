@@ -129,8 +129,8 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     simp only [fv, Finset.union_assoc] at hG
     grw [← ih₁, ← ih₂]
     · intro σ; simp only [Ty.lit, Pi.add_apply, Pi.mul_apply, BExpr.probOf_apply, Pi.sub_apply,
-      Pi.ofNat_apply, hnot_eq_compl, Pi.iver_apply, Pi.compl_apply, compl_iff_not, Iverson.iver_neg,
-      ENNReal.natCast_sub, Nat.cast_one, le_refl]
+      Pi.ofNat_apply, hnot_eq_compl, Pi.iver_prop_apply, Pi.compl_apply, compl_iff_not,
+      Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, le_refl]
     · grind
     · clear ih₁; grind
   | nonDet C₁ C₂ ih₁ ih₂ =>
@@ -153,7 +153,10 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     intro σ
     if inv : IdleInvariant wp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
-      left
+      -- NOTE: This seems like something that should happen automatically
+      have : ENNReal.instMax = ENNReal.instLinearOrder.toMax := rfl
+      rw [this]
+      grw [← le_max_left]
       apply IdleInduction
       grind
     else
@@ -168,8 +171,11 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
 
         specialize h₁ x (by contrapose! h; exact C.enc_mods (by grind))
         simp_all only
-      simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.substs_help_apply, le_sup_iff]
-      right
+      simp_all only [Ty.lit, Pi.sup_apply, iSup_apply, Exp.substs_help_apply]
+      -- NOTE: This seems like something that should happen automatically
+      have : ENNReal.instMax = ENNReal.instLinearOrder.toMax := rfl
+      rw [this]
+      grw [← le_max_right]
       apply le_iSup_of_le Ξ
       simp [σ_eq_σ']
       apply ENNReal.le_covalidate_sdiff_of_lt
@@ -185,7 +191,7 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     grind [spGCL.enc, HeyVL.vp, add_comm, spGCL.pGCL, wp.tick_apply, le_refl]
   | observe r =>
     intro σ
-    simp only [Ty.lit, pGCL, wp.observe_apply, Pi.mul_apply, Pi.iver_apply, enc, HeyVL.vp,
+    simp only [Ty.lit, pGCL, wp.observe_apply, Pi.mul_apply, Pi.iver_prop_apply, enc, HeyVL.vp,
       sem_inf_apply, Ty.expr, sem_embed, Pi.inf_apply, Pi.top_apply, le_inf_iff,
       BExpr.iver_mul_le_apply, and_true]
     if r.sem σ then simp_all [Iverson.iver] else simp_all
@@ -210,14 +216,20 @@ private lemma spGCL.vp_le_wlp_aux.loop
   intro σ
   if inv : IdleCoinvariant wlp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
     simp
-    left
+    -- NOTE: This seems like something that should happen automatically
+    have : ENNReal.instMin = ENNReal.instLinearOrder.toMin := rfl
+    rw [this]
+    grw [min_le_left]
     apply IdleCoinduction <;> grind
   else
     simp [IdleCoinvariant] at inv
     obtain ⟨σ', h₁, h₂⟩ := inv
     simp [Ψ] at h₂
-    simp_all only [Pi.inf_apply, inf_le_iff]
-    right
+    simp_all only [Pi.inf_apply]
+    -- NOTE: This seems like something that should happen automatically
+    have : ENNReal.instMin = ENNReal.instLinearOrder.toMin := rfl
+    rw [this]
+    grw [min_le_right]
     simp_all only [Ty.expr, Ty.lit, iInf_apply, Exp.substs_help_apply]
     let Ξ := HeyVL.Subs.of (C.enc O .wlp G).2.mods.sort (by simp) σ'
     have σ_eq_σ' : σ[..Ξ.help'] = σ' := by
@@ -265,7 +277,7 @@ private lemma spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv
     simp only [Ty.expr, enc, HeyVL.if_vp_sem, sem_not_apply, pGCL, pGCL.ite, wlp.prob_apply]
     simp only [fv, Finset.union_assoc] at hG
     grw [ih₁ _ hφ, ih₂ _ hφ]
-    · intro; simp only [Ty.lit, hnot_eq_compl, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
+    · intro; simp only [Ty.lit, hnot_eq_compl, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply,
       Pi.compl_apply, compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one,
       BExpr.probOf_apply, Pi.sub_apply, Pi.ofNat_apply, le_refl]
     all_goals grind
@@ -302,21 +314,27 @@ private lemma spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv
   | tick r =>
     simp only [Ty.expr, Ty.lit, enc, HeyVL.vp, sem_add_apply, pGCL, wlp.tick_apply]
     intro σ
-    simp [Pi.add_apply, Ty.lit, add_zero, le_refl]
+    simp only [Ty.lit, sem_mul_apply, Ty.expr, sem_zero, zero_mul, Pi.add_apply, Pi.zero_apply,
+      add_zero, Pi.inf_apply, Pi.one_apply, le_inf_iff, Std.le_refl, true_and]
     apply hφ
   | observe r =>
     intro σ
-    simp only [Ty.lit, enc, HeyVL.vp, sem_inf_apply, Ty.expr, sem_embed, Pi.inf_apply,
-      Pi.mul_apply, Pi.iver_apply, Pi.top_apply, pGCL, wlp.observe_apply, inf_le_iff]
+    simp only [Ty.lit, enc, HeyVL.vp, sem_inf_apply, Ty.expr, sem_embed, Pi.inf_apply, Pi.mul_apply,
+      Pi.iver_prop_apply, Pi.top_apply, pGCL, wlp.observe_apply, BExpr.probOf_apply, Pi.one_apply]
+    -- NOTE: This seems like something that should happen automatically
+    have : ENNReal.instMin = ENNReal.instLinearOrder.toMin := rfl
+    rw [this]
+    simp
     if r.sem σ then
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
-        Iverson.iver_True, Nat.cast_one, one_mul, BExpr.probOf_apply, Pi.one_apply, le_inf_iff,
-        top_le_iff, ENNReal.one_ne_top, and_false, le_refl, true_and, false_or]
-      apply hφ
+        Iverson.iver_True, Nat.cast_one, one_mul]
+      have : ⟦@φ⟧' σ ≤ 1 := hφ _
+      grind
     else
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
-        Iverson.iver_False, Nat.cast_zero, zero_mul, BExpr.probOf_apply, Pi.ofNat_apply, le_refl,
-        nonpos_iff_eq_zero, true_or]
+        Iverson.iver_False, Nat.cast_zero, zero_mul, nonpos_iff_eq_zero]
+      have : 0 ≤ (⟦@φ⟧' σ) := zero_le _
+      grind
 
 theorem spGCL.vp_le_wlp {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :
     (C.vp O .wlp φ).sem ≤ wlp[O]⟦@C.pGCL⟧ φ.sem := vp_le_wlp_aux (by rfl) hφ hI

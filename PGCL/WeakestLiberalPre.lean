@@ -21,9 +21,10 @@ omit [DecidableEq 𝒱] in
 theorem pΨ_eq_Ψ (hg : ∀ (X : ProbExp Γ) σ, g X σ = g' X σ) :
     pΨ[g] φ x y = Ψ[g'] φ x y := by
   ext σ
-  simp only [pΨ, coe_mk, ProbExp.add_apply, ProbExp.mul_apply, BExpr.probOf_apply, ← hg,
-    ProbExp.sub_apply, ProbExp.one_apply, Ψ, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
-    Pi.compl_apply, compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub, Nat.cast_one, inf_eq_left]
+  simp only [pΨ, coe_mk, ProbExp.add_apply, ProbExp.mul_apply, BExpr.probOf_apply,
+    ProbExp.sub_apply, ProbExp.one_apply, Ψ, mk_apply, Pi.add_apply, Pi.mul_apply,
+    Pi.iver_prop_apply, ← hg, Pi.compl_apply, compl_iff_not, Iverson.iver_neg, ENNReal.natCast_sub,
+    Nat.cast_one, inf_eq_left]
   apply ProbExp.pick_le (p:=p[φ]) <;> simp
 
 omit [DecidableEq 𝒱] in
@@ -203,7 +204,8 @@ end
 
 noncomputable def wlp (O : Optimization) (C : pGCL Γ) : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal] :=
   ⟨fun X ↦ wlp'[O]⟦@C⟧ (ProbExp.ofExp X),
-    by intro a b hab σ; simp [ProbExp.ofExp]; apply (wlp' _ _).mono; gcongr⟩
+    by intro a b hab σ; simp [ProbExp.ofExp]; apply (wlp' _ _).mono;
+       simp only [ProbExp.coe_le]; gcongr⟩
 
 syntax "wlp[" term "]⟦" cpgcl_prog "⟧" : term
 
@@ -284,7 +286,7 @@ theorem wlp_sound (C : pGCL Γ) (X : ProbExp Γ) : wlp'[O]⟦@C⟧ X = 1 - wfp'[
         constructor
         · gcongr; exact min_le_left _ _
         · gcongr; exact min_le_right _ _
-      · simp only [le_sup_iff]
+      · apply le_sup_iff.mpr
         if hfg : f ≤ g then
           left
           gcongr
@@ -299,7 +301,7 @@ theorem wlp_sound (C : pGCL Γ) (X : ProbExp Γ) : wlp'[O]⟦@C⟧ X = 1 - wfp'[
       set f := wfp'[𝒜]⟦@C₁⟧ (1 - X) σ
       set g := wfp'[𝒜]⟦@C₂⟧ (1 - X) σ
       apply le_antisymm
-      · simp only [inf_le_iff]
+      · apply inf_le_iff.mpr
         if hfg : f ≤ g then
           right
           gcongr

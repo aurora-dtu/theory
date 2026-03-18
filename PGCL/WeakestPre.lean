@@ -7,7 +7,7 @@ import MDP.Optimization
 open OrderHom OmegaCompletePartialOrder
 
 theorem OrderHom.lfp_ωScottContinuous {α ι : Type*} [CompleteLattice α] [CompleteLattice ι]
-    {f : ι →o α →o α} (hf' : ωScottContinuous f) (hf : ∀ i, ωScottContinuous ⇑(f i)) :
+    {f : ι →o α →o α} (hf' : ωScottContinuous f) (hf : ∀ i, ωScottContinuous (f i)) :
     ωScottContinuous fun X ↦ lfp (f X) := by
   refine ωScottContinuous.of_monotone_map_ωSup ?_
   simp [ωSup]
@@ -24,6 +24,8 @@ theorem OrderHom.lfp_ωScottContinuous {α ι : Type*} [CompleteLattice α] [Com
     simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, Chain.map, comp, OrderHom.ωSup] at hf'
     simp only [DFunLike.coe] at hf'
     simp only [toFun_eq_coe, Function.comp_apply, Function.eval] at hf'
+    specialize hf' ⟨fun i ↦ c i, OrderHomClass.mono c⟩
+    simp at hf'
     simp [hf']
     simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, Chain.map] at hf
     replace hf := hf (c:=⟨fun i ↦ (f (c i))^[n] ⊥, fun a b h ↦ by
@@ -31,8 +33,12 @@ theorem OrderHom.lfp_ωScottContinuous {α ι : Type*} [CompleteLattice α] [Com
       refine Monotone.iterate_le_of_le (f _).mono ?_ n; simp only [coe_le_coe]; gcongr⟩)
     simp only [DFunLike.coe] at hf
     simp at hf
-    simp [hf]
-    apply iSup_iSup_eq_iSup
+    replace hf := fun i ↦ hf (c i)
+    simp [← funext_iff] at hf
+    have := congrArg iSup hf
+    simp at this
+    rw [iSup_iSup_eq_iSup] at this
+    · convert this
     · intro a b hab s; simp; apply f.mono (c.mono hab)
     · intro i a b hab; simp; gcongr
       suffices (f (c a))^[n] ≤ (f (c b))^[n] by exact this ⊥
@@ -186,7 +192,7 @@ def Ψ.continuous' {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} : ωScottConti
   intro c
   ext X σ
   simp only [Ψ, ωSup, Chain.map_coe, Pi.evalOrderHom_coe, Function.comp_apply, Function.eval,
-    coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply, compl_iff_not,
+    coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply, Pi.compl_apply, compl_iff_not,
     ENNReal.mul_iSup, ENNReal.add_iSup, OrderHom.ωSup, apply_coe]
 omit [DecidableEq 𝒱] in
 theorem Ψ_iSup {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (f : ℕ → 𝔼[Γ, ENNReal]) :
@@ -218,7 +224,7 @@ def Ψ.cocontinuous {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (ih : ωScott
   intro c
   simp [Ψ] at ih ⊢
   ext σ
-  simp only [ih, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, _root_.iInf_apply,
+  simp only [ih, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply, _root_.iInf_apply,
     ENNReal.natCast_ne_top, IsEmpty.forall_iff, ENNReal.mul_iInf, Pi.compl_apply, compl_iff_not,
     ENNReal.iInf_add]
 
@@ -274,8 +280,8 @@ theorem wp_le_one (C : pGCL Γ) (X : 𝔼[Γ, ENNReal]) (hX : X ≤ 1) : wp[O]�
     simp [st]
     apply lfp_le
     intro σ
-    simp_all only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Pi.compl_apply,
-      compl_iff_not, Pi.one_apply]
+    simp_all only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply,
+      Pi.compl_apply, compl_iff_not, Pi.one_apply]
     if b σ then
       simp_all
       apply ih _ (by rfl)

@@ -39,7 +39,8 @@ theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a
   specialize hb σ
   simp [himp]
   split_ifs <;> try grind
-  · simp_all
+  simp_all
+  exact (ENNReal.sdiff_zero_eq_zero (b₁ σ) ⊤).mp rfl
 
 @[gcongr]
 theorem Exp.hnot_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a₁) :
@@ -48,6 +49,8 @@ theorem Exp.hnot_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a₁) :
   specialize ha σ
   simp [hnot]
   split_ifs <;> simp_all
+  · exact (ENNReal.sdiff_zero_eq_zero 0 ⊤).mp rfl
+  · grind
 @[gcongr]
 theorem Exp.compl_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a₁) :
     a₁ᶜ ≤ a₂ᶜ := by
@@ -68,6 +71,8 @@ theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
     ￢ a₁ ≤ ￢ a₂ := by
   simp [hnot]
   split_ifs <;> simp_all
+  · exact (ENNReal.sdiff_zero_eq_zero 0 ⊤).mp rfl
+  · grind
 @[gcongr]
 theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
     ▿ a₁ ≤ ▿ a₂ := by
@@ -76,7 +81,13 @@ theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
 
 @[grind =, simp]
 theorem Exp.zero_himp {a : 𝔼[Γ, ENNReal]} :
-    (0 ⇨ a) = ⊤ := by simp [himp]; rfl
+    (0 ⇨ a) = ⊤ := by
+  ext; simp [himp]
+  split_ifs with h
+  · rfl
+  · simp_all
+    contrapose! h
+    grind [zero_le]
 
 @[grind =]
 theorem State.subst_comm [DecidableEq 𝒱] {σ : State Γ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :
@@ -276,7 +287,7 @@ theorem wp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mod
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Ψ]
       nth_rw 2 [Ψ]
-      simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
+      simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply,
         Exp.fix_apply, Pi.compl_apply, compl_iff_not]
       congr! 2
       classical
@@ -320,7 +331,7 @@ theorem wlp_fix (C : pGCL Γ) (φ : 𝔼[Γ, ENNReal]) (S : Set 𝒱) (hS : C.mo
       simp only [Function.iterate_succ', Function.comp_apply]
       nth_rw 1 [Ψ]
       nth_rw 2 [Ψ]
-      simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply,
+      simp only [OrderHom.coe_mk, OrderHom.mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply,
         Exp.fix_apply, Pi.compl_apply, compl_iff_not, Pi.inf_apply, Pi.one_apply]
       congr! 2
       classical

@@ -125,6 +125,32 @@ noncomputable def M : MDP State ℕ := ofRelation (Step 𝓅)
       rw [ENNReal.tsum_eq_add_tsum_ite .s₂]; simp_all)
   (by rintro (_ | ⟨i, j⟩) <;> simp_all; use 𝓅 0, 0, .s₁; simp)
 
+@[grind =, simp]
+theorem P_s₁ : (M 𝓅).P .s₁ n s = if s = .s₁ then 𝓅 n else if s = .s₂ then 1 - 𝓅 n else 0 := by
+  simp [M]
+  rw [ENNReal.tsum_eq_add_tsum_ite (𝓅 n), ENNReal.tsum_eq_add_tsum_ite (1 - 𝓅 n)]
+  simp_all
+  cases s <;> simp
+  split_ifs
+  · simp_all
+  · grind
+  · grind
+  · grind
+@[grind =, simp]
+theorem P_s₂ : (M 𝓅).P .s₂ n s = if n = 0 ∧ s = State.s₃ then 1 else 0 := by
+  simp [M]
+  rw [ENNReal.tsum_eq_add_tsum_ite 1]
+  simp_all
+@[grind =, simp]
+theorem P_s₃ : (M 𝓅).P .s₃ n s = if n = 0 ∧ s = State.s₃ then 1 else 0 := by
+  simp [M]
+  rw [ENNReal.tsum_eq_add_tsum_ite 1]
+  simp_all
+
+@[grind =, simp]
+theorem succs_univ : (M 𝓅).succs_univ s = if s = .s₁ then {.s₁, .s₂} else {.s₃} := by
+  ext s'; cases s <;> cases s' <;> simp [M]
+
 @[simp] def M.cost : (M ℯ).Costs | .s₂ => 1 | _ => 0
 
 @[simp] theorem M.act_eq : (M 𝓅).act = fun s ↦ if s = .s₁ then Set.univ else {0} := by
@@ -147,16 +173,17 @@ noncomputable def ℒ_a (a : ℕ) : 𝔏[M 𝓅] := ⟨⟨
   fun π ↦ by simp_all⟩,
   by constructor; intro π; simp⟩
 
-@[simp] theorem default_act_s₂ : (M 𝓅).default_act State.s₂ = 0 := by simp [default_act]
-@[simp] theorem default_act_s₃ : (M 𝓅).default_act State.s₃ = 0 := by simp [default_act]
+@[simp, grind =] theorem default_act_s₂ : (M 𝓅).default_act State.s₂ = 0 := by
+  have := (M 𝓅).default_act_spec .s₂
+  simpa
+@[simp, grind =] theorem default_act_s₃ : (M 𝓅).default_act State.s₃ = 0 := by
+  have := (M 𝓅).default_act_spec .s₃
+  simpa
 
 /-- Picks the action proportional to the length of the scheduled path -/
 noncomputable def 𝒮_len (a : ℕ) : 𝔖[M 𝓅] := ⟨
-  fun π ↦ if π.last = .s₁ then (a + ‖π‖) else (M 𝓅).default_act π.last,
-  fun π ↦ by
-    simp_all
-    set s := π.last with h
-    symm at h; rcases s <;> simp_all⟩
+  fun π ↦ if π.last = .s₁ then (a + ‖π‖) else 0,
+  fun π ↦ by simp_all⟩
 
 noncomputable abbrev 𝒮_s₁ {𝓅} (𝒮 : 𝔖[M 𝓅]) := 𝒮 {.s₁}
 
@@ -175,8 +202,7 @@ theorem EC_succ_s₁' :
 := by
   simp [EC_succ]
   rw [ENNReal.tsum_eq_add_tsum_ite ⟨.s₁, by simp⟩, ENNReal.tsum_eq_add_tsum_ite ⟨.s₂, by simp⟩]
-  simp_all [M, ENNReal.tsum_eq_zero.mpr]
-  rfl
+  simp_all [ENNReal.tsum_eq_zero.mpr]
 
 theorem EC_succ_s₁ :
     (M 𝓅).EC M.cost 𝒮 (n + 1) .s₁
@@ -269,6 +295,9 @@ theorem 𝒮_x_𝒮_len_one : (𝒮_x 𝓅 (𝒮_len 𝓅 n) 1) = 𝒮_len 𝓅 
   · ring_nf
   · contrapose h
     apply Path_s₁_prior (i:=‖π‖ - 1) <;> simp_all
+  · generalize h : π.last = s
+    have : s ≠ .s₁ := by grind
+    grind [cases State]
 
 @[simp]
 theorem 𝒮_x_𝒮_len : (𝒮_x 𝓅 (𝒮_len 𝓅 n) m) = 𝒮_len 𝓅 (n + m) := by
@@ -291,8 +320,7 @@ theorem le_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] =
   | succ n le ih =>
     apply ih
     · have := π.property n (by simp; omega)
-      simp at this
-      simp_all [M]
+      grind
     · omega
 
 theorem ge_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₃) (hj : i ≤ j)
@@ -305,32 +333,29 @@ theorem ge_of_s₁_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] =
     conv => left; arg 2; rw [← add_assoc, add_comm, ← add_assoc]
     apply ih
     · have := π.property i (by simp_all; omega)
-      simp_all [add_comm]
+      grind
     · omega
 
 theorem lt_of_s₂_eq_s₁ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : j < i) :
     π[j]'(by omega) = State.s₁ := by
   rcases hj with _ | hj
-  · simp_all
-    have := π.property j (by simp; omega)
-    simp at this
-    simp_all [M]
+  · have := π.property j (by simp; omega)
+    grind
   · rename_i n
-    simp_all
     apply le_of_s₁_eq_s₁ (i:=j+1)
     · apply le_of_s₁_eq_s₁ (i:=n)
       · have := π.property n (by simp; omega)
-        simp at this
-        simp_all [M]
-      · simp_all
-      · omega
+        grind
+      · grind
+      · grind
     · simp_all
 
 theorem gt_of_s₂_eq_s₃ (π : (M 𝓅).Path) {hi : i < ‖π‖} (h : π[i] = State.s₂) {j : ℕ} (hj : i < j)
     (hj' : j < ‖π‖) : π[j]'(by omega) = State.s₃ := by
-  have := π.property i (by simp_all; omega)
-  simp_all
-  apply ge_of_s₁_eq_s₁ 𝓅 π this hj hj'
+  apply ge_of_s₁_eq_s₁ 𝓅 π ?_ hj hj'
+  · grind
+  · have := π.property i (by simp_all; omega)
+    grind
 
 theorem s₂_mem_of_s₁_s₃_mem (π : (M 𝓅).Path) (hs₁ : .s₁ ∈ π) (hs₃ : .s₃ ∈ π) : State.s₂ ∈ π := by
   simp_all [Path.mem_iff_getElem]
@@ -344,7 +369,7 @@ theorem s₂_mem_of_s₁_s₃_mem (π : (M 𝓅).Path) (hs₁ : .s₁ ∈ π) (h
   | zero =>
     have := π.property i₁
     simp_all
-    omega
+    grind
   | succ d ih =>
     if π[i₁ + 1] = State.s₁ then
       apply ih (i₁ + 1) <;> try omega
@@ -353,6 +378,7 @@ theorem s₂_mem_of_s₁_s₃_mem (π : (M 𝓅).Path) (hs₁ : .s₁ ∈ π) (h
       have := π.property i₁ (by simp_all; omega)
       simp_all
       use ⟨i₁ + 1, by omega⟩
+      grind
 
 theorem Cost_one_of_s₂_mem (hs₂ : .s₂ ∈ π) : Path.Cost M.cost π = 1 := by
   rename_i 𝓅
@@ -423,12 +449,12 @@ theorem tsum_paths_eq_ite_tprod :
         apply Function.Bijective.finset_prod (fun ⟨x, _⟩ ↦ ⟨x, by simp_all⟩)
         · simp; rfl
         · simp; ring_nf; simp
-      · simp_all [π']
+      · simp_all
     · simp_all
       intro π h h' h'' h'''
       simp_all [Membership.mem]
       contrapose h''
-      ext i h₁ h₂ <;>simp_all [π']
+      ext i h₁ h₂ <;> simp_all [π']
       exact h''' ⟨i, by omega⟩
 
 @[simp]
@@ -499,7 +525,8 @@ theorem iInf_iSup_EC_lt_iInf_iSup_ECℒ :
   simp_all
   rintro (_ | n)
   · simp
-  simp [prod_p_eq']
+  rw [prod_p_eq']
+  simp
   ring_nf
   rw [← ENNReal.one_sub_inv_two, ENNReal.sub_add_eq_add_sub (by simp) (by simp)]
   apply ENNReal.le_sub_of_add_le_left (by simp)

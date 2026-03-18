@@ -131,8 +131,8 @@ theorem EC_init_eq_EC_node :
     M.EC M.cost 𝒮 (n + 2) .init = M.EC M.cost 𝒮 (n + 1) (.node 0 (𝒮 {.init})) := by
   rw [EC_succ]; simp_all
   split_ifs with h
-  · exact ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 (𝒮 {.init}), by simp⟩, by simp_all [M]⟩
-  · simp_all [M]; rintro s α ⟨_⟩; apply Decidable.not_or_of_imp; rintro ⟨_⟩; assumption
+  · exact ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 (𝒮 {.init}), by simp⟩, by simp_all; simp [M]⟩
+  · simp_all; simp [M]; grind
 
 @[simp]
 theorem iInf_iSup_EC_eq_0 : ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init = ⊤ :=
@@ -187,7 +187,8 @@ theorem lfp_Φ𝒟_node_eq_top : lfp (Φ 𝒟 M.cost) (.node α β) = ⊤ := by
     convert lfp_Φ𝒟_node_eq_top with h h'
     simp [Φ, Φf]
     congr!
-    simp only [M, ofRelation_P, tsum_p]⟩
+    simp only [M, ofRelation_P, tsum_p]
+    grind⟩
 
 theorem iSup_iInf_EC_lt_iInf_iSup_EC :
     ⨆ n, ⨅ 𝒮, M.EC M.cost 𝒮 n .init < ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init := by simp

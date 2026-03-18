@@ -59,6 +59,7 @@ def Path.toMC (π : M.Path) (h : π.Prob ℒ ≠ 0) (h' : π[0] = ι := by rfl) 
 theorem inducedMC_cyl (π : M.Path) (h' : π.Prob ℒ ≠ 0) :
     (M.inducedMC ℒ π[0]).Pr (π.toMC h').Cyl = π.Prob ℒ := by
   simp [MarkovChain.Pr_cyl, Path.toMC, Path.Prob]
+  rfl
 
 /-- info: 'MDP.inducedMC_cyl' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs in

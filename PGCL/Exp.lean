@@ -31,9 +31,18 @@ instance {α : Type*} [Compl α] : Covalidate α := ⟨fun x ↦ xᶜᶜ⟩
 
 noncomputable instance {α β : Type*} [SDiff β] : SDiff (α → β) := inferInstance
 
+theorem ENNReal.hnot_def {a : ENNReal} : ￢a = if a = ⊤ then 0 else ⊤ := by
+  simp [hnot]; rfl
+theorem ENNReal.compl_def {a : ENNReal} : aᶜ = if a = 0 then ⊤ else 0 := by
+  simp [compl]; rfl
+theorem ENNReal.himp_def {a b : ENNReal} : (a ⇨ b) = if a ≤ b then ⊤ else b := by
+  simp [himp]; rfl
+theorem ENNReal.sdiff_def {a b : ENNReal} : (a \ b) = if a ≤ b then 0 else a := by
+  simp [sdiff]; rfl
+
 theorem ENNReal.covalidate_sdiff {a b : ENNReal} : ▿ (a \ b) = if a ≤ b then 0 else ⊤ := by
   simp [covalidate, compl, sdiff]
-  split_ifs <;> grind [zero_ne_top, _root_.not_lt_zero]
+  split_ifs with h₁ h₂ h₃ <;> try grind [zero_ne_top, _root_.not_lt_zero]
 
 theorem ENNReal.le_covalidate_sdiff {a b : ENNReal} : x ≤ ▿ (a \ b) ↔ a ≤ b → x = 0 := by
   simp [ENNReal.covalidate_sdiff]
@@ -41,7 +50,7 @@ theorem ENNReal.le_covalidate_sdiff {a b : ENNReal} : x ≤ ▿ (a \ b) ↔ a �
 theorem ENNReal.le_covalidate_sdiff_of_lt {a b : ENNReal} (h : b < a) : x ≤ ▿ (a \ b) := by
   simp [ENNReal.le_covalidate_sdiff, h]
 theorem ENNReal.validate_himp_le_of_lt {a b : ENNReal} (h : b < a) : ▵ (a ⇨ b) ≤ x := by
-  simp [validate, hnot, h]
+  simp [validate, himp_def, h, hnot_def, LT.lt.ne_top h]
 
 @[grind =, simp]
 theorem ENNReal.himp_zero_le (x y : ENNReal) : x ⇨ 0 ≤ y ↔ (x = 0 → y = ⊤) := by
@@ -52,25 +61,22 @@ theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := b
   simp only [himp_zero_le, zero_ne_top, imp_false]
 @[grind =, simp]
 theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
-  simp only [sdiff]; constructor <;> grind [sdiff, zero_le]
+  simp only [sdiff_def]; constructor <;> grind [zero_le]
 
 @[grind =, simp]
-theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp [sdiff]
+theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp
 @[grind =, simp]
 theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < y → x < z) := by
-  simp_all [himp]
-  split_ifs
-  · simp_all
-  · simp_all
+  simp_all [himp]; grind
 @[grind =, simp]
 theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
-  simp_all [himp]
+  simp_all [ENNReal.himp_def]
 
 noncomputable instance : SDiff ENNReal := inferInstance
-example {φ ψ : ENNReal} : φ ⇨ ψ = if φ ≤ ψ then ⊤ else ψ := by simp [himp]
-example {φ ψ : ENNReal} : φ ↜ ψ = (if ψ ≤ φ then 0 else ψ) := by simp [sdiff]
-example {φ : ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
-example {φ : ι → ENNReal} : φᶜ = φ ⇨ 0 := by simp [compl, himp]
+example {φ ψ : ENNReal} : φ ⇨ ψ = if φ ≤ ψ then ⊤ else ψ := by simp [ENNReal.himp_def]
+example {φ ψ : ENNReal} : φ ↜ ψ = (if ψ ≤ φ then 0 else ψ) := by simp [ENNReal.sdiff_def]
+example {φ : ENNReal} : φᶜ = φ ⇨ 0 := by simp [ENNReal.compl_def, ENNReal.himp_def]
+example {φ : ι → ENNReal} : φᶜ = φ ⇨ 0 := by ext; simp [ENNReal.compl_def, ENNReal.himp_def]
 example {φ : ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot]
 example {φ : ι → ENNReal} : ￢φ = φ ↜ ⊤ := by simp [hnot]
 example {φ : ENNReal} : ψ \ φ = φ ↜ ψ := by simp [sdiff]
@@ -126,18 +132,16 @@ noncomputable instance instIverson {α : Type*} : Iverson (α → Prop) (α → 
   iver v := fun σ ↦ i[v σ]
 noncomputable instance instIversonBool {α : Type*} : Iverson (α → Bool) (α → ENNReal) where
   iver v := fun σ ↦ i[v σ]
+@[grind =, simp] theorem iver_prop_apply {α : Type*} {f : α → Prop} {σ : α} : i[f] σ = i[f σ] := rfl
+@[grind =, simp] theorem iver_bool_apply {α : Type*} {f : α → Bool} {σ : α} : i[f] σ = i[f σ] := rfl
 instance instLawfulIverson {α : Type*} : LawfulIverson (α → Prop) (α → ENNReal) where
-  iver_le_one b := by intro σ; simp [instIverson]
+  iver_le_one b := by intro σ; simp
 instance instLawfulIversonBool {α : Type*} : LawfulIverson (α → Bool) (α → ENNReal) where
-  iver_le_one b := by intro σ; simp [instIversonBool]
-@[grind =, simp] theorem iver_apply {α : Type*} (f : α → Prop) (a : α) :
-    i[f] a = i[f a] := rfl
+  iver_le_one b := by intro σ; simp
 @[grind =, simp] theorem iver_subst {α ι : Type*} {γ : ι → Type*}
     [Substitution α γ]
     (f : α → Prop) (x : ι) (y : α → γ x) : i[f][x ↦ y] = i[f[x ↦ y]] := by
   rfl
-@[grind =, simp] theorem iver_bool_apply {α : Type*} (f : α → Bool) (a : α) :
-    i[f] a = i[f a] := rfl
 @[grind =, simp] theorem iver_bool_subst {α ι : Type*} {γ : ι → Type*}
     [Substitution α γ]
     (f : α → Bool) (x : ι) (y : α → γ x) : i[f][x ↦ y] = i[f[x ↦ y]] := by

@@ -30,7 +30,7 @@ theorem IdleInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I :
   rw [wp_fix _ _ _ (by simp; rfl)]
   apply lfp_le
   intro σ'
-  simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Exp.fix_apply,
+  simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply, Exp.fix_apply,
     Pi.compl_apply, compl_iff_not]
   simp [IdleInvariant, Ψ] at h
   rw [← C.wp_fix I C.modsᶜ (by simp)]
@@ -79,7 +79,7 @@ theorem IdleKInduction {b : BExpr Γ} {C : pGCL Γ} {φ : 𝔼[Γ, ENNReal]} {I 
   rw [wp_fix _ _ _ (by simp; rfl)]
   apply lfp_le_of_iter k
   intro σ'
-  simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_apply, Exp.fix_apply,
+  simp only [Ψ, coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply, Exp.fix_apply,
     Pi.compl_apply, compl_iff_not]
   simp [IdleKInvariant, Ψ] at h
   have : ((fun x ↦
@@ -157,7 +157,10 @@ def IdleKCoinvariant''.toIdleKCoinvariant {C : pGCL Γ}
   convert h
   ext
   simp [pΨ, Ψ, wlp]
-  rw [min_eq_left]
+  -- NOTE: This seems like something that should happen automatically
+  have : ENNReal.instMin = ENNReal.instLinearOrder.toMin := rfl
+  rw [this]
+  rw [min_eq_left (b:=(@OfNat.ofNat ENNReal 1 One.toOfNat1 : ENNReal))]
   swap
   · apply ProbExp.pick_le (p:=p[b])
     · simp
