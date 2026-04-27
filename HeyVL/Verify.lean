@@ -67,7 +67,7 @@ def Conditions.sound (C : Conditions E) : Prop :=
 
 @[simp]
 theorem ENNReal.compl_compl_le : ∀ {a b : ENNReal}, (~~a ≤ b ↔ a = 0 ∨ b = ⊤) := by
-  simp [compl]; grind [zero_le]
+  simp [compl_def]; grind [zero_le]
 
 @[grind =, simp]
 theorem Nat.log2_div_2 (n : ℕ) : Nat.log2 (n / 2) = Nat.log2 n - 1 := by

@@ -13,7 +13,7 @@ variable {𝒱 : Type*} {Γ : Γ[𝒱]} [DecidableEq 𝒱]
 noncomputable def pΨ (g : ProbExp Γ →o ProbExp Γ) (φ : BExpr Γ) :
     ProbExp Γ →o ProbExp Γ →o ProbExp Γ :=
   ⟨fun f ↦ ⟨fun X ↦ p[φ] * g X + (1 - p[φ]) * f, by intro _ _ _; simp only; gcongr⟩,
-    by intro _ _ _ _; simp only; gcongr⟩
+    by intro _ _ _ _; simp only [coe_mk]; gcongr⟩
 
 notation "pΨ[" g "]" => pΨ g
 
@@ -38,7 +38,7 @@ theorem pΨ_apply₂ {g : ProbExp Γ →o ProbExp Γ} :
 omit [DecidableEq 𝒱] in
 theorem ProbExp.ωScottContinuous_dual_iff' {f : ProbExp Γ →o ProbExp Γ} :
     ωScottContinuous f.dual ↔ ∀ (c : ℕ → ProbExp Γ), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i) := by
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
+  simp [CompleteLattice.ωScottContinuous_orderHom_iff]
   constructor
   · intro h c hc; exact h ⟨c, hc⟩
   · intro h c; exact h c c.mono
@@ -55,7 +55,7 @@ theorem pΨ.continuous {g : ProbExp Γ →o ProbExp Γ} (hg : ωScottContinuous 
 omit [DecidableEq 𝒱] in
 theorem pΨ.continuous' {g : ProbExp Γ →o ProbExp Γ} (hg : ωScottContinuous g) :
     ωScottContinuous (pΨ[g] b X) := by
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup] at hg ⊢
+  simp [CompleteLattice.ωScottContinuous_orderHom_iff] at hg ⊢
   intro c
   ext σ
   simp [pΨ]
@@ -345,9 +345,9 @@ theorem wlp_sound (C : pGCL Γ) (X : ProbExp Γ) : wlp'[O]⟦@C⟧ X = 1 - wfp'[
 attribute [- simp] Function.iterate_succ in
 theorem wlp'_sound (C : pGCL Γ) : wlp'[O]⟦@C⟧ = wfp'[O.dual]⟦@C⟧ᶜ := by ext; rw [wlp_sound]; rfl
 
+
 def wfp.continuous (C : pGCL Γ) : ωScottContinuous (C.wfp O) := by
-  refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
-  simp [ωSup, Chain, Pi.evalOrderHom, Chain.map]
+  simp [CompleteLattice.ωScottContinuous_orderHom_pi_iff]
   induction C with
   | skip => simp [wfp]
   | assign x A => intro C; ext σ; simp [wfp]
@@ -357,7 +357,7 @@ def wfp.continuous (C : pGCL Γ) : ωScottContinuous (C.wfp O) := by
     intro c
     specialize ih₁ ⟨fun i a ↦ wfp[O]⟦@C₂⟧ (c i) a,
                     fun _ _ h _ ↦ by simp; apply (wfp _ _).mono; apply c.mono h⟩
-    simp at ih₁
+    simp only [DFunLike.coe] at ih₁; simp only [toFun_eq_coe, Chain.coe_toOrderHom] at ih₁
     simp [ih₁]
   | nonDet C₁ C₂ ih₁ ih₂ =>
     intro c; ext σ
@@ -395,15 +395,15 @@ def wfp.continuous (C : pGCL Γ) : ωScottContinuous (C.wfp O) := by
       Pi.sub_apply, Pi.ofNat_apply, ENNReal.iSup_add]
 
 def wfp'.continuous (C : pGCL Γ) : ωScottContinuous (C.wfp' O) := by
-  refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
-  simp [Chain, ωSup, Chain.map, comp_coe, Function.comp_apply,]
+  simp [CompleteLattice.ωScottContinuous_orderHom_iff]
   intro c
   have := wfp.continuous C (O:=O)
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, Chain, Pi.evalOrderHom, Chain.map] at this
+  simp [CompleteLattice.ωScottContinuous_orderHom_pi_iff] at this
   ext σ
   simp [wfp'_eq_wfp]
   convert congrFun (this ⟨fun i ↦ c i, fun _ _ _ _ ↦ by simp; apply c.mono ‹_›⟩) σ
   simp
+  rfl
 
 omit [DecidableEq 𝒱] in
 theorem ωScottContinuous_dual_prob_iff {f : ProbExp Γ →o ProbExp Γ} :

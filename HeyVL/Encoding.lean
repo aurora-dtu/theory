@@ -153,10 +153,7 @@ private lemma spGCL.wp_le_vp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv 
     intro σ
     if inv : IdleInvariant wp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
       simp
-      -- NOTE: This seems like something that should happen automatically
-      have : ENNReal.instMax = ENNReal.instLinearOrder.toMax := rfl
-      rw [this]
-      grw [← le_max_left]
+      left
       apply IdleInduction
       grind
     else
@@ -216,10 +213,7 @@ private lemma spGCL.vp_le_wlp_aux.loop
   intro σ
   if inv : IdleCoinvariant wlp[O]⟦@C.pGCL⟧ b.sem φ.sem I.sem C.modsᶜ σ then
     simp
-    -- NOTE: This seems like something that should happen automatically
-    have : ENNReal.instMin = ENNReal.instLinearOrder.toMin := rfl
-    rw [this]
-    grw [min_le_left]
+    left
     apply IdleCoinduction <;> grind
   else
     simp [IdleCoinvariant] at inv

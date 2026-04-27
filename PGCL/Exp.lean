@@ -41,7 +41,7 @@ theorem ENNReal.sdiff_def {a b : ENNReal} : (a \ b) = if a ≤ b then 0 else a :
   simp [sdiff]; rfl
 
 theorem ENNReal.covalidate_sdiff {a b : ENNReal} : ▿ (a \ b) = if a ≤ b then 0 else ⊤ := by
-  simp [covalidate, compl, sdiff]
+  simp [covalidate, sdiff_def, compl_def]
   split_ifs with h₁ h₂ h₃ <;> try grind [zero_ne_top, _root_.not_lt_zero]
 
 theorem ENNReal.le_covalidate_sdiff {a b : ENNReal} : x ≤ ▿ (a \ b) ↔ a ≤ b → x = 0 := by
@@ -54,7 +54,7 @@ theorem ENNReal.validate_himp_le_of_lt {a b : ENNReal} (h : b < a) : ▵ (a ⇨ 
 
 @[grind =, simp]
 theorem ENNReal.himp_zero_le (x y : ENNReal) : x ⇨ 0 ≤ y ↔ (x = 0 → y = ⊤) := by
-  simp only [himp]; grind [zero_le, nonpos_iff_eq_zero]
+  simp only [himp_def]; grind [zero_le, nonpos_iff_eq_zero]
 @[grind =, simp]
 theorem ENNReal.himp_zero_eq_zero (x : ENNReal) : x ⇨ 0 = 0 ↔ (¬x = 0) := by
   suffices x ⇨ 0 ≤ 0 ↔ (¬x = 0) by simpa
@@ -67,7 +67,7 @@ theorem ENNReal.sdiff_zero_eq_zero (x y : ENNReal) : x \ y = 0 ↔ x ≤ y := by
 theorem ENNReal.max_sdiff (x y : ENNReal) : max x (⊤ ↜ y) = x := by simp
 @[grind =, simp]
 theorem ENNReal.lt_himp (x y z : ENNReal) (hx : x < ⊤) : x < y ⇨ z ↔ (z < y → x < z) := by
-  simp_all [himp]; grind
+  simp_all [himp_def]; grind
 @[grind =, simp]
 theorem ENNReal.zero_himp (x : ENNReal) : 0 ⇨ x = ⊤ := by
   simp_all [ENNReal.himp_def]
@@ -161,7 +161,7 @@ end Pi
 @[simp]
 theorem ENNReal.iver_eq_zero_himp_le (x y z : ENNReal) (hz : z ≠ ⊤) :
     (i[x = 0] : ENNReal) * (⊤ : ENNReal) ⇨ y ≤ z ↔ x = 0 ∧ y ≤ z := by
-  simp [himp]
+  simp [himp_def]
   if x = 0 then
     simp_all only [Iverson.iver_True]
     grind

@@ -169,7 +169,7 @@ noncomputable instance : CompleteLattice (ProbExp Γ) where
   le_sup_left a b σ := by split; split; simp
   le_sup_right a b σ := by split; split; simp
   sup_le := fun ⟨a, ha⟩ ⟨b, hb⟩ ⟨c, hc⟩ _ _ ↦ by simp_all
-  inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ↦ ⟨a ⊓ b, by intro σ; simp; exact inf_le_of_right_le (hb σ)⟩
+  inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ↦ ⟨a ⊓ b, by intro σ; simp; left; apply ha⟩
   inf_le_left a b σ := by split; split; simp
   inf_le_right a b σ := by split; split; simp
   le_inf := fun ⟨a, ha⟩ ⟨b, hb⟩ ⟨c, hc⟩ _ _ ↦ by simp_all

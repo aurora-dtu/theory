@@ -37,20 +37,17 @@ theorem Exp.himp_mono {a₁ a₂ b₁ b₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a
   intro σ
   specialize ha σ
   specialize hb σ
-  simp [himp]
+  simp [ENNReal.himp_def]
   split_ifs <;> try grind
   simp_all
-  exact (ENNReal.sdiff_zero_eq_zero (b₁ σ) ⊤).mp rfl
 
 @[gcongr]
 theorem Exp.hnot_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a₁) :
     ￢ a₁ ≤ ￢ a₂ := by
   intro σ
   specialize ha σ
-  simp [hnot]
+  simp [ENNReal.hnot_def]
   split_ifs <;> simp_all
-  · exact (ENNReal.sdiff_zero_eq_zero 0 ⊤).mp rfl
-  · grind
 @[gcongr]
 theorem Exp.compl_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₂ ≤ a₁) :
     a₁ᶜ ≤ a₂ᶜ := by
@@ -69,10 +66,8 @@ theorem Exp.covalidate_mono {a₁ a₂ : 𝔼[Γ, ENNReal]} (ha : a₁ ≤ a₂)
 @[gcongr]
 theorem ENNReal.hnot_mono {a₁ a₂ : ENNReal} (ha : a₂ ≤ a₁) :
     ￢ a₁ ≤ ￢ a₂ := by
-  simp [hnot]
+  simp [ENNReal.hnot_def]
   split_ifs <;> simp_all
-  · exact (ENNReal.sdiff_zero_eq_zero 0 ⊤).mp rfl
-  · grind
 @[gcongr]
 theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
     ▿ a₁ ≤ ▿ a₂ := by
@@ -82,12 +77,7 @@ theorem ENNReal.covalidate_mono {a₁ a₂ : ENNReal} (ha : a₁ ≤ a₂) :
 @[grind =, simp]
 theorem Exp.zero_himp {a : 𝔼[Γ, ENNReal]} :
     (0 ⇨ a) = ⊤ := by
-  ext; simp [himp]
-  split_ifs with h
-  · rfl
-  · simp_all
-    contrapose! h
-    grind [zero_le]
+  ext; simp [ENNReal.himp_def]
 
 @[grind =]
 theorem State.subst_comm [DecidableEq 𝒱] {σ : State Γ} {x₁ x₂ : 𝒱} {v₁ v₂} (h : x₁ ≠ x₂) :

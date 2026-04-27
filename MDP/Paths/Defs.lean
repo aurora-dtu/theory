@@ -189,7 +189,7 @@ theorem mem_succs_univ_of_prev_univ (π : M.Path) (s : M.prev_univ π[0]) : π[0
 theorem prepend_tail : (π.prepend s).tail = π := by simp [prepend, tail]
 @[grind =, simp]
 theorem tail_prepend (h : 1 < ‖π‖) : π.tail.prepend ⟨π[0], by simp [Nat.ne_of_lt' h]⟩ = π := by
-  ext <;> grind [prepend, tail]
+  ext <;> (simp only [prepend]; grind [prepend, tail])
 @[grind =, simp]
 theorem tail_prepend' (h : 1 < ‖π‖) (h' : π[0] = s) :
     π.tail.prepend ⟨s, by simp [Nat.ne_of_lt' h, ← h']⟩ = π := by simp [← h', h]
@@ -322,11 +322,8 @@ theorem tail_getElem_nat_succ' (i : ℕ) (h : i < ‖π‖ - 2) :
     (π.prepend s)[i]'(by grind) = if _ : i = 0 then s.val else π[i - 1] := by
   grind [prepend]
 
--- @[grind =, simp] theorem prepend_getElem_one (s : M.prev_univ π[0]) : (π.prepend s)[1] = π[0] := rfl
 @[grind =, simp] theorem prepend_getElem_succ (s : M.prev_univ π[0]) (i : Fin ‖π‖) :
     (π.prepend s)[i.val + 1] = π[i] := by simp
--- @[grind =, simp] theorem prepend_getElem_succ' (s : M.prev_univ π[0]) (i : Fin (‖π‖ - 1)) :
---     (π.prepend s)[i.val + 1]'(by grind) = π[i] := by simp [prepend]; rfl
 @[grind ., simp] theorem prepend_injective : Function.Injective π.prepend := by
   intro ⟨s, _⟩ ⟨s', _⟩ h
   simp_all [prepend]
@@ -339,14 +336,16 @@ theorem last_mem_succs_univ_prev_last (h : 1 < ‖π‖) : π.last ∈ M.succs_u
 @[grind =, simp]
 theorem prev_extend (h : 1 < ‖π‖) :
     π.prev.extend ⟨π.last, π.last_mem_succs_univ_prev_last h⟩ = π := by
-  ext <;> grind
+  ext
+  · simp; grind
+  · simp only [extend]; grind [extend, prev]
 
 theorem succs_univ_eq_extend_range : π.succs_univ = Set.range π.extend := by
   ext π'
   simp [succs_univ]
   constructor <;> simp_all
   · rintro ⟨_⟩; grind [Path.prev_extend]
-  · grind
+  · rintro s h ⟨_⟩; grind
 
 theorem induction_on
   {P : M.Path → Prop} (π : M.Path)

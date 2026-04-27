@@ -73,6 +73,9 @@ def Path.ext {a b : M.Path} (h₀ : ‖a‖ = ‖b‖)
     (h : ∀ i, (ha : i < ‖a‖) → (hb : i < ‖b‖) → a.states[i] = b.states[i]) :
     a = b := by
   grind [List.ext_getElem]
+def Path.ext_states {a b : M.Path} (h : a.states = b.states) :
+    a = b := by
+  grind [List.ext_getElem]
 @[ext]
 def Path'.ext {a b : M.Path'} (h : a.states = b.states) : a = b := by
   grind
@@ -199,6 +202,7 @@ theorem Path.pmf'_apply {π : M.Path} {π' : M.Path} :
     · simp; grind
   · simp_all; grind
 
+@[reducible]
 def Path.ofLength_countable (n : ℕ) : Countable {π : M.Path | ‖π‖ = n} := by
   rcases n with _ | n
   · simp
@@ -522,9 +526,17 @@ theorem Pr_cyl (π : M.Path) :
     rw [← π.pmf.tsum_coe]
     apply tsum_eq_tsum_of_ne_zero_bij fun ⟨x, _⟩ ↦ x
     · intro; grind
-    · intro
+    · intro π'
       simp only [Function.mem_support, succs, Set.mem_range, Subtype.exists]
-      grind [pmf_apply, pmf'_apply]
+      simp +contextual only [ne_eq, dite_eq_right_iff, forall_and_index, not_forall, Set.coe_setOf,
+        Set.mem_setOf_eq, exists_prop, exists_and_right, exists_eq_right, forall_exists_index,
+        and_true, exists_true_left]
+      intro h h' h''
+      suffices π.pmf' π' ≠ 0 by
+        have h₀ := π.pmf_apply (π' := ⟨π', by simp_all [succs]⟩)
+        rw [← h₀] at this
+        convert this
+      grind [pmf'_apply]
     · grind [succs, pmf_apply, pmf'_apply]
   · have : ‖x‖ < ‖π‖ := by grind
     rw [tsum_eq_single (π.take ⟨‖x‖, by grind⟩)]

@@ -302,7 +302,8 @@ noncomputable def ξ (O : Optimization) : (P → 𝔼[S] →o 𝔼[S]) →o P �
     · apply (Y _).mono hab
     · apply 𝕊.cost_t.mono hab⟩),
   fun a b hab C X σ ↦ by
-    simp only [Φ']
+    simp only [Φ', DFunLike.coe]
+    simp only [toFun_eq_coe]
     gcongr with α
     split <;> try rfl
     gcongr
@@ -446,7 +447,7 @@ theorem ξ_continuous [i : Optimization.ΦContinuous O 𝕊.mdp] : ωScottContin
   simp only [ξ, ← Φ_simp, coe_mk]
   refine ωScottContinuous.of_apply₂ fun C ↦ ?_
   refine ωScottContinuous.of_monotone_map_ωSup ?_
-  simp only [ωSup, OrderHom.ωSup_coe, Chain.map_coe, Pi.evalOrderHom_coe, apply_coe,
+  simp only [ωSup, OrderHom.ωSup_coe, Chain.coe_map, Pi.evalOrderHom_coe, apply_coe,
     Function.comp_apply, Function.eval]
   fapply Exists.intro
   · intro a b hab X σ; simp only; apply (MDP.Φ _ _).mono; intro; simp; split <;> try gcongr

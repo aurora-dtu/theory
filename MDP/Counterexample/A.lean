@@ -132,7 +132,7 @@ theorem EC_init_eq_EC_node :
   rw [EC_succ]; simp_all
   split_ifs with h
   · exact ENNReal.tsum_eq_top_of_eq_top ⟨⟨.node 0 (𝒮 {.init}), by simp⟩, by simp_all; simp [M]⟩
-  · simp_all; simp [M]; grind
+  · simp_all; simp [M]; intro i; refine Decidable.not_or_of_imp ?_; rintro ⟨_⟩; exact h
 
 @[simp]
 theorem iInf_iSup_EC_eq_0 : ⨅ 𝒮, ⨆ n, M.EC M.cost 𝒮 n .init = ⊤ :=

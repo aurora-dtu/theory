@@ -94,7 +94,7 @@ def Path.toMC' (π : M.Path) (h : π.Prob 𝒮 ≠ 0) (h' : π[0] = ι := by rfl
     use by grind
     ext
     · simp; grind
-    · simp [take]
+    · simp [take, extend]
       grind
 
 set_option maxHeartbeats 500000 in
@@ -133,8 +133,8 @@ theorem inducedMC'_cyl (π : M.Path) (h' : π.Prob 𝒮 ≠ 0) :
       · grind
       · contrapose! h'
         ext
-        · grind
-        · simp [Path.take]; grind
+        · simp; grind
+        · simp [Path.take, Path.extend]; grind
     · simp_all only [ne_eq, dite_eq_left_iff, ite_eq_right_iff, imp_false]
       intro s' hs' h
       contrapose! hs'

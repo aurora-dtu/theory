@@ -6,11 +6,41 @@ import MDP.Optimization
 
 open OrderHom OmegaCompletePartialOrder
 
+namespace CompleteLattice
+
+variable {ι α : Type*} [CompleteLattice α]
+
+theorem ωScottContinuous_orderHom_pi_iff (f : (ι → α) →o ι → α) :
+    ωScottContinuous f ↔ ∀ c : Chain (ι → α), (f (⨆ i, c i ·)) = (⨆ i, f (c i) ·) := by
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, Pi.evalOrderHom, Chain.map, OrderHom.comp]
+  rfl
+theorem ωScottContinuous_pi_iff
+    (f : (ι → α) → ι → α) :
+    ωScottContinuous f ↔ Monotone f ∧ ∀ c : Chain (ι → α), (f (⨆ i, c i ·)) = (⨆ i, f (c i) ·) := by
+  simp [ωScottContinuous_iff_monotone_map_ωSup, ωSup, Pi.evalOrderHom, Chain.map, OrderHom.comp]
+  simp only [DFunLike.coe]
+  simp
+
+variable [CompleteLattice ι]
+
+theorem ωScottContinuous_orderHom_iff (f : ι →o α) :
+    ωScottContinuous f ↔ ∀ c : Chain ι, (f (⨆ i, c i)) = (⨆ i, f (c i)) := by
+  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup, Chain.map, OrderHom.comp]
+  rfl
+
+theorem ωScottContinuous_iff
+    (f : ι → α) :
+    ωScottContinuous f ↔ Monotone f ∧ (∀ (c : Chain ι), f (⨆ i, c i) = ⨆ i, f (c i)) := by
+  simp [ωScottContinuous_iff_monotone_map_ωSup, ωSup, Chain.map, OrderHom.comp]
+  simp only [DFunLike.coe]
+  simp
+
+end CompleteLattice
+
 theorem OrderHom.lfp_ωScottContinuous {α ι : Type*} [CompleteLattice α] [CompleteLattice ι]
     {f : ι →o α →o α} (hf' : ωScottContinuous f) (hf : ∀ i, ωScottContinuous (f i)) :
     ωScottContinuous fun X ↦ lfp (f X) := by
-  refine ωScottContinuous.of_monotone_map_ωSup ?_
-  simp [ωSup]
+  simp [CompleteLattice.ωScottContinuous_iff]
   constructor
   · intro _ _ _; simp only; gcongr
   intro c
@@ -191,7 +221,7 @@ def Ψ.continuous' {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} : ωScottConti
   refine ωScottContinuous.of_map_ωSup_of_orderHom ?_
   intro c
   ext X σ
-  simp only [Ψ, ωSup, Chain.map_coe, Pi.evalOrderHom_coe, Function.comp_apply, Function.eval,
+  simp only [Ψ, ωSup, Chain.coe_map, Pi.evalOrderHom_coe, Function.comp_apply, Function.eval,
     coe_mk, mk_apply, Pi.add_apply, Pi.mul_apply, Pi.iver_prop_apply, Pi.compl_apply, compl_iff_not,
     ENNReal.mul_iSup, ENNReal.add_iSup, OrderHom.ωSup, apply_coe]
 omit [DecidableEq 𝒱] in
@@ -208,12 +238,12 @@ theorem Ψ_iSup' {g : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} (f : ℕ → �
 omit [DecidableEq 𝒱] in
 theorem ωScottContinuous_dual_iff {f : 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]} :
       ωScottContinuous f.dual ↔ (∀ (c : Chain (𝔼[Γ, ENNReal])ᵒᵈ), f (⨅ i, c i) = ⨅ i, f (c i)) := by
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]; rfl
+  simp [CompleteLattice.ωScottContinuous_orderHom_iff]; rfl
 
 omit [DecidableEq 𝒱] in
 theorem ωScottContinuous_dual_iff' {α ι : Type*} [CompleteLattice α] {f : (ι → α) →o (ι → α)} :
     ωScottContinuous f.dual ↔ (∀ (c : ℕ → (ι → α)), Antitone c → f (⨅ i, c i) = ⨅ i, f (c i)) := by
-  simp [ωScottContinuous_iff_map_ωSup_of_orderHom, ωSup]
+  simp [CompleteLattice.ωScottContinuous_orderHom_iff]
   constructor
   · intro h c hc; exact h ⟨c, hc⟩
   · intro h c; exact h c c.mono
