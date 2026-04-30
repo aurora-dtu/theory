@@ -95,10 +95,6 @@ theorem ENNReal.two_inv_mul_two_id (q : ENNReal) : 2⁻¹ * q * 2 = q := by
   rw [mul_comm, ← mul_assoc]
   simp
 
-syntax "cbv_le" : tactic
-macro_rules
-| `(tactic|cbv_le) => `(tactic|apply le_of_eq_of_le (by cbv) (le_of_le_of_eq _ (by symm; cbv)))
-
 syntax "vc_simp" : tactic
 
 @[simp]
@@ -113,7 +109,7 @@ macro_rules
   `(tactic|
     simp [Conditions.sound];
     apply le_trans spGCL.wp_le_vp;
-    cbv_le;
+    cbv;
     intro $σ:ident;
     simp only [Ty.lit, CharP.cast_eq_zero, Nat.cast_add, Nat.cast_id, Nat.cast_ofNat,
       pGCL.State.subst_apply, ↓dreduceDIte, cast_eq, Ident.mk.injEq, String.reduceEq, and_true,

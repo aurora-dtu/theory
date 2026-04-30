@@ -55,7 +55,7 @@ Section 4, Theorem 19: M.iInf_iSup_EC_eq_lfp_Φ𝒟 (c:=c)
 /-! ## Section 5 – pGCL: probabilistic Guarded Command Language -/
 
 Section 5, Definition 20: Conf (pGCL Γ) (pGCL.State Γ) pGCL.Termination
-Section 5, Definition 21: pGCL.SmallStep (Γ:=Γ)
+Section 5, Definition 21: pGCL.Step (Γ:=Γ)
 Section 5, Definition 22: pGCL.𝒪 (Γ:=Γ)
 /-- In Lean the cost functions are split for programs and terminations where `ct = cost_p, cost_t`
 and  `cp = cost_p', cost_t'`. -/

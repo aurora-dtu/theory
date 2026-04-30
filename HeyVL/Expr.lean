@@ -138,8 +138,24 @@ namespace Ident
 
 def toLex (i : Ident) : Lex (String × Ty) := (i.name, i.type)
 
+@[reducible]
+def String.initLinearOrder : LinearOrder String :=
+  {String.instLE, String.instLT, String.instOrd with
+    le_refl := by simp
+    le_trans := by exact fun a b c a_1 a_2 ↦ String.le_trans a_1 a_2
+    le_antisymm := by exact fun a b a_1 a_2 ↦ String.le_antisymm a_1 a_2
+    le_total := by exact fun a b ↦ String.le_total a b
+    toDecidableLE := String.decLE
+    min a b := if String.instLE.le a b then a else b
+    max a b := if String.instLE.le a b then b else a
+    lt_iff_le_not_ge := @Std.LawfulOrderLT.lt_iff String String.instLT String.instLE _
+  }
+
+-- TODO: the inferred instance `LinearOrder String` kernel errors in `cbv` on `v4.30.0-rc2`. check
+-- again when a new version is released
 instance instLinearOrder : LinearOrder Ident :=
-  LinearOrder.lift' toLex (by grind [Function.Injective, toLex, Ident])
+  @LinearOrder.lift' _ _ (@Prod.Lex.instLinearOrder String Ty String.initLinearOrder _) toLex
+    (by grind [Function.Injective, toLex, Ident])
 
 end Ident
 
