@@ -19,8 +19,9 @@ actions, equipped with a probability function.
 -/
 
 structure MDP (State : Type*) (Act : Type*) where
-  P' : State → Act → Option (PMF State)
-  exists_P'_isSome s : ∃α, (P' s α).isSome
+  /-- The transition probability of going from `s` to `s'` using action `α` -/
+  P : State → Act → Option (PMF State)
+  exists_P_isSome s : ∃α, (P s α).isSome
 
 namespace MDP
 
@@ -28,17 +29,29 @@ variable {State : Type*} {Act : Type*}
 
 variable (M : MDP State Act)
 
-/-- The transition probability of going from `s` to `s'` using action `α` -/
-def P (s : State) (α : Act) (s' : State) := if let some pmf := M.P' s α then pmf s' else 0
+instance : FunLike (Option (PMF State)) State ENNReal where
+  coe pmf' x := if let some pmf := pmf' then pmf x else 0
+  coe_injective' := by
+    rintro (_ | a) (_ | b) h <;> simp_all
+    · exact Ne.elim ‹PMF _›.coe_ne_zero.symm h
+    · exact Ne.elim ‹PMF _›.coe_ne_zero h
+
+theorem P_apply_eq : M.P s a s' = if let some pmf := M.P s a then pmf s' else 0 := rfl
+
+@[simp, grind =]
+theorem P_get : (M.P s a).get h s' = M.P s a s' := by
+  simp [P_apply_eq]
+  split <;> simp_all [← Option.eq_none_iff_forall_ne_some]
+  grind
 
 /-- An action is enabled in state `s` iff choosing this action gives a positive probability to any
 other state. -/
-def act (s : State) : Set Act := (M.P s).support
+def act (s : State) : Set Act := {a | (M.P s a).isSome}
 /-- α-successors of `s` are states `s'` which have a positive probability for a given action `α`,
 such that `0 < M.P s α s'`. -/
-def succs (α : Act) (s : State) : Set State := (M.P s α).support
+def succs (α : Act) (s : State) : Set State := {s' | M.P s α s' ≠ 0}
 /-- α-predecessors of `s` are states `s'` such that `s' ∈ M.succs α s`. -/
-def prev (α : Act) (s' : State) : Set State := {s : State | s' ∈ M.succs α s}
+def prev (α : Act) (s' : State) : Set State := {s | s' ∈ M.succs α s}
 
 /-- Successors of `s` are those `s'` with `s' ∈ M.succs α` for some `α`. -/
 def succs_univ (s : State) : Set State := ⋃ α, M.succs α s
@@ -47,14 +60,28 @@ def prev_univ (s : State) : Set State := ⋃ α, M.prev α s
 def mem_prev_univ_iff_mem_succs_univ (s s' : State) : s ∈ M.prev_univ s' ↔ s' ∈ M.succs_univ s := by
   simp_all [prev_univ, succs_univ, prev]
 
+theorem P_eq_some_iff : M.P s α = some pmf ↔ DFunLike.coe (M.P s α) = pmf := DFunLike.ext'_iff
+theorem P_isSome_iff :
+      (M.P s α).isSome
+    ↔ ∃ (s' : State) (pmf : PMF State), ¬pmf s' = 0 ∧ DFunLike.coe (M.P s α) = pmf := by
+  simp [Option.isSome_iff_exists, P_eq_some_iff, funext_iff]
+  constructor
+  · simp only [forall_exists_index]
+    intro pmf h
+    obtain ⟨s', hs'⟩ := pmf.support_nonempty
+    use s', pmf, hs'
+  · simp only [forall_exists_index, and_imp]
+    intro s pmf h h'
+    use pmf
+
 class FiniteBranching where
   act_fin : ∀ (s : State), (M.act s).Finite
-  succs_fin : ∀ (s : State) (α : Act), (M.P s α).support.Finite
+  succs_fin : ∀ (s : State) (α : Act), (M.succs α s).Finite
 
 noncomputable def ofP (P : State → Act → State → ENNReal)
     (h₁ : ∀ s α, ∑' s', P s α s' = 0 ∨ ∑' s', P s α s' = 1)
     (h₂ : ∀ s, ∃ α s', 0 < P s α s') : MDP State Act where
-  P' s α :=
+  P s α :=
     have : Decidable (α ∈ (P s).support) := Classical.propDecidable _
     if h : α ∈ (P s).support then some ⟨P s α, by
       apply (Summable.hasSum_iff ENNReal.summable).mpr
@@ -64,7 +91,7 @@ noncomputable def ofP (P : State → Act → State → ENNReal)
         exact (Set.eqOn_univ (P s α) 0).mp fun ⦃x⦄ a ↦ h₁ x
       · simp_all⟩
     else none
-  exists_P'_isSome := by
+  exists_P_isSome := by
     intro s
     obtain ⟨α, s', hα⟩ := h₂ s
     use α
@@ -73,15 +100,13 @@ noncomputable def ofP (P : State → Act → State → ENNReal)
     simp_all only [Pi.zero_apply, lt_self_iff_false]
 
 @[simp]
-theorem ofP_P (P : State → Act → State → ENNReal) (h₁) (h₂) : (ofP P h₁ h₂).P = P := by
-  ext s α s'
-  simp [ofP, MDP.P]
-  split_ifs
-  · simp; rfl
-  · simp_all
+theorem ofP_P (P : State → Act → State → ENNReal) (h₁) (h₂) :
+    (ofP P h₁ h₂).P s α s' = P s α s' := by
+  simp [ofP, DFunLike.coe]
+  split_ifs <;> simp_all
 
 @[simp] lemma P_le_one (s : State) (α : Act) (s' : State) : M.P s α s' ≤ 1 := by
-  unfold P
+  simp [P_apply_eq]
   split
   · apply PMF.coe_le_one
   · simp only [zero_le]
@@ -92,10 +117,8 @@ theorem ofP_P (P : State → Act → State → ENNReal) (h₁) (h₂) : (ofP P h
 instance [Fintype Act] : Finite (M.act s) := Subtype.finite
 noncomputable instance instFintypeAct [Fintype Act] : Fintype (M.act s) := Fintype.ofFinite _
 noncomputable instance instNonemptyAct : Nonempty (M.act s) :=
-  have ⟨α, hα⟩ := M.exists_P'_isSome s
-  have ⟨pmf, _⟩ := Option.isSome_iff_exists.mp hα
-  have ⟨s', h⟩ := pmf.support_nonempty
-  ⟨α, Function.ne_iff.mpr ⟨s', by simp_all [P]⟩⟩
+  have ⟨α, hα⟩ := M.exists_P_isSome s
+  ⟨α, Set.mem_of_subset_of_mem (fun _ a ↦ a) hα⟩
 
 noncomputable def default_act (s : State) : Act :=
   (nonempty_subtype.mp <| M.instNonemptyAct (s:=s)).choose
@@ -115,8 +138,11 @@ theorem act₀_eq_act [i : M.FiniteBranching] : M.act₀ s = M.act s := by simp 
 @[simp]
 theorem act₀_mem_iff_act_mem [M.FiniteBranching] : a ∈ M.act₀ s ↔ a ∈ M.act s := by
   simp only [← act₀_eq_act, Finset.mem_coe]
-theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.P s a).support.Nonempty := by
-  simp_all [act₀_mem_iff_act_mem, act]
+theorem act₀_prop [FiniteBranching M] (h : a ∈ M.act₀ s) : (M.succs a s).Nonempty := by
+  simp_all [act₀_mem_iff_act_mem, act, succs, Option.isSome_iff_exists]
+  obtain ⟨pmf, h⟩ := h
+  rw [h]
+  exact pmf.support_nonempty
 
 noncomputable instance [M.FiniteBranching] : Nonempty (M.act₀ s) := by
   simp_all [M.instNonemptyAct]
@@ -125,11 +151,9 @@ noncomputable def act₀_nonempty [M.FiniteBranching] (s : State ) : (M.act₀ s
   Finset.nonempty_coe_sort.mp M.instNonemptySubtypeMemFinsetAct₀
 
 lemma P_ne_zero_sum_eq_one (h : ¬M.P s a s' = 0) : ∑' s'', M.P s a s'' = 1 := by
-  simp [P] at h ⊢
-  split
-  · rename_i pmf _
-    simp [pmf.tsum_coe]
-  · simp at h
+  simp [P_apply_eq] at h ⊢
+  split at h <;> try contradiction
+  exact ‹PMF _›.tsum_coe
 
 noncomputable instance act.instDefault : Inhabited (M.act s) := Classical.inhabited_of_nonempty'
 
@@ -137,13 +161,10 @@ noncomputable instance act₀.instDefault [M.FiniteBranching] : Inhabited (M.act
   Classical.inhabited_of_nonempty'
 
 theorem P_sum_one_iff : ∑' s', M.P s a s' = 1 ↔ a ∈ M.act s := by
-  simp [act, P]
-  unfold P
+  simp [act, P_apply_eq]
   split
-  · rename_i pmf _
-    simp [pmf.tsum_coe, pmf.coe_ne_zero]
-  · simp_all
-    rfl
+  · rename_i pmf _; grind [pmf.tsum_coe]
+  · simp_all [Option.eq_none_iff_forall_ne_some]
 
 section Succs
 
@@ -163,9 +184,12 @@ noncomputable instance [M.FiniteBranching] : Fintype (M.succs α s) := Fintype.o
 
 instance instNonemptySuccs (α : M.act s) : Nonempty (M.succs α s) := by
   obtain ⟨α, hα⟩ := α
-  simp [act] at hα
+  simp [act, Option.isSome_iff_exists] at hα
+  obtain ⟨pmf, hpmf⟩ := hα
+  obtain ⟨s', hs'⟩ := pmf.support_nonempty
+  use s'
   simp [succs]
-  exact Function.ne_iff.mp hα
+  exact ne_of_eq_of_ne (congrFun (congrArg DFunLike.coe hpmf) s') hs'
 instance instNonemptySuccs₀ [M.FiniteBranching] (α : M.act s) : Nonempty (M.succs₀ α s) := by
   simp only [succs₀_mem_eq_succs_mem]
   exact M.instNonemptySuccs α
@@ -202,10 +226,8 @@ theorem succs_univ₀_eq_succs_univ (s : State) :
   M.succs_univ₀ s = M.succs_univ s
 := by
   ext s'
-  simp [succs_univ, succs_univ₀, succs, act]
-  constructor
-  · intro ⟨α, h₁, h₂⟩; use α
-  · intro ⟨α, h⟩; exact Exists.intro α ⟨fun a ↦ h (congrFun a s'), h⟩
+  simp [succs_univ, succs_univ₀, succs, act, Option.isSome_iff_exists, P_apply_eq]
+  grind
 
 @[simp]
 theorem succs_univ₀_mem_eq_succs_univ_mem (s s' : State) :

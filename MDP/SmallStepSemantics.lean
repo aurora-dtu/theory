@@ -244,8 +244,20 @@ theorem Φ_simp {C : Conf P S T} :
   simp [MDP.Φ, MDP.act, MDP.Φf, tsum_succs_univ', -Φ']
   simp [Φ', Optimization.act]
   congr! with α hα
-  · ext; simp [act, mdp, Function.ne_iff]
-    grind
+  · ext α; simp [act, mdp, MDP.P_isSome_iff, funext_iff]
+    constructor
+    · simp
+      intro C' pmf h h'
+      specialize h' C'
+      obtain ⟨p, hp⟩ := Summable.tsum_ne_zero_iff (by simp) |>.mp (h'.trans_ne h)
+      use p, C', p.prop
+    · simp
+      intro p C' h
+      use C'
+      use ⟨fun x ↦ ∑' (p : { p // rr C α p x }), ↑p, ?_⟩
+      · simp [DFunLike.coe]; grind
+      rw [Summable.hasSum_iff (by simp)]
+      grind
   · split <;> split <;> simp [mdp]
     · rename_i C σ _ α
       have := 𝕊.sum_psucc_eq_sub_succ_univ (A:=A) (C:=C) (σ:=σ) (α:=α)
@@ -348,7 +360,7 @@ instance instFiniteBranchingMDP [instFin : 𝕊.FiniteBranching] : 𝕊.mdp.Fini
     simp [mdp, conf₂_to_conf]
     grind
   succs_fin C α := by
-    set Z := (Function.support (𝕊.mdp.P C α))
+    set Z := 𝕊.mdp.succs α C
     rcases C with (⟨t, σ⟩ | ⟨C, σ⟩ | _) <;> try simp
     · rcases α with (_ | α)
       · have : Z = {.bot} := by

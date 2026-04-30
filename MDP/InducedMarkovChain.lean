@@ -6,42 +6,26 @@ namespace MDP
 variable {State Act : Type*}
 
 @[grind =, simp]
-theorem P'_get {M : MDP State Act} {h} : (M.P' s α).get h s' = M.P s α s' := by
-  simp [P]
-  split
-  · grind only [= Option.get_some]
-  · rename_i h'
-    specialize h' ((M.P' s α).get (by grind))
-    grind
-
-@[grind =, simp]
-theorem MScheduler.P'_isSome {M : MDP State Act} (ℒ : 𝔏[M]) : (M.P' s (ℒ {s})).isSome = true := by
+theorem MScheduler.P'_isSome {M : MDP State Act} (ℒ : 𝔏[M]) : (M.P s (ℒ {s})).isSome = true := by
+  simp [M.P_isSome_iff]
   have := (ℒ.toScheduler.property {s})
-  simp [act] at this
-  unfold MDP.P at this
-  split at this
-  · grind
-  · contrapose this; ext; simp
+  simpa [act, M.P_isSome_iff]
 
 @[grind =, simp]
 theorem Scheduler.P'_isSome {M : MDP State Act} (𝒮 : 𝔖[M]) (π : M.Path) :
-    (M.P' π.last (𝒮 π)).isSome = true := by
+    (M.P π.last (𝒮 π)).isSome = true := by
   have := (𝒮.property π)
-  simp [act] at this
-  unfold MDP.P at this
-  split at this
-  · grind
-  · contrapose this; ext; simp
+  simpa [act, M.P_isSome_iff]
 
 def inducedMC (M : MDP State Act) (ℒ : 𝔏[M]) (ι : State) : MarkovChain State where
-  P s := (M.P' s (ℒ {s})).get (by simp)
+  P s := (M.P s (ℒ {s})).get (by simp)
   ι := ι
 
 variable {M : MDP State Act} {ℒ : 𝔏[M]} {ι : State}
 
 @[grind =, simp]
 theorem inducedMC_P : (M.inducedMC ℒ ι).P s s' = M.P s (ℒ {s}) s' := by
-  simp [inducedMC, MDP.P]
+  simp [inducedMC]
 
 def Path.toMC (π : M.Path) (h : π.Prob ℒ ≠ 0) (h' : π[0] = ι := by rfl) :
     (M.inducedMC ℒ ι).Path where
@@ -66,7 +50,7 @@ theorem inducedMC_cyl (π : M.Path) (h' : π.Prob ℒ ≠ 0) :
 #print axioms inducedMC_cyl
 
 noncomputable def Path.pmf (π : M.Path) (𝒮 : 𝔖[M]) : PMF M.Path :=
-  ((M.P' π.last (𝒮 π)).get (by simp)).bindOnSupport
+  ((M.P π.last (𝒮 π)).get (by simp)).bindOnSupport
     (fun s hs ↦ PMF.pure (π.extend ⟨s, by simp_all [MDP.succs_univ, MDP.succs]; grind⟩))
 
 noncomputable def inducedMC' (M : MDP State Act) (𝒮 : 𝔖[M]) (ι : State) :
