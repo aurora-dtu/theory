@@ -482,7 +482,7 @@ theorem Path.Cyl_measurable (π : M.Path) : MeasurableSet π.Cyl :=
 
 open scoped Classical in
 open Path in
-theorem Pr_cyl_help (π : M.Path) :
+theorem Pr_cyl.help (π : M.Path) :
       (∏ x ∈ π.pref.attach, if h : ↑x = π then 1 else x.val.pmf' (π.take ⟨‖x.val‖, by
         obtain ⟨x, hx⟩ := x
         simp [Path.pref] at hx
@@ -509,7 +509,7 @@ theorem Pr_cyl_help (π : M.Path) :
 
 open scoped Classical in
 open Path in
-theorem Pr_cyl (π : M.Path) : Pr π.Cyl = ∏ i : Fin (‖π‖ - 1), M.P π[i] (π[i.val + 1]) := by
+theorem Pr_cyl (π : M.Path) : Pr π.Cyl = ∏ i : Fin (‖π‖ - 1), M.P π[i] π[i.val + 1] := by
   simp [Pr]
   rw [Measure.map_apply (by measurability) (by measurability)]
   simp [lifted, Path.Cyl_eq_cylinder]
@@ -519,7 +519,7 @@ theorem Pr_cyl (π : M.Path) : Pr π.Cyl = ∏ i : Fin (‖π‖ - 1), M.P π[i]
     exists_eq_right_right]
   simp_all only [succs, Set.mem_setOf_eq, and_self, and_true, Nat.reduceSubDiff,
     add_tsub_cancel_right]
-  rw [← Pr_cyl_help]
+  rw [← Pr_cyl.help]
   simp [Path.pmf'_apply]
   congr! 1 with ⟨x, hx⟩ hx'
   simp_all only [Finset.mem_attach]
