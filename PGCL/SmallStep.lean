@@ -6,43 +6,37 @@ import MDP.SmallStepSemantics
 
 ## Main definitions
 
-* `pGCL.SmallStep`: The inductive definition of the probabilistic small step semantics of `pGCL`.
+* `pGCL.Step`: The inductive definition of the probabilistic small step semantics of `pGCL`.
 -/
 
 namespace pGCL
 
 variable {𝒱 : Type*} {Γ : Γ[𝒱]} [DecidableEq 𝒱]
 
+open Act in
 /-- Probabilistic small step operational semantics for `pGCL` -/
 @[aesop safe [constructors, cases], grind]
-inductive SmallStep : Conf₀ Γ → Act → ENNReal → Conf₁ Γ → Prop where
-  | skip     : SmallStep conf₀[skip, σ]          .N 1 conf₁[⇓, σ]
-  | assign   : SmallStep conf₀[@x := @e, σ]       .N 1 conf₁[⇓, σ[x ↦ e σ]]
-  | prob     : SmallStep conf₀[{@C} [@p] {@C}, σ]   .N 1 conf₁[@C, σ]
-  | prob_L   : (h : ¬C₁ = C₂) → (h' : 0 < p σ) →
-    SmallStep conf₀[{@C₁} [@p] {@C₂}, σ] .N (p σ)     conf₁[@C₁, σ]
-  | prob_R   : (h : ¬C₁ = C₂) → (h' : p σ < 1) →
-    SmallStep conf₀[{@C₁} [@p] {@C₂}, σ] .N (1 - p σ) conf₁[@C₂, σ]
-  | nonDet_L : SmallStep conf₀[{@C₁} [] {@C₂}, σ]      .L 1 conf₁[@C₁, σ]
-  | nonDet_R : SmallStep conf₀[{@C₁} [] {@C₂}, σ]      .R 1 conf₁[@C₂, σ]
-  | tick     : SmallStep conf₀[tick(@ r), σ]       .N 1 conf₁[⇓, σ]
-  | observe₁  : b σ → SmallStep conf₀[observe(@b), σ] .N 1 conf₁[⇓, σ]
-  | observe₂  : ¬b σ → SmallStep conf₀[observe(@b), σ] .N 1 conf₁[↯, σ]
-  | seq_L    : SmallStep conf₀[@C₁, σ] α p conf₁[⇓, τ] →
-                SmallStep conf₀[@C₁ ; @C₂, σ] α p conf₁[@C₂, τ]
-  | seq_R    : SmallStep conf₀[@C₁, σ] α p conf₁[@C₁', τ] →
-                SmallStep conf₀[@C₁ ; @C₂, σ] α p conf₁[@C₁' ; @C₂, τ]
-  | seq_F    : SmallStep conf₀[@C₁, σ] .N 1 conf₁[↯, σ] →
-                SmallStep conf₀[@C₁ ; @C₂, σ] .N 1 conf₁[↯, σ]
-  | loop     : ¬b σ →
-                SmallStep conf₀[while @b {@C}, σ] .N 1 conf₁[⇓, σ]
-  | loop'    : b σ →
-                SmallStep conf₀[while @b {@C}, σ] .N 1 conf₁[@C ; while @b {@C}, σ]
+inductive Step : Conf₀ Γ → Act → ENNReal → Conf₁ Γ → Prop where
+  | skip     : Step conf₀[skip, σ] N 1 conf₁[⇓, σ]
+  | assign   : Step conf₀[@x := @e, σ] N 1 conf₁[⇓, σ[x ↦ e σ]]
+  | prob     : Step conf₀[{@C} [@p] {@C}, σ] N 1 conf₁[@C, σ]
+  | probL   : ¬C₁ = C₂ → 0 < p σ → Step conf₀[{@C₁} [@p] {@C₂}, σ] N (p σ) conf₁[@C₁, σ]
+  | probR   : ¬C₁ = C₂ → p σ < 1 → Step conf₀[{@C₁} [@p] {@C₂}, σ] N (1 - p σ) conf₁[@C₂, σ]
+  | nonDetL : Step conf₀[{@C₁} [] {@C₂}, σ] L 1 conf₁[@C₁, σ]
+  | nonDetR : Step conf₀[{@C₁} [] {@C₂}, σ] R 1 conf₁[@C₂, σ]
+  | tick     : Step conf₀[tick(@ r), σ] N 1 conf₁[⇓, σ]
+  | observe₁ :  b σ → Step conf₀[observe(@b), σ] N 1 conf₁[⇓, σ]
+  | observe₂ : ¬b σ → Step conf₀[observe(@b), σ] N 1 conf₁[↯, σ]
+  | seqL : Step conf₀[@C₁, σ] α p conf₁[⇓, τ] → Step conf₀[@C₁; @C₂, σ] α p conf₁[@C₂, τ]
+  | seqR : Step conf₀[@C₁, σ] α p conf₁[@C₁', τ] → Step conf₀[@C₁; @C₂, σ] α p conf₁[@C₁'; @C₂, τ]
+  | seqF : Step conf₀[@C₁, σ] N 1 conf₁[↯, σ] → Step conf₀[@C₁; @C₂, σ] N 1 conf₁[↯, σ]
+  | loop  : ¬b σ → Step conf₀[while @b {@C}, σ] N 1 conf₁[⇓, σ]
+  | loop' :  b σ → Step conf₀[while @b {@C}, σ] N 1 conf₁[@C; while @b {@C}, σ]
 
 @[inherit_doc]
-notation c " ⤳[" α "," p "] " c' => SmallStep c α p c'
+notation c " ⤳[" α "," p "] " c' => Step c α p c'
 
-namespace SmallStep
+namespace Step
 
 variable {c : Conf₀ Γ} {c' : Conf₁ Γ} {σ : State Γ}
 
@@ -276,7 +270,7 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
     simp_all only [↓reduceIte, assign_iff, false_and, false_or, ite_and, loop_iff, nonDet_iff,
       observe_iff, or_false, prob_iff, reduceCtorEq, seq_iff, skip_iff, tick_iff, true_and,
       tsum_ite_eq, tsum_p]
-  | seq_L =>
+  | seqL =>
     rename_i C₂ h ih
     rw [← ih]
     apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
@@ -289,7 +283,7 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
     · simp only [ENNReal.tsum_eq_zero, ite_eq_right_iff, not_forall, Prod.mk.injEq, Sum.inl.injEq,
       seq.injEq, and_true, exists_eq_right_right', exists_eq_right', seq_ne_right, false_and,
       and_false, exists_false, reduceCtorEq, or_self, or_false, implies_true]
-  | seq_R =>
+  | seqR =>
     rename_i C₂ h ih
     rw [← ih]
     apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
@@ -306,7 +300,7 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
     · simp
     · clear h; grind
     · grind
-  | seq_F =>
+  | seqF =>
     rename_i C₂ h ih
     rw [← ih]
     apply C₂.tsum_after_eq <;> (rw [ih]; clear ih)
@@ -323,11 +317,11 @@ theorem sums_to_one (h₀ : c ⤳[α,p₀] c₀) :
     · simp
     · grind
     · grind
-  | prob_L | prob_R =>
+  | probL | probR =>
     rename_i C₁ C₂ _ σ _ _
     rw [ENNReal.tsum_eq_add_tsum_ite conf₁[@C₁,σ], ENNReal.tsum_eq_add_tsum_ite conf₁[@C₂,σ]]
     simp_all [ite_and, eq_comm]
 
-end SmallStep
+end Step
 
 end pGCL

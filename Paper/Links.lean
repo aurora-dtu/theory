@@ -172,7 +172,7 @@ paper_link[3] pGCL (𝒱:=𝒱)
 paper_link[4] ProbExp (𝒱:=𝒱)
 
 paper_link[5] Conf
-paper_link[6] SmallStep (Γ:=Γ)
+paper_link[6] Step (Γ:=Γ)
 
 /-!
 

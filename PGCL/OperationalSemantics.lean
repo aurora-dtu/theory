@@ -40,10 +40,10 @@ noncomputable def cost_p' : pGCL Γ × State Γ → ENNReal := 0
 noncomputable instance 𝕊
     (cT : 𝔼[Γ, ENNReal] →o Termination × State Γ → ENNReal) (cP : pGCL Γ × State Γ → ENNReal) :
     SmallStepSemantics (pGCL Γ) (State Γ) Termination Act where
-  r := SmallStep
-  relation_p_pos := SmallStep.p_ne_zero
-  succs_sum_to_one := SmallStep.sums_to_one
-  progress := SmallStep.progress
+  r := Step
+  relation_p_pos := Step.p_ne_zero
+  succs_sum_to_one := Step.sums_to_one
+  progress := Step.progress
   cost_t := cT
   cost_p := cP
 
@@ -63,7 +63,7 @@ attribute [simp] SmallStepSemantics.cost
 
 open scoped Classical in
 noncomputable instance : (𝕊 cost_t cost_p (Γ:=Γ)).FiniteBranching where
-  finite := by simp [r, ← SmallStep.succs_univ_fin'_eq_r]
+  finite := by simp [r, ← Step.succs_univ_fin'_eq_r]
 
 variable {f : pGCL Γ → 𝔼[Γ, ENNReal] →o 𝔼[Γ, ENNReal]}
 
@@ -71,9 +71,9 @@ variable {C : pGCL Γ} {σ : State Γ}
 
 @[simp]
 theorem act_eq_SmallStep_act :
-    (𝕊 cT cP).act (Conf.prog C σ) = (some ·) '' SmallStep.act (C, σ) := by
+    (𝕊 cT cP).act (Conf.prog C σ) = (some ·) '' Step.act (C, σ) := by
   ext
-  simp [act, r, SmallStep.act, conf₂_to_conf]
+  simp [act, r, Step.act, conf₂_to_conf]
   grind
 
 @[simp]
@@ -272,8 +272,7 @@ noncomputable instance instET : (𝕊 cost_t cost_p).ET O (wp O (Γ:=Γ)) where
     | assign =>
       rw [← ξ_op_eq_op]
       intro X
-      simp only [OrderHom.toFun_eq_coe, wp.assign_apply, ξ.assign, cost_p, OrderHom.mk_apply,
-        zero_add, OrderHom.coe_mk]
+      simp only [wp.assign_apply, ξ.assign, cost_p, zero_add, OrderHom.coe_mk]
       rfl
     | seq C₁ C₂ ih₁ ih₂ =>
       apply le_trans _ (op_le_seq cost_t cost_p 0 _ _ _) <;> simp
@@ -314,7 +313,7 @@ theorem wp_eq_op {C : pGCL Γ} : wp[O]⟦@C⟧ = (𝕊 cost_t cost_p).op O C := 
 noncomputable instance : SmallStepSemantics (pGCL Γ) (State Γ) Termination Act := 𝕊 cost_t' cost_p'
 open scoped Classical in
 noncomputable instance : (𝕊 cost_t' cost_p' (Γ:=Γ)).FiniteBranching where
-  finite := by simp [r, ← SmallStep.succs_univ_fin'_eq_r]
+  finite := by simp [r, ← Step.succs_univ_fin'_eq_r]
 
 open scoped Classical in
 theorem wfp_le_op.loop (ih : C.wfp O ≤ (𝕊 cost_t' cost_p').op O C) :
@@ -343,8 +342,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp O (Γ:=Γ)) wh
     | prob C₁ p C₂ ih₁ ih₂ =>
       intro X
       rw [← ξ_op_eq_op]
-      simp only [OrderHom.toFun_eq_coe, ξ.prob, OrderHom.add_apply, cP'_apply, Pi.ofNat_apply,
-        Exp.mk_zero_eq, ProbExp.pick'_apply, zero_add]
+      simp only [ξ.prob, OrderHom.add_apply, cP'_apply, ProbExp.pick'_apply]
       simp [wfp]
       gcongr <;> apply_assumption
     | nonDet C₁ C₂ ih₁ ih₂ =>
@@ -354,7 +352,7 @@ noncomputable instance instET' : (𝕊 cost_t' cost_p').ET O (wfp O (Γ:=Γ)) wh
     | loop b C' ih => apply wfp_le_op.loop ih
   et_prefixed_point := by
     apply le_of_eq
-    funext C; induction C with try simp_all [ξ.seq']; (try rfl) <;> try ext; simp [wfp]; done
+    funext C; induction C with try simp_all [ξ.seq']; (try rfl) <;> try ext; simp [wfp]
     | loop b C' ih =>
       rw [ξ.loop]
       ext X σ
