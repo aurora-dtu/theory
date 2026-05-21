@@ -327,7 +327,7 @@ private lemma spGCL.vp_le_wlp_aux {C : spGCL} {G : Globals} (hG : C.fv ∪ φ.fv
     else
       simp_all only [Ty.expr, Ty.lit, invs, Finset.notMem_empty, IsEmpty.forall_iff, implies_true,
         Iverson.iver_False, Nat.cast_zero, zero_mul, nonpos_iff_eq_zero]
-      have : 0 ≤ (⟦@φ⟧' σ) := zero_le _
+      have : 0 ≤ (⟦@φ⟧' σ) := zero_le
       grind
 
 theorem spGCL.vp_le_wlp {C : spGCL} (hφ : φ.sem ≤ 1) (hI : ∀ I ∈ C.invs, I.sem ≤ 1) :

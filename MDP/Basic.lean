@@ -18,16 +18,13 @@ actions, equipped with a probability function.
 
 -/
 
-structure MDP (State : Type*) (Act : Type*) where
-  /-- The transition probability of going from `s` to `s'` using action `α` -/
+structure MDP (State Act : Type*) where
   P : State → Act → Option (PMF State)
   exists_P_isSome s : ∃α, (P s α).isSome
 
 namespace MDP
 
-variable {State : Type*} {Act : Type*}
-
-variable (M : MDP State Act)
+variable {State Act : Type*} (M : MDP State Act)
 
 instance : FunLike (Option (PMF State)) State ENNReal where
   coe pmf' x := if let some pmf := pmf' then pmf x else 0

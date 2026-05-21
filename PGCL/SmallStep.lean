@@ -27,9 +27,9 @@ inductive Step : Conf₀ Γ → Act → ENNReal → Conf₁ Γ → Prop where
   | tick     : Step conf₀[tick(@ r), σ] N 1 conf₁[⇓, σ]
   | observe₁ :  b σ → Step conf₀[observe(@b), σ] N 1 conf₁[⇓, σ]
   | observe₂ : ¬b σ → Step conf₀[observe(@b), σ] N 1 conf₁[↯, σ]
-  | seqL : Step conf₀[@C₁, σ] α p conf₁[⇓, τ] → Step conf₀[@C₁; @C₂, σ] α p conf₁[@C₂, τ]
+  | seqL : Step conf₀[@C₁, σ] α p conf₁[⇓, τ]    → Step conf₀[@C₁; @C₂, σ] α p conf₁[@C₂, τ]
   | seqR : Step conf₀[@C₁, σ] α p conf₁[@C₁', τ] → Step conf₀[@C₁; @C₂, σ] α p conf₁[@C₁'; @C₂, τ]
-  | seqF : Step conf₀[@C₁, σ] N 1 conf₁[↯, σ] → Step conf₀[@C₁; @C₂, σ] N 1 conf₁[↯, σ]
+  | seqF : Step conf₀[@C₁, σ] N 1 conf₁[↯, σ]    → Step conf₀[@C₁; @C₂, σ] N 1 conf₁[↯, σ]
   | loop  : ¬b σ → Step conf₀[while @b {@C}, σ] N 1 conf₁[⇓, σ]
   | loop' :  b σ → Step conf₀[while @b {@C}, σ] N 1 conf₁[@C; while @b {@C}, σ]
 

@@ -36,8 +36,8 @@ Section 4, Definition 1: MarkovChain
 Section 4, Definition 2: MarkovChain.Path.Cyl (M:=MC)
 Section 4, Theorem 3: MC.Pr_cyl
 Section 4, Definition 4: MDP
-Section 4, Definition 5: M.inducedMC'
-Section 4, Theorem 6: M.inducedMC'_cyl (𝒮:=𝒮)
+Section 4, Definition 5: M.inducedMC
+Section 4, Theorem 6: M.inducedMC_cyl (𝒮:=𝒮)
 Section 4, Definition 7: M.ECost
 Section 4, Definition 8: M.OEC
 Section 4, Lemma 9: Pi.instCompleteLattice (α:=S) (β:=fun _ ↦ ENNReal)

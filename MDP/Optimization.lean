@@ -36,10 +36,15 @@ section opt
 
 variable [Lattice α]
 
+def cmp (a b : α) : Prop :=
+  match O with
+  | 𝒜 => a ≤ b
+  | 𝒟 => b ≤ a
+
 def opt (a b : α) : α :=
   match O with
-    | 𝒜 => a ⊔ b
-    | 𝒟 => a ⊓ b
+  | 𝒜 => a ⊔ b
+  | 𝒟 => a ⊓ b
 
 @[simp]
 theorem opt_apply (f g : γ → α) : O.opt f g x = O.opt (f x) (g x) := by

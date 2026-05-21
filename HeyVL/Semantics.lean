@@ -17,7 +17,8 @@ theorem HeyLo.ofNat_ident (n : String) :
 theorem HeyLo.ofNat_sem (n : ℕ) : sem (ofNat(n) : HeyLo .Nat) σ = n := by
   simp [sem]
 @[grind =, simp]
-theorem HeyLo.nat_zero_sem : sem (0 : HeyLo .Nat) = 0 := by simp [sem] @[grind =, simp]
+theorem HeyLo.nat_zero_sem : sem (0 : HeyLo .Nat) = 0 := by simp [sem]
+@[grind =, simp]
 theorem HeyLo.nat_one_sem : sem (1 : HeyLo .Nat) = 1 := by simp [sem]
 
 section
