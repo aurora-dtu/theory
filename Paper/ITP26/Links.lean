@@ -109,9 +109,9 @@ paper_link[10] M.succs
 paper_link[11] M.act
 paper_link[12] M.Path
 paper_link[13] M.Scheduler
-paper_link[14] M.inducedMC'
+paper_link[14] M.inducedMC
 
-paper_thm[15] M.inducedMC'_cyl π h
+paper_thm[15] M.inducedMC_cyl π h
 
 /-!
 

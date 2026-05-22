@@ -3,4 +3,4 @@ docs:
     MATHLIB_NO_CACHE_ON_UPDATE=1 lake build MDP:docs PGCL:docs HeyVL:docs Paper:docs
 
 paper:
-    MATHLIB_NO_CACHE_ON_UPDATE=1 lake build Paper:docs
+    MATHLIB_NO_CACHE_ON_UPDATE=1 lake build MDP:docs PGCL:docs HeyVL:docs Paper:docs
