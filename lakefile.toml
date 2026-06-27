@@ -28,6 +28,9 @@ name = "mathlib"
 scope = "leanprover-community"
 
 [[lean_lib]]
+name = "WGCL"
+
+[[lean_lib]]
 name = "PGCL"
 
 [[lean_lib]]
