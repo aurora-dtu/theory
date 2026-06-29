@@ -54,11 +54,8 @@ variable {𝒲 : Type*} {S A : Type} [Zero 𝒲] {M : WDP 𝒲 S A}
 
 instance {s : S} {α : A} : Countable (M.P s α).support := M.P_countable s α
 
-def act (M : WDP 𝒲 S A) (s : S) : Set A := {a | (M.P s a).support.Nonempty}
-
 structure Sched (M : WDP 𝒲 S A) : Type where
   toFun : S → List S → A
-  prop : ∀ s ss, toFun s ss ∈ M.act s
 
 structure MSched (M : WDP 𝒲 S A) extends M.Sched where
   mk' ::
@@ -92,7 +89,6 @@ theorem MSched.ext {𝔖₁ 𝔖₂ : M.MSched} (h : ∀ s, 𝔖₁ s = 𝔖₂ 
 def Sched.toMSched (𝔖 : M.Sched) : M.MSched where
   toFun s ss := 𝔖 s []
   toFun_eq_nil := by simp
-  prop := by simp; intro s; apply 𝔖.prop
 
 @[ext]
 structure Path (S : Type*) where
@@ -108,15 +104,15 @@ instance : FunLike M.Sched (Path S) A where
     have := congrFun h ⟨s, ss⟩
     grind
 @[simp]
-theorem Sched.mk_apply {f : S → List S → A} {h} {π} : (⟨f, h⟩ : M.Sched) π = f π.head π.tail := rfl
+theorem Sched.mk_apply {f : S → List S → A} {π} : (⟨f⟩ : M.Sched) π = f π.head π.tail := rfl
 
 @[simp]
 theorem Sched.toMSched_apply {𝔖 : M.Sched} : 𝔖.toMSched s = 𝔖 ⟨s, []⟩ := by rfl
 
-def MSched.mk (f : S → A) (h : ∀ s, f s ∈ M.act s) : M.MSched :=
-  ⟨⟨fun s ss ↦ f s, by simp_all⟩, by simp_all⟩
-def HSched.mk (f : S → ℕ → A) (h : ∀ s n, f s n ∈ M.act s) : M.HSched :=
-  ⟨⟨fun s ss ↦ f s ss.length, by simp_all⟩, by simp_all⟩
+def MSched.mk (f : S → A) : M.MSched :=
+  ⟨⟨fun s ss ↦ f s⟩, by simp_all⟩
+def HSched.mk (f : S → ℕ → A) : M.HSched :=
+  ⟨⟨fun s ss ↦ f s ss.length⟩, by simp_all⟩
 
 instance : FunLike M.HSched S (ℕ → A) where
   coe a := (fun s n ↦ a.toFun s (List.replicate n s))
@@ -137,15 +133,15 @@ theorem HSched.ext {𝔖₁ 𝔖₂ : M.HSched} (h : ∀ s n, 𝔖₁ s n = 𝔖
   · rw [h₂]; simp
 
 @[simp]
-theorem MSched.mk_apply {f : S → A} {h} : MSched.mk (M := M) f h s = f s := by
+theorem MSched.mk_apply {f : S → A} : MSched.mk (M := M) f s = f s := by
   simp [mk, DFunLike.coe]
 @[simp]
-theorem HSched.mk_apply {f : S → ℕ → A} {h} : HSched.mk (M := M) f h s = f s := by
+theorem HSched.mk_apply {f : S → ℕ → A} : HSched.mk (M := M) f s = f s := by
   ext; simp [mk, DFunLike.coe]
 
 def HSched.toMSchedStream : M.HSched ≃ (ℕ → M.MSched) where
-  toFun 𝔖 n := ⟨⟨fun s _ ↦ 𝔖 s n, by simp; intro; apply 𝔖.prop⟩, by simp⟩
-  invFun f := ⟨⟨fun s ss ↦ f ss.length s, by intro s ss; apply (f _).prop⟩, by simp_all⟩
+  toFun 𝔖 n := ⟨⟨fun s _ ↦ 𝔖 s n⟩, by simp⟩
+  invFun f := ⟨⟨fun s ss ↦ f ss.length s⟩, by simp_all⟩
   left_inv := by intro; ext; simp_all [DFunLike.coe]
   right_inv := by intro; ext; simp_all [DFunLike.coe]
 
@@ -227,23 +223,17 @@ theorem Path.of_succ {s : S} (n : ℕ) : of (n + 1) s = ⋃ π ∈ of n s, Set.r
   · grind
 
 def MSched.cmb {M : WDP 𝒲 S A} (h : M.MSched) (j : S → M.Sched) : M.Sched :=
-  ⟨fun s ss ↦
-    match ss with | [] => h s | ss => j (ss.getLastD s) ⟨s, (ss).dropLast⟩, by
-      simp
-      rintro s (_ | ⟨s', ss⟩)
-      · simp; apply h.prop
-      · simp; apply (j _).prop⟩
+  ⟨fun s ss ↦ match ss with | [] => h s | ss => j (ss.getLastD s) ⟨s, (ss).dropLast⟩⟩
 
 theorem MSched.cmb_surj : Function.Surjective (fun ((a, b) : M.MSched × _) ↦ MSched.cmb a b) := by
   intro f
   simp [cmb, Sched.ext_iff]
   simp only [DFunLike.coe]
-  use f.toMSched, fun s ↦ ⟨fun s' ss ↦ f (((⟨s', ss⟩ : Path S)).pushFirst s), ?_⟩
-  · simp
-    rintro s (_ | ⟨s', ss⟩)
-    · simp [Sched.toMSched]; rfl
-    simp [DFunLike.coe, List.dropLast_concat_getLast, List.getLast?]
-  intro s' ss; apply f.prop
+  use f.toMSched, fun s ↦ ⟨fun s' ss ↦ f (((⟨s', ss⟩ : Path S)).pushFirst s)⟩
+  simp
+  rintro s (_ | ⟨s', ss⟩)
+  · simp [Sched.toMSched]; rfl
+  simp [DFunLike.coe, List.dropLast_concat_getLast, List.getLast?]
 
 @[simp]
 theorem MSched.cmb_nil {h : M.MSched} {j} (hxx : xx = []) : (h.cmb j) ⟨x, xx⟩ = h x := by
@@ -293,7 +283,7 @@ theorem Path.pushFirst_Weight_cmb [Monoid 𝒲] {π : Path S} {s : S} {𝔖 : M.
       · simp
 
 def HSched.bump (𝔖 : M.HSched) : M.HSched :=
-  .mk (fun s n ↦ 𝔖 s (n + 1)) <| by intro s n; apply 𝔖.prop
+  .mk (fun s n ↦ 𝔖 s (n + 1))
 @[simp]
 theorem HSched.bump_apply (𝔖 : M.HSched) : 𝔖.bump s n = 𝔖 s (n + 1) := by simp [bump]
 @[simp]
@@ -476,8 +466,7 @@ def Ar' (g : S → ℛ) (𝔖 : M.Sched) : S → ℛ := ⨆ n, M.Ar g n 𝔖
 def MinAr (g : S → ℛ) : S → ℛ := ⨅ 𝔖, ⨆ n, M.Ar g n 𝔖
 
 def T (g : S → ℛ) (J : S → ℛ) : S → ℛ :=
-  fun s ↦ ⨅ α ∈ M.act s, g s + ω∑ (s' : (M.P s α).support), M.P s α s' • J s'
-           -- ^ this is new
+  fun s ↦ ⨅ α, g s + ω∑ (s' : (M.P s α).support), M.P s α s' • J s'
 
 def T' (g : S → ℛ) (𝔖 : M.MSched) (J : S → ℛ) : S → ℛ :=
   fun s ↦ g s + ω∑ (s' : (M.P s (𝔖 s)).support), M.P s (𝔖 s) s' • J s'
@@ -802,8 +791,8 @@ theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
   simp
   simp [ωSum_eq_iSup_sum]
   simp [smul_iInf, smul_iSup]
-  trans ⨅ α ∈ M.act s, g s + ⨆ (Z : Finset (M.P s α).support), ⨅ i, ∑ s' ∈ Z, ⨆ n, M.P s α s' • M.Ar g n i s'
-  · gcongr with a ha Z
+  trans ⨅ α, g s + ⨆ (Z : Finset (M.P s α).support), ⨅ i, ∑ s' ∈ Z, ⨆ n, M.P s α s' • M.Ar g n i s'
+  · gcongr with a Z
     simp
     intro ℨ
     classical
@@ -811,7 +800,7 @@ theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
     | empty => simp
     | insert z Z hzZ ih => simp_all; grw [ih]; clear ih; gcongr; apply iInf_le_of_le ℨ; rfl
   simp [add_iSup, add_iInf]
-  trans ⨅ α ∈ M.act s, ⨆ (Z : Finset (M.P s α).support), ⨅ 𝔖, g s + ⨆ n, ∑ s' ∈ Z, M.P s α s' • M.Ar g n 𝔖 s'
+  trans ⨅ α, ⨆ (Z : Finset (M.P s α).support), ⨅ 𝔖, g s + ⨆ n, ∑ s' ∈ Z, M.P s α s' • M.Ar g n 𝔖 s'
   · gcongr with a Z 𝔖'
     grw [sum_iSup_le]
     intro i j
@@ -821,10 +810,10 @@ theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
     · gcongr; apply M.Ar_mono; omega
     · gcongr; apply M.Ar_mono; omega
   simp [add_iSup]
-  trans ⨅ α ∈ M.act s, ⨅ 𝔖, ⨆ (Z : Finset (M.P s α).support), ⨆ n, g s + ∑ s' ∈ Z, M.P s α s' • M.Ar g n 𝔖 s'
+  trans ⨅ α, ⨅ 𝔖, ⨆ (Z : Finset (M.P s α).support), ⨆ n, g s + ∑ s' ∈ Z, M.P s α s' • M.Ar g n 𝔖 s'
   · gcongr; grw [iSup_iInf_le_iInf_iSup]
   trans ⨅ (𝔖 : M.MSched) (j : S → _), ⨆ (Z : Finset (M.P s (𝔖 s)).support), ⨆ n, g s + ∑ s' ∈ Z, M.P s (𝔖 s) s' • M.Ar g n (j s) s'
-  · simp; intro h j; apply iInf₂_le_of_le (h s) (h.prop s []); apply iInf_le_of_le (j s); rfl
+  · simp; intro h j; apply iInf₂_le_of_le (h s) (j s); rfl
   trans ⨅ (𝔖 : M.MSched) (j : S → M.Sched), ⨆ n, M.Ar g (n + 1) (𝔖.cmb j) s
   · gcongr with h j
     rw [iSup_comm]
@@ -949,7 +938,7 @@ theorem Ar_HSched {g : S → ℛ} {𝔖 : M.HSched} :
 omit [ωScottContinuousSMul 𝒲 ℛ] [ωScottContinuousAdd ℛ] [NoZeroDivisors 𝒲] [SMulBicontinuous 𝒲 ℛ]
      [AddBicontinuous ℛ] [Nontrivial 𝒲] in
 theorem T_le_T' {J g : S → ℛ} (𝔖 : M.MSched) : M.T g J ≤ M.T' g 𝔖 J := by
-  intro s; simp [T, T']; apply iInf₂_le_of_le _ (𝔖.prop _ []); rfl
+  intro s; simp [T, T']; apply iInf_le_of_le _; rfl
 
 omit [ωScottContinuousAdd ℛ] [NoZeroDivisors 𝒲] [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ]
      [Nontrivial 𝒲] in
@@ -975,10 +964,10 @@ theorem MinAr_of {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved ℛ
   trans ⨅ (𝔖 : M.HSched), ⨆ n, ((List.range (n + 1)).map (M.T' g ∘ 𝔖.toMSchedStream)).comp J
   · gcongr; apply List.comp_mono (by simp [T'_mono]); simp
   apply le_trans (iInf_mono' fun i ↦ ?_) hwb.iInf_iSup_comp_le
-  exists HSched.mk (fun s n ↦ hwb.𝔖 (i n) s) <| by intro s n; apply (hwb.𝔖 _).prop
+  exists HSched.mk (fun s n ↦ hwb.𝔖 (i n) s)
   apply iSup_mono' fun n ↦ ⟨n + 1, ?_⟩
   suffices
-        (HSched.mk (fun s n ↦ hwb.𝔖 (i n) s) <| by intro s n; apply (hwb.𝔖 _).prop).toMSchedStream
+        (HSched.mk (fun s n ↦ hwb.𝔖 (i n) s)).toMSchedStream
       = hwb.𝔖 ∘ i by
     simp [this]; clear this
     apply le_trans (le_trans _ <| T_comp_le_f_comp _ hwb.𝔖_spec ((List.range n.succ).map i))

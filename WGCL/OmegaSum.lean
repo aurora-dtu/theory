@@ -591,6 +591,41 @@ theorem ωSum_eq_single
   · apply ωSum_le fun S ↦ ?_
     if x ∈ S then simp_all [Finset.sum_eq_single x] else rw [Finset.sum_eq_zero (by grind)]; simp
   · apply le_ωSum_of_le {x}; simp
+theorem ωSum_eq_pair
+    {f : ι → α} (x₁ x₂ : ι) (h : x₁ ≠ x₂) (hf : ∀ (x' : ι), x' ≠ x₁ → x' ≠ x₂ → f x' = 0) :
+    ω∑ x, f x = f x₁ + f x₂  := by
+  classical
+  apply le_antisymm
+  · apply ωSum_le fun S ↦ ?_
+    induction S using Finset.induction with simp_all
+    | insert x₃ S h₃ ih =>
+      if x₁ = x₃ then
+        subst_eqs
+        induction S using Finset.induction with simp_all
+        | empty => rw [add_comm]; refine le_add_of_nonneg_of_le ?_ ?_ <;> simp
+        | insert x₄ S h₄ ih =>
+          if x₂ = x₄ then
+            subst_eqs; simp_all
+            rw [Finset.sum_eq_zero]
+            · simp_all
+            · intro x hx; apply hf <;> grind
+          else
+            grind
+      else if x₂ = x₃ then
+        subst_eqs
+        induction S using Finset.induction with simp_all
+        | empty => refine le_add_of_nonneg_of_le ?_ ?_ <;> simp
+        | insert x₄ S h₄ ih =>
+          if x₁ = x₄ then
+            subst_eqs
+            rw [Finset.sum_eq_zero]
+            · grind
+            · intro x hx; apply hf <;> grind
+          else
+            grind
+      else
+        grind
+  · apply le_ωSum_of_le {x₁, x₂}; simp_all
 
 theorem ωSum_eq_ωSum_of_equiv
     {f : ι → α} {g : κ → α} (e : κ ≃ ι)
