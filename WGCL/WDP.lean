@@ -44,7 +44,7 @@ section
   6. the reward function 𝑔 : S → ℛ. -/
 structure WDP (𝒲 S A : Type*) [Zero 𝒲] where
   P : S → A → S → 𝒲
-  P_countable : ∀ s α, Countable (P s α).support
+  P_countable : ∀ s α, Countable (P s α).support := by infer_instance
 
 namespace WDP
 
