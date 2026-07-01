@@ -366,6 +366,25 @@ instance {μ : Type*} : IsBotZeroClass (μ → α) := ⟨fun a b ↦ by simp⟩
 theorem ωSum_apply {μ : Type*} {f : ι → μ → α} (y : μ) : (ω∑ x, f x) y = ω∑ x, f x y := by
   simp [ωSum, Finset.ωSup, ωSup]; congr!; ext; simp
 
+variable {μ : Type*} {α : μ → Type*} [∀ y, LE (α y)]
+  [∀ y, Add (α y)] [∀ y, AddLeftMono (α y)] in
+instance : AddLeftMono (Π y, α y) where
+  elim := by
+    intro a b c h y
+    specialize h y
+    simp_all
+    gcongr
+variable {μ : Type*} {α : μ → Type*} [∀ y, LE (α y)] [∀ y, Zero (α y)]
+  [∀ y, IsBotZeroClass (α y)] in
+instance : IsBotZeroClass (Π y, α y) where
+  isBot_zero := by intro b s; simp
+
+variable {μ : Type*} {α : μ → Type*} [∀ y, OmegaCompletePartialOrder (α y)]
+  [∀ y, AddCommMonoid (α y)] [∀ y, AddLeftMono (α y)] [∀ y, IsBotZeroClass (α y)] in
+@[simp]
+theorem ωSum_apply' {f : ι → (y : μ) → α y} (y : μ) : (ω∑ x, f x) y = ω∑ x, f x y := by
+  simp [ωSum, Finset.ωSup, ωSup]; congr!; ext; simp
+
 theorem ωSum_nat_eq_ωSup {f : ℕ → α} :
       ω∑ (x : ℕ), f x
     = ωSup ⟨fun n ↦ ∑ x ∈ Finset.range n, f x, fun i j h ↦ by simp; gcongr; simp⟩ :=

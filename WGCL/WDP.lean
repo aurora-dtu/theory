@@ -67,7 +67,7 @@ structure HSched (M : WDP 𝒲 S A) extends M.Sched where
 
 instance : FunLike M.Sched S (List S → A) where
   coe := Sched.toFun
-  coe_injective' := by grind [Sched, Function.Injective]
+  coe_injective := by grind [Sched, Function.Injective]
 
 @[ext]
 theorem Sched.ext {𝔖₁ 𝔖₂ : M.Sched} (h : ∀ s ss, 𝔖₁ s ss = 𝔖₂ s ss) : 𝔖₁ = 𝔖₂ := by
@@ -75,7 +75,7 @@ theorem Sched.ext {𝔖₁ 𝔖₂ : M.Sched} (h : ∀ s ss, 𝔖₁ s ss = 𝔖
 
 instance : FunLike M.MSched S A where
   coe a := (a.toFun · [])
-  coe_injective' := by
+  coe_injective := by
     rintro ⟨⟨_⟩⟩ ⟨⟨_⟩⟩ h
     simp_all
     ext x
@@ -97,7 +97,7 @@ structure Path (S : Type*) where
 
 instance : FunLike M.Sched (Path S) A where
   coe 𝔖 π := 𝔖 π.head π.tail
-  coe_injective' := by
+  coe_injective := by
     intro i j h
     ext s ss
     simp_all
@@ -116,7 +116,7 @@ def HSched.mk (f : S → ℕ → A) : M.HSched :=
 
 instance : FunLike M.HSched S (ℕ → A) where
   coe a := (fun s n ↦ a.toFun s (List.replicate n s))
-  coe_injective' := by
+  coe_injective := by
     rintro ⟨⟨_⟩⟩ ⟨⟨_⟩⟩ h
     simp_all
     ext x xx
@@ -330,6 +330,7 @@ variable {𝒲 ℛ : Type*} {S A : Type}
 variable [MonoidWithZero 𝒲] [NoZeroDivisors 𝒲]
 variable {M : WDP 𝒲 S A} (𝔖 : M.Sched)
 
+-- TODO: can we get rid of NoZeroDivisors
 theorem Path.of_countable : {π ∈ Path.of n s | π.Weight 𝔖 ≠ 0}.Countable := by
   simp
   induction n with
@@ -527,7 +528,7 @@ macro_rules
              [CompleteLattice $ℛ] [AddCommMonoid $ℛ] [DistribMulActionWithZero $𝒲 $ℛ]
              [AddLeftMono $ℛ] [IsBotZeroClass $ℛ])
 
-variable {𝒲 : Type*} (ℛ : Type*) {S A : Type}
+variable {𝒲 : Type*} {ℛ : Type*} {S A : Type}
 variable_module 𝒲 ℛ
 
 variable {M : WDP 𝒲 S A} in
@@ -537,13 +538,15 @@ structure WellBehaved {J g : S → ℛ} (h : M.T g J ≤ J) where
   f_mono : ∀ n, Monotone (f n)
   iInf_iSup_comp_le : ⨅ (x : ℕ → X), ⨆ n, ((List.range n).reverse.map (f ∘ x)).comp J ≤ J
   exists_T'_le : ∀ x : X, ∃ (𝔖 : M.MSched), M.T' g 𝔖 J ≤ (f x) J
-  exists_T'_le' : ∀ x : X, ∀ s, ∃ (𝔖 : M.MSched), M.T' g 𝔖 J s ≤ (f x) J s
   T'_f_comm (J : S → ℛ) : ∀ 𝔖, ∀ x : X, M.T' g 𝔖 (f x J) ≤ f x (M.T' g 𝔖 J)
+
+variable {𝒲 : Type*} (ℛ : Type*) {S A : Type}
+variable_module 𝒲 ℛ
 
 variable (M : WDP 𝒲 S A)
 
 class IsWellBehaved where
-  is_wellBehaved {J g : S → ℛ} (hJ : M.T g J ≤ J) : M.WellBehaved ℛ hJ
+  is_wellBehaved {J g : S → ℛ} (hJ : M.T g J ≤ J) : M.WellBehaved hJ
 
 end
 
@@ -552,11 +555,11 @@ namespace WellBehaved
 variable {𝒲 ℛ : Type*} {S A : Type}
 variable {ℛ : Type*}
 variable_module 𝒲 ℛ
-variable {M : WDP 𝒲 S A} {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved ℛ hJ)
+variable {M : WDP 𝒲 S A} {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ)
 
 def 𝔖 (x : hwb.X) : M.MSched := (hwb.exists_T'_le x).choose
 
-def 𝔖_spec (x : hwb.X) : M.T' g (hwb.𝔖 x) J ≤ hwb.f x J := (hwb.exists_T'_le x).choose_spec
+theorem 𝔖_spec (x : hwb.X) : M.T' g (hwb.𝔖 x) J ≤ hwb.f x J := (hwb.exists_T'_le x).choose_spec
 
 end WellBehaved
 
@@ -942,7 +945,7 @@ theorem T_le_T' {J g : S → ℛ} (𝔖 : M.MSched) : M.T g J ≤ M.T' g 𝔖 J 
 
 omit [ωScottContinuousAdd ℛ] [NoZeroDivisors 𝒲] [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ]
      [Nontrivial 𝒲] in
-theorem T_comp_le_f_comp {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved _ hJ)
+theorem T_comp_le_f_comp {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ)
     {𝔖 : hwb.X → M.MSched}
     (h : ∀ (x : hwb.X), M.T' g (𝔖 x) J ≤ hwb.f x J) (L : List hwb.X) :
     (L.map (M.T' g ∘ 𝔖)).comp J ≤ (L.map hwb.f).reverse.comp J := by
@@ -955,7 +958,7 @@ theorem T_comp_le_f_comp {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBeh
     · apply List.comp_mono (by simp [hwb.f_mono]) (h _)
 
 omit [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ] in
-theorem MinAr_of {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved ℛ hJ) :
+theorem MinAr_of {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ) :
     M.MinAr g ≤ J := by
   simp [MinAr]
   trans ⨅ (𝔖 : M.HSched), ⨆ n, M.Ar g n 𝔖.toSched
@@ -979,8 +982,7 @@ open OrderHom IsWellBehaved
 theorem T_MinAr_eq_MinAr (g : S → ℛ) [M.IsWellBehaved ℛ] : M.T g (M.MinAr g) = M.MinAr g :=
   M.T_MinAr_le_MinAr g |>.antisymm<| M.MinAr_of (is_wellBehaved (M.T_mono (M.T_MinAr_le_MinAr g)))
 
-@[reducible]
-def _root_.Subsintleton.ofMulActionWithZero
+theorem _root_.Subsintleton.ofMulActionWithZero
     (𝒲 ℛ : Type*) [Subsingleton 𝒲] [MonoidWithZero 𝒲] [Zero ℛ] [MulActionWithZero 𝒲 ℛ] :
     Subsingleton ℛ := by
   constructor; intro a b
@@ -1006,11 +1008,6 @@ end WDP
 
 end
 
--- Complete lattice necessary because of uncountability of schedulers
--- iSup-continuous is difficult to capture with type classes
--- Topology instantiation is challenging (Scott/Lawson)
--- Type* + countable ≃ Type
-
 section
 
 variable {𝒲 ℛ : Type*} [MonoidWithZero 𝒲] [AddCommMonoid ℛ] [CompleteLattice ℛ] [i : AddLeftMono ℛ] [j : ExistsAddOfLE ℛ]
@@ -1027,28 +1024,320 @@ end
 
 namespace WDP
 
-class WellBehavedModule (𝒲 ℛ : Type*) (S A : Type) [CompleteLattice ℛ] [AddCommMonoid ℛ]
+class WellBehavedModule (𝒲 ℛ : Type*) [CompleteLattice ℛ] [AddCommMonoid ℛ]
     [MonoidWithZero 𝒲] [DistribMulActionWithZero 𝒲 ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] where
-  wdp_isWellBehaved (M : WDP 𝒲 S A) : Nonempty (M.IsWellBehaved ℛ)
+  wdp_isWellBehaved {S A : Type} [Nonempty A] (M : WDP 𝒲 S A) : Nonempty (M.IsWellBehaved ℛ)
+
+section Products
+
+section
+
+variable {κ ι : Type*} {α : ι → Type*} [∀ i, CompleteLattice (α i)]
+  [Countable κ]
+  [∀ i, AddCommMonoid (α i)] [∀ i, AddLeftMono (α i)] [∀ i, IsBotZeroClass (α i)]
+  {f : κ → Π i, α i}
+
+open OmegaCompletePartialOrder
+
+@[simp]
+theorem ωSum_apply : (@ωSum _ _ _ ChainCompletePartialOrder.instOmegaCompletePartialOrder (f := f) _ _ _) i = ω∑ j, f j i := by
+  have := ωSum_apply' (ι := κ) (f := fun s' ↦ f s') i
+  apply Eq.trans (Eq.trans _ this) <;> clear this
+  · apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨s', h₁⟩ ↦ s'
+    · intro ⟨s', h₁⟩; simp
+    · simp
+    · simp
+  · cbv
+    simp
+    congr! 2
+    constructor
+    · simp
+      rintro g hg ⟨_⟩
+      obtain ⟨y, ⟨_⟩⟩ := hg
+      use y
+      simp
+    · rintro ⟨y, ⟨_⟩⟩
+      apply Exists.intro
+      · constructor
+        swap
+        · rfl
+        use y
+        ext; simp
+
+end
+
+variable {ι : Type} {𝒲 ℛ : ι → Type}
+variable [∀ (i : ι), CompleteLattice (ℛ i)] [∀ (i : ι), AddCommMonoid (ℛ i)]
+  [∀ (i : ι), MonoidWithZero (𝒲 i)] [∀ (i : ι), DistribMulActionWithZero (𝒲 i) (ℛ i)]
+  [∀ (i : ι), AddLeftMono (ℛ i)] [∀ (i : ι), IsBotZeroClass (ℛ i)]
+
+instance : DistribMulActionWithZero (Π i, 𝒲 i) (Π i, ℛ i) where
+
+instance : AddLeftMono (Π i, ℛ i) where
+  elim := by intro a b c h i; simp_all; gcongr; apply h
+
+instance : IsBotZeroClass (Π i, ℛ i) where
+  isBot_zero := by simp; ext i; simp [bot_eq_zero]
+
+variable [inst₁ : ∀ i, WellBehavedModule (𝒲 i) (ℛ i)]
+
+def proj (M : WDP (Π i, 𝒲 i) S A) (i : ι) : WDP (𝒲 i) S A where
+  P s a s' := M.P s a s' i
+  P_countable s a := by
+    have := M.P_countable s a
+    apply Set.Countable.mono _ this
+    simp_all [Pi.zero_def, funext_iff]
+    grind
+
+open OmegaCompletePartialOrder
+
+instance WellBehavedModule.pi : WellBehavedModule (Π i, 𝒲 i) (Π i, ℛ i) := by
+  constructor
+  intro S A _ M
+  constructor
+  constructor
+  intro J g hJ
+
+  let z : M.MSched → (i : ι) → (M.proj i).MSched := fun 𝔖 i ↦ MSched.mk 𝔖
+  have {𝔖 : M.MSched} {i} {s : S} : z 𝔖 i s = 𝔖 s := rfl
+
+  letI : Nonempty M.MSched := ⟨MSched.mk fun s ↦ Classical.choice ‹_›⟩
+
+  have hT' {𝔖 : M.MSched} {J} {s} {i} :
+        M.T' g 𝔖 J s i
+      = (M.proj i).T' ((· i) ∘ g) (z 𝔖 i) ((· i) ∘ J) s := by
+    simp [T']
+    congr! 1
+    apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨s', h₁⟩, h₂⟩ ↦ ⟨s', by simp_all; simp_all [proj, funext_iff]; grind⟩
+    · intro ⟨⟨s', h₁⟩, h₂⟩; simp
+    · simp; simp_all [proj]; intros; intro; simp_all
+    · simp; simp_all [proj]
+
+  have hJi {i : ι} : (M.proj i).T ((· i) ∘ g) ((· i) ∘ J) ≤ ((· i) ∘ J) := by
+    intro s
+    simp only [Function.comp_apply]
+    convert hJ s i; clear hJ
+    simp [T]
+    congr! 3 with a
+    apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨s', h₁⟩, h₂⟩ ↦ ⟨s', by simp_all; intro; simp_all [proj, funext_iff]⟩
+    · intro ⟨⟨s', h₁⟩, h₂⟩; simp
+    · simp; simp_all [proj]; intros; intro; simp_all
+    · simp; simp_all [proj]
+  let hwb (i : ι) := (Classical.choice ((inst₁ i).wdp_isWellBehaved (M.proj i))).is_wellBehaved hJi
+  let X' (i : ι) := (hwb i).X
+  let f' (i : ι) := (hwb i).f
+  let f'_mono (i : ι) := (hwb i).f_mono
+  let X := Option (Sigma X')
+  classical
+  let f (x : X) (j : S → Π i, ℛ i) (s : S) : Π i, ℛ i :=
+    match x with
+    | none => ⊤
+    | some ⟨i, xᵢ⟩ => Function.update ⊤ i (f' i xᵢ ((· i) ∘ j) s)
+  apply WellBehaved.mk X f
+  · rintro (_ | ⟨i, xᵢ⟩)
+    · simp [f]; intro a b h s; simp
+    · intro a b h s; simp [f]; apply f'_mono i; intro s'; simp; apply h
+  · intro s i
+    simp
+    have := (hwb i).iInf_iSup_comp_le s
+    simp_all
+    apply le_trans _ this
+    refine iInf_mono' fun I ↦ ?_
+    use fun n ↦ some ⟨i, I n⟩
+    congr! with n
+    clear this
+    induction n generalizing s with
+    | zero => simp
+    | succ n ih => simp [List.range_succ]; simp [f, f']; congr!; ext s''; simp; apply ih
+  · rintro (_ | ⟨i, xᵢ⟩)
+    · simp [f, Pi.le_def]
+    simp [f, Pi.le_def]
+    obtain ⟨𝔖, h𝔖⟩ := (hwb i).exists_T'_le xᵢ
+    simp_all
+    use MSched.mk 𝔖
+    intro s i'
+    if hi : i' = i then
+      subst_eqs
+      simp only [Function.update_self]
+      apply h𝔖
+    else
+      simp_all
+  · rintro J' 𝔖 (_ | ⟨i, xᵢ⟩)
+    · simp [f, Pi.le_def]
+    · intro s i'
+      simp [f]
+      if hi : i' = i then
+        subst_eqs
+        have := (hwb i).T'_f_comm ((· i) ∘ J') (MSched.mk 𝔖) xᵢ s
+        simp_all [Function.update_self, z]
+        convert this
+        · ext; simp_all; rfl
+        · ext; simp_all
+      else
+        simp_all
+
+#print axioms WellBehavedModule.pi
+
+end Products
+
+section Products
+
+variable {𝒲₁ ℛ₁ 𝒲₂ ℛ₂ : Type}
+variable [CompleteLattice ℛ₁] [AddCommMonoid ℛ₁] [MonoidWithZero 𝒲₁] [DistribMulActionWithZero 𝒲₁ ℛ₁] [AddLeftMono ℛ₁] [IsBotZeroClass ℛ₁]
+variable [CompleteLattice ℛ₂] [AddCommMonoid ℛ₂] [MonoidWithZero 𝒲₂] [DistribMulActionWithZero 𝒲₂ ℛ₂] [AddLeftMono ℛ₂] [IsBotZeroClass ℛ₂]
+
+instance : SMul (𝒲₁ × 𝒲₂) (ℛ₁ × ℛ₂) where
+  smul := fun ⟨w₁, w₂⟩ ⟨r₁, r₂⟩ ↦ ⟨w₁ • r₁, w₂ • r₂⟩
+
+@[simp]
+theorem prod_smul {w₁ : 𝒲₁} {w₂ : 𝒲₂} {r₁ : ℛ₁} {r₂ : ℛ₂} :
+    (w₁, w₂) • (r₁, r₂) = (w₁ • r₁, w₂ • r₂) := by rfl
+@[simp]
+theorem prod_smul_fst {w₁₂ : 𝒲₁ × 𝒲₂} {r₁₂ : ℛ₁ × ℛ₂} :
+    (w₁₂ • r₁₂).fst = w₁₂.fst • r₁₂.fst := by rfl
+@[simp]
+theorem prod_smul_snd {w₁₂ : 𝒲₁ × 𝒲₂} {r₁₂ : ℛ₁ × ℛ₂} :
+    (w₁₂ • r₁₂).snd = w₁₂.snd • r₁₂.snd := by rfl
+
+instance : DistribMulActionWithZero (𝒲₁ × 𝒲₂) (ℛ₁ × ℛ₂) where
+  mul_smul := by simp_all [mul_smul]
+  one_smul := by simp_all; intro r₁ r₂; show (1, 1) • (r₁, r₂) = _; simp
+  smul_zero := by simp_all; intro w₁ w₂; show (w₁, w₂) • (0, 0) = _; simp
+  smul_add := by simp_all [smul_add]
+  zero_smul := by simp_all; intro r₁ r₂; show (0, 0) • (r₁, r₂) = _; simp
+
+instance : AddLeftMono (ℛ₁ × ℛ₂) where
+  elim := by intro ⟨r₁, r₂⟩ ⟨b₁, b₂⟩ ⟨c₁, c₂⟩ ⟨h₁, h₂⟩; simp_all; split_ands <;> gcongr
+
+instance : IsBotZeroClass (ℛ₁ × ℛ₂) where
+  isBot_zero := by simp; show (0, 0) = (⊥, ⊥); simp [bot_eq_zero]
+
+variable [inst₁ : WellBehavedModule 𝒲₁ ℛ₁] [inst₂ : WellBehavedModule 𝒲₂ ℛ₂]
+
+variable {ι α β : Type*} [CompleteLattice α] [CompleteLattice β]
+  [Countable ι]
+  [AddCommMonoid α] [AddLeftMono α] [IsBotZeroClass α]
+  [AddCommMonoid β] [AddLeftMono β] [IsBotZeroClass β] {f : ι → α × β}
+
+instance : AddLeftMono (α × β) where
+  elim := by
+    intro ⟨a₁, b₁⟩ ⟨a₂, b₂⟩ ⟨a₃, b₃⟩
+    simp_all [Prod.le_def]
+    intro h₂ h₃; split_ands <;> gcongr
+instance : IsBotZeroClass (α × β) where
+  isBot_zero := by intro ⟨a₁, b₁⟩; simp_all [Prod.le_def]
+
+open OmegaCompletePartialOrder
+
+open OmegaCompletePartialOrder
+
+def map {𝒲₁ 𝒲₂ : Type*} [Zero 𝒲₁] [Zero 𝒲₂] {S A : Type} (M : WDP 𝒲₁ S A) (f : 𝒲₁ → 𝒲₂) (hf : f 0 = 0) : WDP 𝒲₂ S A where
+  P s a s' := f (M.P s a s')
+  P_countable s a := by
+    apply Set.Countable.mono _ (M.P_countable s a); intro; contrapose; simp_all
+
+set_option maxHeartbeats 500000 in
+instance : WellBehavedModule (𝒲₁ × 𝒲₂) (ℛ₁ × ℛ₂) := by
+  let ι := Unit ⊕ Unit
+  let 𝒲 : ι → Type := Sum.elim (fun _ ↦ 𝒲₁) (fun _ ↦ 𝒲₂)
+  let ℛ : ι → Type := Sum.elim (fun _ ↦ ℛ₁) (fun _ ↦ ℛ₂)
+  letI (i : Unit ⊕ Unit) : CompleteLattice (ℛ i) :=
+    match i with | .inl _ => by simp [ℛ]; infer_instance | .inr _ => by simp [ℛ]; infer_instance
+  letI (i : Unit ⊕ Unit) : AddCommMonoid (ℛ i) :=
+    match i with | .inl _ => by simp [ℛ]; infer_instance | .inr _ => by simp [ℛ]; infer_instance
+  letI (i : Unit ⊕ Unit) : MonoidWithZero (𝒲 i) :=
+    match i with | .inl _ => by simp [𝒲]; infer_instance | .inr _ => by simp [𝒲]; infer_instance
+  letI (i : Unit ⊕ Unit) : DistribMulActionWithZero (𝒲 i) (ℛ i) :=
+    match i with
+    | .inl _ => by rename DistribMulActionWithZero 𝒲₁ ℛ₁ => inst; exact inst
+    | .inr _ => by rename DistribMulActionWithZero 𝒲₂ ℛ₂ => inst; exact inst
+  letI (i : Unit ⊕ Unit) : AddLeftMono (ℛ i) :=
+    match i with
+    | .inl _ => by rename AddLeftMono ℛ₁ => inst; exact inst
+    | .inr _ => by rename AddLeftMono ℛ₂ => inst; exact inst
+  letI (i : Unit ⊕ Unit) : IsBotZeroClass (ℛ i) :=
+    match i with
+    | .inl _ => by rename IsBotZeroClass ℛ₁ => inst; exact inst
+    | .inr _ => by rename IsBotZeroClass ℛ₂ => inst; exact inst
+  letI (i : Unit ⊕ Unit) : WellBehavedModule (𝒲 i) (ℛ i) :=
+    match i with
+    | .inl _ => by rename WellBehavedModule 𝒲₁ ℛ₁ => inst; exact inst
+    | .inr _ => by rename WellBehavedModule 𝒲₂ ℛ₂ => inst; exact inst
+  have := WellBehavedModule.pi (ι := Unit ⊕ Unit) (𝒲 := 𝒲) (ℛ := ℛ)
+
+  constructor
+  intro S A _ M
+  constructor
+
+  let 𝒲_eqiv : ((i : Unit ⊕ Unit) → 𝒲 i) ≃ (𝒲₁ × 𝒲₂) := {
+    toFun w := ⟨w (.inl ()), w (.inr ())⟩
+    invFun w i := match i with | .inl _ => w.1 | .inr _ => w.2
+    left_inv := by grind
+    right_inv := by grind
+  }
+  let ℛ_eqiv : ((i : Unit ⊕ Unit) → ℛ i) ≃ (ℛ₁ × ℛ₂) := {
+    toFun w := ⟨w (.inl ()), w (.inr ())⟩
+    invFun w i := match i with | .inl _ => w.1 | .inr _ => w.2
+    left_inv := by grind
+    right_inv := by grind
+  }
+
+  let M' : WDP (Π i, 𝒲 i) S A := M.map 𝒲_eqiv.symm (by simp [funext_iff, 𝒲]; split_ands <;> intro <;> rfl)
+  obtain ⟨hwb⟩ := Classical.choice <| this.wdp_isWellBehaved M'
+
+  constructor
+  intro J g hJ
+  sorry
+
+end Products
 
 noncomputable instance : DistribMulActionWithZero ENNReal ENNReal where
 
 open OmegaCompletePartialOrder
 
 noncomputable instance : ωScottContinuousAdd ENNReal where
-  add_left_ωScottContinuous := sorry
-  add_right_ωScottContinuous := sorry
+  add_left_ωScottContinuous x := by
+    refine ωScottContinuous_iff_monotone_map_ωSup.mpr ?_
+    simp [ENNReal.iSup_add]; intro; simp_all [add_le_add]
+  add_right_ωScottContinuous x := by
+    refine ωScottContinuous_iff_monotone_map_ωSup.mpr ?_
+    simp [ENNReal.add_iSup]; intro; simp_all [add_le_add]
 noncomputable instance : ωScottContinuousRightMul ENNReal where
-  mul_left_ωScottContinuous := sorry
+  mul_left_ωScottContinuous x := by
+    refine ωScottContinuous_iff_monotone_map_ωSup.mpr ?_
+    simp [ENNReal.iSup_mul]; intro; simp_all [mul_le_mul]
 
 theorem _root_.ENNReal.ωSum_eq_tsum {ι : Type*} [Countable ι] {f : ι → ENNReal} :
     ωSum f = tsum f := by
   simp [ωSum_eq_iSup_sum, ENNReal.tsum_eq_iSup_sum]
 
-noncomputable instance {S A : Type} : WellBehavedModule ENNReal ENNReal S A := by
-  constructor
-  intro M
-  constructor
+theorem ashjdsa {ι : Type*} [Nonempty ι] (us : ι → ENNReal) (ε : ENNReal) (hε : 0 < ε) :
+    ∃ i, ∀ j, us i ≤ us j + ε := by
+  if hus : ∃ x, ¬us x = ⊤ then
+    have h₀ : IsGLB (Set.range us) (iInf us) := isGLB_iInf
+    have : ¬(iInf us + ε) ∈ lowerBounds (Set.range us) := by
+      simp [IsGLB, IsGreatest, upperBounds] at h₀
+      intro h₁
+      obtain ⟨h₀, h₂⟩ := h₀
+      simp_all [lowerBounds]
+      simp_all [iInf_le_iff]
+      contrapose hε
+      simp_all
+      have : iInf us + ε ≤ iInf us := by exact le_iInf h₁
+      have := ENNReal.add_le_add_iff_left (a := iInf us) (b := ε) (c := 0)
+      simp_all
+    simp_all [IsGLB, IsGreatest, upperBounds, lowerBounds]
+    obtain ⟨x, hx⟩ := this
+    use x
+    replace hx := hx.le
+    simpa [ENNReal.iInf_add] using hx
+  else
+    simp_all
+
+@[reducible]
+noncomputable def mdp_wellBehaved {S A : Type} [Nonempty A] {M : WDP ENNReal S A}
+    (h : ∀ s a, ω∑ (i : (M.P s a).support), M.P s a i ≤ 1) :
+    M.IsWellBehaved ENNReal := by
   constructor
   intro J g hJ
   exact {
@@ -1066,10 +1355,7 @@ noncomputable instance {S A : Type} : WellBehavedModule ENNReal ENNReal S A := b
       simp_all
       simp [← ENNReal.add_iSup, ← ENNReal.add_iInf]
       trans J s + ⨅ (x : ℕ → {x : ENNReal // 0 < x}), ω∑ i, (x i).val
-      · simp [ωSum_eq_iSup_sum]
-        gcongr with x
-        apply iSup_mono' fun i ↦ ⟨Finset.Iio i, ?_⟩
-        rfl
+      · simp [ωSum_eq_iSup_sum]; gcongr with x; apply iSup_mono' fun i ↦ ⟨Finset.Iio i, ?_⟩; rfl
       trans J s + ⨅ (x : ℕ → {x : ENNReal // 0 < x}), ∑' i, (x i).val
       · gcongr; simp [ωSum_nat_eq_ωSup, ENNReal.tsum_eq_iSup_nat]
       · suffices ⨅ (x : ℕ → {x : ENNReal // 0 < x}), ∑' i, (x i).val = 0 by simp_all
@@ -1078,72 +1364,25 @@ noncomputable instance {S A : Type} : WellBehavedModule ENNReal ENNReal S A := b
         intro b hb
         obtain ⟨ε', h₁, h₂⟩ := ENNReal.exists_pos_sum_of_countable' (ε := b) (by grind) ℕ
         use fun i ↦ ⟨ε' i, by simp_all⟩
-    exists_T'_le' := by
-      simp
-      intro x hx s
-      suffices ∃ 𝔖, M.T' g 𝔖 J s ≤ M.T g J s + x by
-        obtain ⟨𝔖, h⟩ := this; use 𝔖; grw [h, ← hJ s]
-      simp [T, T', ENNReal.iInf_add, ENNReal.ωSum_eq_tsum]
-      specialize hJ s
-      simp [T, iInf_le_iff] at hJ
-      conv at hJ => enter [b]; rw [← not_imp_not]
-      simp at hJ
-      sorry
     exists_T'_le := by
       simp
       intro x hx
       simp [Pi.le_def]
       suffices ∃ 𝔖, ∀ (i : S), M.T' g 𝔖 J i ≤ M.T g J i + x by
         obtain ⟨𝔖, h⟩ := this; use 𝔖; intro s; grw [h, ← hJ s]
-      simp [T, T', ENNReal.iInf_add, ENNReal.ωSum_eq_tsum]
-
-      simp [T, T', ENNReal.iInf_add, ENNReal.ωSum_eq_tsum, Pi.le_def, iInf_le_iff_forall_lt] at hJ
-
-      -- ∀ (i : S) (b : ENNReal), J i < b → ∃ i_1, g i + ∑' (s' : ↑(Function.support (M.P i i_1))), M.P i i_1 ↑s' * J ↑s' < b
-      let q s b hb : A := (hJ s b hb).choose
-      sorry
-      -- have hq s b hb : g s + ∑' (s' : ↑(Function.support (M.P s (q s b hb)))), M.P s (q s b hb) ↑s' * J ↑s' < b := (hJ s b hb).choose_spec
-
-      -- let b₀ (s : S) : ENNReal := J s + 1
-      -- have hb₀ (s : S) : J s < b₀ s := sorry
-
-      -- use MSched.mk fun s ↦ q s (b₀ s) (hb₀ s)
-
-      -- simp
-
-      -- intro s a
-      -- trans g s + ∑' (s' : ↑(Function.support (M.P s (q s (b₀ s) (hb₀ s))))), M.P s (q s (b₀ s) (hb₀ s)) ↑s' * J ↑s'
-      -- · gcongr
-      --   apply le_of_eq
-      --   apply tsum_eq_tsum_of_ne_zero_bij fun ⟨⟨x, hx₀⟩, hx₁⟩ ↦ ⟨x, by simp_all⟩
-      --   · intro ⟨⟨_, _⟩, _⟩; simp_all; grind
-      --   · intro; simp; sorry
-      --   · simp
-      -- · have := hq s _ (hb₀ _)
-      --   sorry
-
-      -- suffices ∃ (𝔖 : M.MSched), ∀ (s : S) (a : A),
-      --     ∑' (s' : ↑(Function.support (M.P s (𝔖 s)))), M.P s (𝔖 s) ↑s' * J ↑s' - ∑' (s' : ↑(Function.support (M.P s a))), M.P s a ↑s' * J ↑s' ≤ x by
-      --   obtain ⟨𝔖, h⟩ := this; use 𝔖; intro s a
-      --   rw [add_assoc]
-      --   gcongr
-      --   exact tsub_le_iff_left.mp (h s a)
-
-      -- apply exists_forall
-
-      -- sorry
-
-      -- use MSched.mk fun s ↦ sorry
-
-      -- sorry
+      simp [T', smul_eq_mul, ENNReal.ωSum_eq_tsum, T, ENNReal.iInf_add, le_iInf_iff]
+      letI : Nonempty M.MSched := ⟨MSched.mk fun _ ↦ Classical.ofNonempty⟩
+      let us : S → A → ENNReal := fun s a ↦ g s + ∑' (s' : ↑(Function.support (M.P s a))), M.P s a ↑s' * J ↑s'
+      have (s : S) := ashjdsa (us s) _ hx
+      let 𝔖 : M.MSched := MSched.mk fun s ↦ (this s).choose
+      have h𝔖 (s : S) (a : A) : us s (𝔖 s) ≤ us s a + x := (this s).choose_spec a
+      use 𝔖
     T'_f_comm := by
-      simp
-      intro J 𝔖 x hx s
-      simp
-      simp [T']
-      simp [mul_add, ωSum_add, add_assoc, ← ωSum_mul]
+      intro J 𝔖 ⟨x, hx⟩ s
+      simp [T', mul_add, ωSum_add, add_assoc, ← ωSum_mul]
       gcongr
-      sorry
+      grw [h]
+      simp
   }
 
 section
@@ -1180,3 +1419,13 @@ decreasing_by sorry
 end
 
 end WDP
+
+-- # Notes 1
+-- Complete lattice necessary because of uncountability of schedulers
+-- iSup-continuous is difficult to capture with type classes
+-- Topology instantiation is challenging (Scott/Lawson)
+-- Type* + countable ≃ Type
+
+-- # Notes 2
+-- Can we define well-behaved modules over WDP's with _nonempty actions_?
+-- WDP's induced from wGCL are _independent_ of programs that we are measuring over
