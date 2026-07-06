@@ -566,6 +566,23 @@ theorem Ar_mono {g : S → ℛ} : Monotone (M.Ar g) := by
   simp [Ar]
   gcongr
   simp
+@[gcongr]
+theorem Ar_mono_left : Monotone (M.Ar (ℛ := ℛ)) := by
+  intro g₁ g₂ h i 𝔖 s
+  simp [Ar]
+  gcongr
+  intro π
+  simp
+  gcongr
+  apply h
+
+@[gcongr]
+theorem MinAr_mono : Monotone (M.MinAr (ℛ := ℛ)) := by
+  intro g₁ g₂ h s
+  simp only [MinAr, iInf_apply, iSup_apply]
+  gcongr with 𝔖
+  apply Ar_mono_left
+  gcongr
 
 end
 
@@ -753,7 +770,7 @@ end
 class SMulContinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β] where
   smul_iSup {ι : Type} {a : α} {f : ι → β} : a • iSup f = ⨆ i, a • f i
 class SMulCocontinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β] where
-  smul_iInf {ι : Type} {a : α} {f : ι → β} : a • iInf f = ⨅ i, a • f i
+  smul_iInf {ι : Type} [Nonempty ι] {a : α} {f : ι → β} : a • iInf f = ⨅ i, a • f i
 class SMulBicontinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β]
     extends SMulContinuous α β, SMulCocontinuous α β
 
@@ -784,7 +801,7 @@ class MulBicontinuous (α : Type*) [Mul α] [CompleteLattice α]
     extends MulLeftBicontinuous α, MulRightBicontinuous α
 
 class AddLeftContinuous (α : Type*) [Add α] [CompleteLattice α] where
-  add_iSup {ι : Type} {a : α} {f : ι → α} : a + iSup f = ⨆ i, a + f i
+  add_iSup {ι : Type} [Nonempty ι] {a : α} {f : ι → α} : a + iSup f = ⨆ i, a + f i
 class AddLeftCocontinuous (α : Type*) [Add α] [CompleteLattice α] where
   add_iInf {ι : Type} {a : α} {f : ι → α} : a + iInf f = ⨅ i, a + f i
 class AddLeftBicontinuous (α : Type*) [Add α] [CompleteLattice α]
@@ -794,7 +811,7 @@ export AddLeftContinuous (add_iSup)
 export AddLeftCocontinuous (add_iInf)
 
 class AddRightContinuous (α : Type*) [Add α] [CompleteLattice α] where
-  iSup_add {ι : Type} {a : α} {f : ι → α} : iSup f + a = ⨆ i, f i + a
+  iSup_add {ι : Type} [Nonempty ι] {a : α} {f : ι → α} : iSup f + a = ⨆ i, f i + a
 class AddRightCocontinuous (α : Type*) [Add α] [CompleteLattice α] where
   iInf_add {ι : Type} {a : α} {f : ι → α} : iInf f + a = ⨅ i, f i + a
 class AddRightBicontinuous (α : Type*) [Add α] [CompleteLattice α]
@@ -1769,8 +1786,20 @@ end end
 
 section
 
-variable {𝒲 : Type*} {ℛ : Type*} {S A : Type}
+variable {𝒲 : Type*} {ℛ : Type*}
 variable_module 𝒲 ℛ
+
+-- def T (M : SubWDP 𝒲 S A) (g : S → ℛ) (J : S → ℛ) : S → ℛ := sorry
+-- def T' (M : SubWDP 𝒲 S A) (g : S → ℛ) (𝔖 : M.toWDP.MSched) (J : S → ℛ) : S → ℛ := sorry
+
+-- variable {M : SubWDP 𝒲 S A} in
+-- structure WellBehaved' {J g : S → ℛ} (h : M.T g J ≤ J) where
+--   X : Type
+--   f : X → (M.carrier → ℛ) → M.carrier → ℛ
+--   f_mono : ∀ n, Monotone (f n)
+--   iInf_iSup_comp_le : ⨅ (x : ℕ → X), ⨆ n, ((List.range n).reverse.map (f ∘ x)).comp J ≤ J
+--   exists_T'_le : ∀ x : X, ∃ (𝔖 : M.toWDP.MSched), ∀ s ∈ M.carrier, M.T' g 𝔖 J s ≤ (f x) J s
+--   T'_f_comm (J : M.carrier → ℛ) : ∀ 𝔖, ∀ x : X, ∀ s ∈ M.carrier, M.T' g 𝔖 (f x J) s ≤ f x (M.T' g 𝔖 J) s
 
 variable {M : SubWDP 𝒲 S A} in
 structure WellBehaved {J g : M.carrier → ℛ} (h : M.toWDP.T g J ≤ J) where
@@ -1793,6 +1822,17 @@ instance IsWellBehaved.toWDP [M.IsWellBehaved ℛ] : M.toWDP.IsWellBehaved ℛ :
   constructor
   intro J g hJ
   have hwb := IsWellBehaved.is_wellBehaved hJ
+  let f : hwb.X → (↑M.carrier → ℛ) → ↑M.carrier → ℛ := hwb.f
+  have f_mono x : Monotone (f x) := hwb.f_mono x
+  refine { X := hwb.X, f, f_mono, iInf_iSup_comp_le := ?_, exists_T'_le := ?_, T'_f_comm := ?_ }
+  · exact hwb.iInf_iSup_comp_le
+  · exact hwb.exists_T'_le
+  · exact hwb.T'_f_comm
+
+instance IsWellBehaved.of_toWDP [M.toWDP.IsWellBehaved ℛ] : M.IsWellBehaved ℛ := by
+  constructor
+  intro J g hJ
+  have hwb := WDP.IsWellBehaved.is_wellBehaved hJ
   let f : hwb.X → (↑M.carrier → ℛ) → ↑M.carrier → ℛ := hwb.f
   have f_mono x : Monotone (f x) := hwb.f_mono x
   refine { X := hwb.X, f, f_mono, iInf_iSup_comp_le := ?_, exists_T'_le := ?_, T'_f_comm := ?_ }
@@ -1895,6 +1935,15 @@ theorem mem_generateFrom [Zero 𝒲] (M : WDP 𝒲 S A) {S₀ : Set S} {s₀ : S
     s₀ ∈ (M.generateFrom S₀).carrier := by
   simp [generateFrom]
   use s₀, hs₀; apply ReflTransGen.refl
+
+@[simp]
+theorem mem_generateFrom_of_closed [Zero 𝒲] (M : WDP 𝒲 S A) {S₀ : Set S} {s₀ : S} (h : ∀ s ∈ S₀, ∀ s', ∀ a, ¬M.P s a s' = 0 → s' ∈ S₀) :
+    s₀ ∈ (M.generateFrom S₀).carrier ↔ s₀ ∈ S₀ := by
+  constructor
+  · simp_all [generateFrom]
+    intro s' h₁ h₂
+    induction h₂ using ReflTransGen.head_induction_on with grind
+  · simp_all
 
 @[simp]
 theorem generateFrom_P_eq [Zero 𝒲] (M : WDP 𝒲 S A) (S₀ : Set S) (s : S) :
