@@ -84,21 +84,6 @@ notation "conf " "⟨" "if " b " then " C₁ " else " C₂ ", " σ "⟩" => Conf
 notation "conf " "⟨" "while " b:max " do " C ", " σ "⟩" => Conf.mk (some (wGCL.loop b C)) σ
 notation "conf " "⟨" "@" C ", " σ "⟩" => Conf.mk (some C) σ
 
-/-
-
-⟨⇓, σ⟩ =[N, 1]=> ⊥
-⟨x := a, σ⟩ =[N, 1]=> ⟨⇓, σ[x ↦ a σ]⟩
-
-⟨C₁, σ⟩ =[α, w]=> ⟨⇓, σ'⟩
----
-⟨C₁ ; C₂, σ⟩ =[α, w]=> ⟨C₂, σ'⟩
-
-⟨C₁, σ⟩ =[α, w]=> ⟨C₁', σ'⟩
----
-⟨C₁ ; C₂, σ⟩ =[α, w]=> ⟨C₁' ; C₂, σ'⟩
-
--/
-
 instance {α β ℛ : Type*} {Γ : β → Type*} [i : Substitution α Γ] : Substitution (α → ℛ) Γ where
   subst a b c := a (i.subst c b)
 
@@ -236,93 +221,6 @@ inductive Step : Conf Γ 𝒲 ℛ → A → 𝒲 → Conf Γ 𝒲 ℛ → Prop w
 
 variable [DecidableEq (wGCL Γ 𝒲 ℛ)]
 
-declare_syntax_cat idk
-
-syntax "make_succs " ident (" | " term " => " term)* : command
-
-open Lean in
-macro_rules
-| `(make_succs $name $[| $ls => $rs]*) => do
-  let name' : TSyntax `ident := mkIdent (name.getId.append (Name.mkSimple "norec"))
-
-  let mut emptys : Array (TSyntax `command) := #[]
-
-  let sec := mkIdent (Name.mkSimple "sectiooooon")
-
-  let mut n := 0
-
-  for lr in ls.zip rs do
-    let thm := mkIdent (Name.mkSimple s!"aux_{n}")
-    n := n + 1
-    if lr.2 == (← `(∅)) then
-      dbg_trace "making {thm}"
-      emptys := emptys.push (← `(
-        @[simp]
-        def $thm : $name ($(lr.1) : Conf Γ 𝒲 ℛ) = (∅ : Set (A × 𝒲 × Conf Γ 𝒲 ℛ)) := by cbv))
-
-    if lr.2.1.getKind == `«term{_}» then
-      match lr.2 with
-      | `(term|{⟨$s,$x,$y⟩}) =>
-        let thm' : TSyntax `ident := mkIdent (thm.getId.append (Name.mkSimple "sum"))
-        emptys := emptys.push (← `(
-          @[simp, grind =]
-          theorem $thm : $name ($(lr.1) : Conf Γ 𝒲 ℛ) = ({⟨$s, $x, $y⟩} : Set (A × 𝒲 × Conf Γ 𝒲 ℛ)) := by cbv
-
-          @[simp]
-          theorem $thm' {f : _ → ℛ} [∀ (c : Conf Γ 𝒲 ℛ), Countable ↑($name c)] :
-              ω∑ (x : $name ($(lr.1) : Conf Γ 𝒲 ℛ)), f x = f ⟨⟨$s, $x, $y⟩, by simp⟩ := by
-            rw [OmegaCompletePartialOrder.ωSum_eq_single]
-            simp
-            grind
-        ))
-        pure ()
-      | `(term|{⟨$s₁,$x₁,$y₁⟩, ⟨$s₂,$x₂,$y₂⟩}) =>
-        let thm' : TSyntax `ident := mkIdent (thm.getId.append (Name.mkSimple "sum"))
-        emptys := emptys.push (← `(
-          @[simp, grind =]
-          theorem $thm : $name ($(lr.1) : Conf Γ 𝒲 ℛ) = ({⟨$s₁, $x₁, $y₁⟩, ⟨$s₂, $x₂, $y₂⟩} : Set (A × 𝒲 × Conf Γ 𝒲 ℛ)) := by cbv
-
-          -- @[simp]
-          -- theorem $thm' {f : _ → ℛ} [∀ (c : Conf Γ 𝒲 ℛ), Countable ↑($name c)] :
-          --     ω∑ (x : $name ($(lr.1) : Conf Γ 𝒲 ℛ)), f x = f ⟨⟨$s₁, $x₁, $y₁⟩, by simp⟩ + f ⟨⟨$s₂, $x₂, $y₂⟩, by simp⟩ := by
-          --   sorry
-            -- rw [OmegaCompletePartialOrder.ωSum_eq_single]
-            -- simp
-            -- grind
-        ))
-      | nope =>
-        dbg_trace "nope"
-        dbg_trace nope
-        pure ()
-    --   dbg_trace "making {thm}"
-    --   let q : TSyntax `term := ⟨lr.2.raw[1]⟩
-    --   dbg_trace lr.2.raw[1]
-
-
-  `(
-    open Conf
-
-    set_option autoImplicit true
-
-
-    def $name : Conf Γ 𝒲 ℛ → Set (A × 𝒲 × Conf Γ 𝒲 ℛ) :=
-      fun c ↦ match _ : c with $[| $ls => $rs]*
-    termination_by C => C.sizeOf
-    decreasing_by simp only [Conf.sizeOf]; grind [Conf.sizeOf, wGCL.sizeOf]
-
-    -- def $name' : Conf Γ 𝒲 ℛ → Set (A × 𝒲 × Conf Γ 𝒲 ℛ) :=
-    --   fun c ↦ match _ : c with $[| $ls => $rs]*
-
-    section $sec
-    end $sec
-
-    $(emptys[0]!)
-    -- $(emptys[1]!)
-    -- $(emptys[2]!)
-    -- $(emptys[3]!)
-    -- $(emptys[4]!)
-  )
-
 set_option linter.unusedVariables false in
 section
 
@@ -330,8 +228,9 @@ variable {σ : Σ[Γ]}
 
 variable [OmegaCompletePartialOrder ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ]
 
-make_succs Conf.succs
-
+-- make_succs
+def Conf.succs : Conf Γ 𝒲 ℛ → Set (A × 𝒲 × Conf Γ 𝒲 ℛ) :=
+  fun c ↦ match _ : c with
   | conf ⟨⇓, σ⟩ => ∅
   | conf ⟨r ⨁, σ⟩ => {⟨.nat n, 1, conf ⟨⇓, σ⟩⟩ | n}
   | conf ⟨w ⨀, σ⟩ => {⟨.nat n, (w σ), conf ⟨⇓, σ⟩⟩ | n}
@@ -355,8 +254,11 @@ make_succs Conf.succs
     if b σ then {⟨.nat n, 1, conf ⟨@C.seq (.loop b C), σ⟩⟩ | n} else {⟨.nat n, 1, conf ⟨⇓, σ⟩⟩ | n}
 
 def Conf.succsₐ : Conf Γ 𝒲 ℛ → A → Set (𝒲 × Conf Γ 𝒲 ℛ) :=
-  fun s a ↦ {⟨w, s'⟩ | ⟨a, w, s'⟩ ∈ s.succs}
+  fun s a ↦ {⟨w, s'⟩ | ⟨a, w, s'⟩ ∈ s.succs ∧ w ≠ 0}
 
+omit [OmegaCompletePartialOrder ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] in
+@[simp]
+theorem Conf.succs_none {σ : Σ[Γ]} : conf ⟨⇓, σ⟩.succs (𝒲:=𝒲) (ℛ:=ℛ) = ∅ := by cbv
 omit [OmegaCompletePartialOrder ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] in
 @[simp]
 theorem Conf.succs_havoc {x : D} {hx : Countable (Γ x)} {σ : Σ[Γ]} {a : A} :
@@ -371,6 +273,8 @@ theorem Conf.succs_havoc {x : D} {hx : Countable (Γ x)} {σ : Σ[Γ]} {a : A} :
     rintro v ⟨_⟩ ⟨_⟩
     simp
   · rcases a; rcases w; simp
+
+variable [NeZero (1 : 𝒲)]
 
 omit [OmegaCompletePartialOrder ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] in
 @[simp, grind =]
@@ -477,10 +381,10 @@ open scoped Classical in
 noncomputable def Step.P : Conf Γ 𝒲 ℛ → A → Conf Γ 𝒲 ℛ → 𝒲 :=
   fun s a s' ↦ if h : ∃ p, Step s a p s' then h.choose else 0
 
-noncomputable def Step.P_spec (s : Conf Γ 𝒲 ℛ) (a : A) (s' : Conf Γ 𝒲 ℛ) (h : ∃ p, Step s a p s') :
+theorem Step.P_spec (s : Conf Γ 𝒲 ℛ) (a : A) (s' : Conf Γ 𝒲 ℛ) (h : ∃ p, Step s a p s') :
     Step s a (Step.P s a s') s' := by
   simp [P, h]; apply h.choose_spec
-noncomputable def Step.P_spec_neg (s : Conf Γ 𝒲 ℛ) (a : A) (s' : Conf Γ 𝒲 ℛ) (h : ∀ p, ¬Step s a p s') :
+theorem Step.P_spec_neg (s : Conf Γ 𝒲 ℛ) (a : A) (s' : Conf Γ 𝒲 ℛ) (h : ∀ p, ¬Step s a p s') :
     Step.P s a s' = 0 := by
   simp [P, h]
 
@@ -527,6 +431,28 @@ theorem Step.P_eq (c : Conf Γ 𝒲 ℛ) : Step.P c = c.P := by
     intro w h'
     have (w₁ w₂ : 𝒲) := Step.w_is_unique (s:=c) (a:=a) (s':=c') (w₁:=w₁) (w₂:=w₂)
     simp_all [Conf.Step_iff_succs]
+    grind
+
+@[simp]
+theorem Conf.P_ne_zero_iff {s : Conf Γ 𝒲 ℛ} : (¬s.P a s' = 0) ↔ (s.P a s', s') ∈ s.succsₐ a := by
+  simp_all only [P, dite_eq_right_iff, not_forall, succsₐ, Prod.mk.eta, ne_eq, Set.mem_setOf_eq,
+    iff_and_self, forall_exists_index, ↓reduceDIte]
+  intro h₁ h₂
+  have := goesP_spec h₁
+  simp_all
+
+@[simp]
+theorem Conf.mem_succsₐ_of_ne_zero {s : Conf Γ 𝒲 ℛ} (h₀ : w ≠ 0) : (w, s') ∈ s.succsₐ a ↔ w = s.P a s' := by
+  simp_all [P, succsₐ]
+  split_ifs with h
+  · have := goesP_spec h
+    constructor
+    · simp_all
+    · simp_all
+  · simp_all
+    intro h'
+    contrapose h
+    simp_all [goes_def']
     grind
 
 @[simp]
@@ -634,6 +560,8 @@ open OrderHom
 variable {𝒲 ℛ : Type}
 variable_module 𝒲 ℛ
 
+variable [NeZero (1 : 𝒲)]
+
 section
 
 variable {D : Type} {Γ : D → Type} [DecidableEq D]
@@ -641,6 +569,9 @@ variable [DecidableEq (wGCL Γ 𝒲 ℛ)]
 
 open OmegaCompletePartialOrder
 
+attribute [local grind →] one_ne_zero
+
+omit [WDP.DistribMulActionWithZero 𝒲 ℛ] in
 @[simp]
 theorem Conf.ωSum_succs_ite {C₁ C₂ : wGCL Γ 𝒲 ℛ} {σ : Σ[Γ]} {f : _ → ℛ} :
     ω∑ (s : Conf.succsₐ conf ⟨if b then C₁ else C₂, σ⟩ a), f s =
@@ -648,6 +579,7 @@ theorem Conf.ωSum_succs_ite {C₁ C₂ : wGCL Γ 𝒲 ℛ} {σ : Σ[Γ]} {f : _
     else f ⟨⟨1, ⟨some C₂, σ⟩⟩, by grind [succsₐ, succs]⟩ := by
   split_ifs; all_goals rw [ωSum_eq_single]; simp [succsₐ, succs]; grind
 
+omit [WDP.DistribMulActionWithZero 𝒲 ℛ] in
 @[simp]
 theorem Conf.ωSum_succs_sink {σ : Σ[Γ]} {f : _ → ℛ} :
     ω∑ (s : Conf.succsₐ (𝒲:=𝒲) (ℛ:=ℛ) conf ⟨⇓, σ⟩ a), f s = 0 := by
@@ -660,12 +592,15 @@ theorem Conf.ωSum_succs_assign {x : D} {v : Σ[Γ] → Γ x} {σ : Σ[Γ]} {f :
   rw [ωSum_eq_single]
   simp_all [succsₐ, succs]
 
+open scoped Classical in
 @[simp]
 theorem Conf.ωSum_succs_weight {v : Σ[Γ] → 𝒲} {σ : Σ[Γ]} {f : _ → ℛ} :
     ω∑ (s : Conf.succsₐ (𝒲:=𝒲) (ℛ:=ℛ) conf ⟨v ⨀, σ⟩ a), f s =
-    f ⟨⟨v σ, conf ⟨⇓, σ⟩⟩, by rcases a; simp [succsₐ, succs]⟩ := by
-  rw [ωSum_eq_single]
-  simp_all [succsₐ, succs]
+    if h : v σ ≠ 0 then f ⟨⟨v σ, conf ⟨⇓, σ⟩⟩, by rcases a; grind [succsₐ, succs]⟩ else 0 := by
+  split_ifs
+  · rw [ωSum_eq_single]
+    simp_all [succsₐ, succs]
+  · simp_all [succsₐ, succs]
 
 @[simp]
 theorem Conf.ωSum_succs_reward {v : Σ[Γ] → ℛ} {σ : Σ[Γ]} {f : _ → ℛ} :
@@ -692,7 +627,7 @@ theorem Conf.ωSum_succs_sample {σ : Σ[Γ]} {x : D} {d : Σ[Γ] → Dist (Γ x
     rintro ⟨⟨w, s', σ'⟩, h⟩
     intro h'
     simp [succsₐ, succs] at h
-    obtain ⟨v, h₁, h₂, h₃, h₄⟩ := h
+    obtain ⟨⟨v, h₁, h₂, h₃, h₄⟩, _⟩ := h
     subst_eqs
     use ⟨⟨v, by simp_all⟩, by simp_all; exact h'⟩
     rfl
@@ -706,14 +641,19 @@ theorem Conf.ωSum_succs_nchoice {σ : Σ[Γ]} {C₁ C₂ : wGCL Γ 𝒲 ℛ} {f
   · simp; rw [ωSum_eq_single]; simp_all [succsₐ, succs]
   · simp; rw [ωSum_eq_single]; simp_all [succsₐ, succs]
 
+open scoped Classical in
 @[simp]
 theorem Conf.ωSum_succs_wchoice {σ : Σ[Γ]} {C₁ C₂ : wGCL Γ 𝒲 ℛ} {f : _ → ℛ} :
     ω∑ (s : Conf.succsₐ (𝒲:=𝒲) (ℛ:=ℛ) conf ⟨C₁ [p₁]⨁[p₂] C₂, σ⟩ a), f s =
-    f ⟨⟨p₁ σ, ⟨some C₁, σ⟩⟩, by simp_all [succsₐ, succs]; split_ifs <;> simp_all⟩ + f ⟨⟨p₂ σ, ⟨some (if C₁ = C₂ then skip.seq C₁ else C₂), σ⟩⟩, by simp_all [succsₐ, succs]; split_ifs <;> simp_all⟩ := by
-  rw [ωSum_eq_pair]
-  · simp; grind
-  simp_all [succsₐ, succs]
-  grind
+      (if h₁ : p₁ σ ≠ 0 then f ⟨⟨p₁ σ, ⟨some C₁, σ⟩⟩, by simp_all [succsₐ, succs]; split_ifs <;> simp_all⟩ else 0)
+    + (if h₂ : p₂ σ ≠ 0 then f ⟨⟨p₂ σ, ⟨some (if C₁ = C₂ then skip.seq C₁ else C₂), σ⟩⟩, by simp_all [succsₐ, succs]; split_ifs <;> simp_all⟩ else 0) := by
+  by_cases h₁ : p₁ σ = 0 <;> by_cases h₂ : p₂ σ = 0 <;> simp_all
+  · simp_all only [succsₐ, succs, Set.mem_setOf_eq]; grind
+  · rw [ωSum_eq_single]; simp_all [succsₐ, succs]; grind
+  · rw [ωSum_eq_single]; simp_all [succsₐ, succs]; grind
+  · rw [ωSum_eq_pair]
+    · simp; grind
+    if C₁ = C₂ then subst_eqs; simp [succsₐ, succs]; grind else simp_all [succsₐ, succs]; grind
 
 notation "WT[" Γ:max 𝒲:max ℛ:max "]" => wGCL Γ 𝒲 ℛ → 𝕎[Γ, ℛ] →o 𝕎[Γ, ℛ]
 
@@ -744,7 +684,7 @@ theorem Conf.ωSum_succs_seq {σ : Σ[Γ]} {C₁ C₂ : wGCL Γ 𝒲 ℛ} {f : _
     show ¬_ = 0 → ∃ _, _
     simp_all [Conf.succsₐ]
     simp [Conf.succsₐ, Conf.succs] at h
-    obtain ⟨⟨_ | C, σ⟩, h₁, ⟨_⟩⟩ := h
+    obtain ⟨⟨⟨_ | C, σ⟩, h₁, ⟨_⟩⟩, _⟩ := h
     · intro h'
       use conf ⟨⇓, σ⟩
       simp_all [Conf.then, Conf.thenC]
@@ -762,21 +702,7 @@ theorem Conf.ωSum_succs_loop {σ : Σ[Γ]} {b} {C : wGCL Γ 𝒲 ℛ} {f : _ �
 
 end
 
-class SMulMonoRight (α β : Type*) [Preorder β] [SMul α β] where
-  smul_le_smul_left {m : α} {a b : β} (h : a ≤ b) : m • a ≤ m • b
-
-namespace SMulMonoRight
-
-variable {ι α β : Type*} [Preorder β] [SMul α β] [SMulMonoRight α β]
-
-attribute [gcongr] SMulMonoRight.smul_le_smul_left
-
-instance : SMulMonoRight (ι → α) (ι → β) where
-  smul_le_smul_left := by intro m a b h i; simp; gcongr; apply h
-instance : CovariantClass α β HSMul.hSMul LE.le where
-  elim _ _ _ := smul_le_smul_left
-
-end SMulMonoRight
+open WDP (SMulMonoRight)
 
 instance {ι α : Type*} [Preorder ι] [Preorder α] [Add α] [AddLeftMono α] [AddRightMono α] :
     Add (ι →o α) where
@@ -809,11 +735,72 @@ noncomputable def wp : wGCL Γ 𝒲 ℛ → 𝕎[Γ, ℛ] →o 𝕎[Γ, ℛ]
       by intro x y h σ; simp; gcongr; apply (wp _).mono h⟩,
       by intro x y h; simp; gcongr; intro g; simp; gcongr⟩
 
+noncomputable def wlp : wGCL Γ 𝒲 ℛ → 𝕎[Γ, ℛ] →o 𝕎[Γ, ℛ]
+  | .assign x a => ⟨fun f σ ↦ f[x ↦ a σ] σ, by intro a b hab σ; simp; apply hab⟩
+  | .sample x d => ⟨fun f σ ↦ ω∑ (q : (d σ).support), d σ q • f[x ↦ q] σ, by
+    intro a b h σ; simp; gcongr; intro q; simp; gcongr; apply h⟩
+  | .havoc x _ => ⟨fun f ↦ ⨅ (v : Γ x), f[x ↦ v], by
+    intro a b hab σ; simp only [_root_.iInf_apply]; gcongr with v; apply hab⟩
+  | .seq C₁ C₂ => C₁.wp.comp C₂.wp
+  | .wchoice C₁ C₂ p₁ p₂ => p₁ • C₁.wp + p₂ • C₂.wp
+  | .nchoice C₁ C₂ => C₁.wp ⊓ C₂.wp
+  | .reward r => ⟨(r + ·), add_right_mono⟩
+  | .weight w => ⟨(w • ·), smul_mono_right _⟩
+  | .ite b C₁ C₂ => ⟨fun f ↦ iver (𝒲:=𝒲) b • C₁.wp f + iver (𝒲:=𝒲) (not b) • C₂.wp f, by
+    intro x y h σ; simp; gcongr <;> apply (wp _).mono h⟩
+  | .loop b C => ⟨fun f ↦ gfp ⟨fun g ↦ iver (𝒲:=𝒲) b • C.wp g + iver (𝒲:=𝒲) (not b) • f,
+      by intro x y h σ; simp; gcongr; apply (wp _).mono h⟩,
+      by intro x y h; simp; gcongr; intro g; simp; gcongr⟩
+
+class ComplInvert (α : Type*) [Order.Frame α] where
+class Flip (α : Type*) [Order.Frame α] where
+  inv : α → α
+  inv_inv {a : α} : inv (inv a) = a
+  inv_le_inv {a b : α} : b ≤ a → inv a ≤ inv b
+  lfp_compl_eq_gfp {f : α →o α} :
+        inv (lfp ⟨fun x ↦ inv (f (inv x)), fun a b h ↦ by apply inv_le_inv; gcongr; simp [inv_le_inv, h]⟩)
+      = gfp f
+
+instance : Flip Prop where
+  inv b := ¬b
+  inv_inv := by simp
+  inv_le_inv := by simp_all; grind
+  lfp_compl_eq_gfp := by
+    intro f
+    apply le_antisymm
+    · apply le_gfp
+      nth_rw 1 [← map_lfp]
+      simp [-map_lfp]
+    · suffices (¬gfp f) ≥ ¬(¬lfp ⟨fun x ↦ ¬f (¬x), fun a b h ↦ by
+          simp_all; have := f.mono (not_imp_not.mpr h); simp_all
+          grind⟩) by simp_all; grind
+      rw [not_not, ge_iff_le]
+      apply lfp_le
+      simp
+
+noncomputable instance : Flip PReal where
+  inv a := 1 - a
+  inv_inv := by simp
+  inv_le_inv := by
+    intro a b
+    exact fun a_1 ↦ tsub_le_tsub_left a_1 1
+  lfp_compl_eq_gfp := by
+    intro f
+    apply le_antisymm
+    · apply le_gfp
+      nth_rw 1 [← map_lfp]
+      simp [-map_lfp]
+    · suffices 1 - gfp f ≥ 1 - (1 - lfp ⟨fun x ↦ 1 - f (1 - x), _⟩) by
+        simp_all; grw [this]; simp
+      rw [PReal.one_sub_one_sub, ge_iff_le]
+      apply lfp_le
+      simp
+
 variable [DecidableEq (wGCL Γ 𝒲 ℛ)]
 
 open OmegaCompletePartialOrder
 
-variable [WDP.SMulBicontinuous 𝒲 ℛ] [WDP.AddBicontinuous ℛ]
+variable [WDP.SMulContinuous 𝒲 ℛ] [WDP.AddBicontinuous ℛ]
 variable [ωScottContinuousSMul 𝒲 ℛ] [ωScottContinuousAdd ℛ]
 
 open scoped Classical in
@@ -858,20 +845,7 @@ theorem T_eq_Φ {X} : (toWDP (Γ:=Γ) (𝒲:=𝒲) (ℛ:=ℛ)).T (g' X) f conf �
   simp [WDP.T, Φ', WDP.AddLeftCocontinuous.add_iInf]
   congr! with a
   apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨⟨w, s⟩, hx⟩, hx'⟩ ↦ ⟨s, by
-    simp [toWDP, Step.P_eq]; simp_all
-    simp_all [Conf.P, Conf.goes, Conf.succsₐ, ExistsUnique]
-    use w
-    simp_all
-    have : (conf ⟨@C, σ⟩).goes a s := by
-      simp_all [Conf.goes, ExistsUnique]
-      use w
-      grind [Conf.w_is_unique_of_succs]
-    apply Exists.intro
-    · intro h
-      have := Conf.goesP_spec this
-      simp_all
-    · grind [Conf.w_is_unique_of_succs]
-    ⟩
+    simp [toWDP, Step.P_eq]; simp_all; by_cases w = 0 <;> simp_all⟩
   · rintro ⟨⟨⟨_, _⟩, _⟩, _⟩ ⟨⟨⟨_, _⟩, _⟩, _⟩; simp_all
     rintro ⟨_⟩
     simp_all [Conf.succsₐ]
@@ -881,25 +855,10 @@ theorem T_eq_Φ {X} : (toWDP (Γ:=Γ) (𝒲:=𝒲) (ℛ:=ℛ)).T (g' X) f conf �
     simp_all [toWDP, Step.P_eq]
     intro s' h₁ h₂
     use conf ⟨@C, σ⟩.P a s'
-    simp_all
-    simp_all [Conf.P, Conf.succsₐ]
-    split_ifs with h
-    · have h' := Conf.goesP_spec h
-      simp_all
-    · simp_all
   · simp
     intro w s' h h'
-    simp_all [toWDP, Step.P_eq, Conf.P]
-    split_ifs with h₀
-    · have := Conf.goesP_spec h₀
-      simp_all [Conf.succsₐ]
-    · simp_all [Conf.goes, Conf.succsₐ]
-      symm
-      simp_all
-      contrapose h₀
-      simp_all
-      use w
-      grind [Conf.w_is_unique_of_succs]
+    simp_all [toWDP, Step.P_eq]
+    by_cases w = 0 <;> simp_all
 
 noncomputable def lp : WT[Γ 𝒲 ℛ] :=
   fun C ↦ ⟨fun X σ ↦ lfp ⟨toWDP.T (g' X), WDP.T_mono _⟩ ⟨some C, σ⟩, by
@@ -936,7 +895,7 @@ theorem ξ_havoc {f : WT[Γ 𝒲 ℛ]} : ξ f (wGCL.havoc x hx) = (wGCL.havoc (�
 
 @[simp]
 theorem ξ_weight {f : WT[Γ 𝒲 ℛ]} : ξ f (wGCL.weight w) = (wGCL.weight (𝒲:=𝒲) (ℛ:=ℛ) w).wp := by
-  ext X σ; simp [ξ, Φ', wp]
+  ext X σ; simp +contextual [ξ, Φ', wp]
 
 @[simp]
 theorem ξ_reward {f : WT[Γ 𝒲 ℛ]} : ξ f (wGCL.reward w) = (wGCL.reward (𝒲:=𝒲) (ℛ:=ℛ) w).wp := by
@@ -965,7 +924,7 @@ theorem ξ_sample {f : WT[Γ 𝒲 ℛ]} : ξ f (wGCL.sample x d) = (wGCL.sample 
 @[simp]
 theorem ξ_wchoice {f : WT[Γ 𝒲 ℛ]} : ξ f (wGCL.wchoice C₁ C₂ p₁ p₂) = ⟨fun X σ ↦ p₁ σ • (f C₁) X σ + p₂ σ • (f (if C₁ = C₂ then skip.seq C₁ else C₂)) X σ, fun _ _ _ _ ↦ by
     simp only; gcongr <;> apply (f _).mono ‹_›⟩ := by
-  ext X σ; simp [ξ, Φ']
+  ext X σ; simp [ξ, Φ']; grind [add_zero, zero_smul]
 
 theorem ξ_seq {f : WT[Γ 𝒲 ℛ]} :
     ξ f (wGCL.seq C₁ C₂) =
@@ -984,11 +943,20 @@ theorem ξ_loop {f : WT[Γ 𝒲 ℛ]} :
 theorem ξ_lp_le_lp : ξ lp ≤ lp (Γ:=Γ) (𝒲:=𝒲) (ℛ:=ℛ) := by
   intro C
   induction C with
-  | assign | sample | reward | weight | ite | wchoice | loop =>
+  | assign | sample | reward | ite | loop =>
     intro X σ
     rw [T_lp_eq_lp]
     simp [Φ']
     try rfl
+  | weight =>
+    intro X σ
+    rw [T_lp_eq_lp]
+    simp [Φ', wp]; grind [zero_smul]
+  | wchoice =>
+    intro X σ
+    rw [T_lp_eq_lp]
+    simp [Φ']
+    split_ifs <;> simp_all <;> rfl
   | havoc x d =>
     intro X σ; simp [T_lp_eq_lp, Φ', wp]
     letI : Nonempty (Γ x) := ⟨σ x⟩
@@ -1149,9 +1117,11 @@ theorem op_eq_MinAr {C : wGCL Γ 𝒲 ℛ} {X : 𝕎[Γ, ℛ]} :
 
 variable [(toWDP (Γ:=Γ) (𝒲:=𝒲) (ℛ:=ℛ)).IsWellBehaved (ℛ:=ℛ)]
 
+variable [WDP.SMulCocontinuousOn 𝒲 ℛ (toWDP (Γ:=Γ) (𝒲:=𝒲) (ℛ:=ℛ)).Sched]
+
 theorem op_eq_lfp {C : wGCL Γ 𝒲 ℛ} {X : 𝕎[Γ, ℛ]} :
     C.op X = fun σ ↦ lfp ⟨toWDP.T (g' X), WDP.T_mono _⟩ ⟨some C, σ⟩ := by
-  simp [WDP.lfp_T_eq_MinAr]; rfl
+  rw [WDP.lfp_T_eq_MinAr]; rfl
 theorem op_eq_lp {C : wGCL Γ 𝒲 ℛ} {X : 𝕎[Γ, ℛ]} :
     C.op X = C.lp X := by simp [op_eq_lfp]; rfl
 
@@ -1181,26 +1151,26 @@ theorem wp_eq_lfp {C : wGCL Γ 𝒲 ℛ} {X : 𝕎[Γ, ℛ]} :
 theorem OrderHom.add_apply {α β : Type*} [Preorder α] [Preorder β] [Add β] [AddLeftMono β] [AddRightMono β] {f g : α →o β} {x : α} :
     (f + g) x = f x + g x := by rfl
 
-def isProb : wGCL Γ ENNReal ℛ → Prop
+def isProb : wGCL Γ PReal ℛ → Prop
   | .assign _ _ => true
-  | .sample _ d => ∀ σ, ω∑ (v : (d σ).support), d σ v ≤ 1
+  | .sample _ d => ∀ σ, ω∑ (v : (d σ).support), ↑(d σ v) ≤ (1 : ENNReal)
   | .havoc _ _ => true
   | .reward _ => true
-  | .weight p => p ≤ 1
+  | .weight _ => true
   | .nchoice C₁ C₂ => C₁.isProb ∧ C₂.isProb
-  | .wchoice C₁ C₂ p₁ p₂ => C₁.isProb ∧ C₂.isProb ∧ p₁ ≤ 1 ∧ p₂ = 1 - p₁
+  | .wchoice C₁ C₂ p₁ p₂ => C₁.isProb ∧ C₂.isProb ∧ p₂ = 1 - p₁
   | .seq C₁ C₂ => C₁.isProb ∧ C₂.isProb
   | .ite _ C₁ C₂ => C₁.isProb ∧ C₂.isProb
   | .loop _ C => C.isProb
 
-def Conf.isProb : Conf Γ ENNReal ℛ → Prop
+def Conf.isProb : Conf Γ PReal ℛ → Prop
   | conf ⟨⇓, _⟩ => true
   | conf ⟨@C, _⟩ => C.isProb
-class Conf.Prob (C : Conf Γ ENNReal ℛ) : Prop where is_prob : C.isProb
+class Conf.Prob (C : Conf Γ PReal ℛ) : Prop where is_prob : C.isProb
 
 omit [CompleteLattice ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] [WDP.AddBicontinuous ℛ] [ωScottContinuousAdd ℛ] in
 open scoped Classical in
-theorem Conf.isProb_closed {c₁ c₂ : Conf Γ ENNReal ℛ} (h : c₁.isProb) (h' : ∃ a p, Step c₁ a p c₂) :
+theorem Conf.isProb_closed' {c₁ c₂ : Conf Γ PReal ℛ} (h : c₁.isProb) (h' : ∃ a p, Step c₁ a p c₂) :
     c₂.isProb := by
   induction c₁ using Conf.induction generalizing c₂ with
   | wchoice C₁ C₂ p₁ p₂ ih₁ ih₂ σ =>
@@ -1213,47 +1183,59 @@ theorem Conf.isProb_closed {c₁ c₂ : Conf Γ ENNReal ℛ} (h : c₁.isProb) (
       simp_all
       rcases h' with ⟨⟨_⟩, ⟨_⟩⟩ | ⟨⟨_⟩, ⟨_⟩⟩
       · simp_all [isProb]
-      · simp_all [isProb, skip, wGCL.isProb]; rfl
+      · simp_all [isProb, skip, wGCL.isProb]
     · grind [isProb]
-  | _ => simp_all [wGCL.isProb, isProb, Step_iff_succs, succs] <;> try grind [wGCL.isProb, isProb]
+  | _ => simp_all [wGCL.isProb, isProb, Step_iff_succs, succs]; try grind [wGCL.isProb, isProb]
 
 omit [CompleteLattice ℛ] [AddCommMonoid ℛ] [AddLeftMono ℛ] [IsBotZeroClass ℛ] [WDP.AddBicontinuous ℛ] [ωScottContinuousAdd ℛ] in
 open scoped Classical in
-theorem Conf.isProb_closed' {c₁ c₂ : Conf Γ ENNReal ℛ} (h : c₁.isProb) (h' : ∃ a, toWDP.P c₁ a c₂ ≠ 0) :
+theorem Conf.isProb_closed {c₁ c₂ : Conf Γ PReal ℛ} (h : c₁.isProb) (h' : ∃ a, toWDP.P c₁ a c₂ ≠ 0) :
     c₂.isProb := by
-  apply Conf.isProb_closed h
-  simp [Step_iff_succs, toWDP, Step.P_eq, P] at h' ⊢
+  apply Conf.isProb_closed' h
+  simp [Step_iff_succs, toWDP, Step.P_eq] at h' ⊢
   obtain ⟨a, h', h''⟩ := h'
-  use a, goesP h'
-  exact goesP_succ h'
+  exact ⟨a, _, h'⟩
 
-instance : SMulMonoRight ENNReal ENNReal := ⟨by simp_all [mul_le_mul_right]⟩
+@[simp]
+theorem _root_.PReal.coe_eq_zero_iff {p : PReal} : ↑p = (0 : ENNReal) ↔ p = 0 := by
+  obtain ⟨p, hp⟩ := p; grind
+@[simp]
+theorem _root_.PReal.one_sub_eq_zero_iff {p : PReal} : 1 - p = 0 ↔ p = 1 := by
+  constructor
+  · intro h
+    simp [PReal.sub_def, ← PReal.coe_eq_zero_iff] at h
+    ext
+    simp [le_antisymm_iff, tsub_eq_zero_iff_le.mp h]
+  · rintro ⟨_⟩; ext; simp [PReal.coe_zero, PReal.coe_sub, -PReal.coe_eq_zero_iff]
+
+instance : NeZero (1 : PReal) := ⟨by
+  show ¬(⟨(1 : ENNReal), by simp⟩ : PReal) = ⟨0, by simp⟩
+  simp [← Subtype.coe_ne_coe]⟩
 
 open scoped Classical in
 noncomputable instance :
     (WDP.generateFrom toWDP (Conf.isProb (Γ := Γ) (ℛ := ENNReal))).IsWellBehaved ENNReal := by
-  have {s : Conf Γ ENNReal ENNReal} : s ∈ (toWDP.generateFrom Conf.isProb).carrier ↔ s.isProb := by
+  have {s : Conf Γ PReal ENNReal} : s ∈ (toWDP.generateFrom Conf.isProb).carrier ↔ s.isProb := by
     rw [WDP.mem_generateFrom_of_closed]
     · rfl
     intro s' h₁ h₂ a h₃
-    apply Conf.isProb_closed' h₁
+    apply Conf.isProb_closed h₁
     use a
   suffices (WDP.generateFrom toWDP (Conf.isProb (Γ := Γ) (ℛ := ENNReal))).toWDP.IsWellBehaved ENNReal by
     apply SubWDP.IsWellBehaved.of_toWDP
   apply WDP.mdp_wellBehaved
   simp [this]
   intro s hs a
-  convert_to ω∑ (s' : (toWDP.P s a).support), toWDP.P s a s' ≤ 1
+  convert_to ω∑ (s' : (toWDP.P s a).support), ↑(toWDP.P s a s') ≤ (1 : ENNReal)
   · symm
-    apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨⟨s', _⟩, _⟩, h⟩ ↦ ⟨s', h⟩
+    apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨⟨s', _⟩, _⟩, h⟩ ↦ ⟨s', by simp_all; exact h⟩
     · intro ⟨⟨⟨_, _⟩, _⟩, _⟩; simp
     · simp [this]
       intro s' h
-      use Conf.isProb_closed' hs ⟨a, h⟩
-      exact h
+      use Conf.isProb_closed hs ⟨a, h⟩, h
     · simp [this]
       intros; rfl
-  convert_to ω∑ (s' : s.succsₐ a), s'.val.1 ≤ 1
+  convert_to ω∑ (s' : s.succsₐ a), ↑s'.val.1 ≤ (1 : ENNReal)
   · clear this
     symm
     have hp₁ {p} {s'} : (p, s') ∈ s.succsₐ a → s.P a s' = p := by
@@ -1269,67 +1251,51 @@ noncomputable instance :
         grind
       simp_all [Conf.goes_def']
     apply ωSum_eq_ωSum_of_ne_zero_bij fun ⟨⟨s', _⟩, h⟩ ↦ ⟨⟨toWDP.P s a s', s'⟩, by
-        simp_all [toWDP, Step.P_eq]; apply hp₂ rfl h⟩
+        have : ¬↑(toWDP.P s a s') = (0 : ENNReal) := by apply h
+        simp_all [toWDP, Step.P_eq]⟩
     · intro ⟨⟨⟨_, _⟩, _⟩, _⟩; simp_all
     · simp_all [toWDP, Step.P_eq]
       grind
     · simp
   clear this
   induction s using Conf.induction with
-  | sample => simp_all [Conf.isProb, wGCL.isProb]
-  | weight => simp_all [Conf.isProb, wGCL.isProb, Pi.le_def]
+  | sample =>
+    simp_all [Conf.isProb, wGCL.isProb]
+  | weight => simp_all [Conf.isProb, wGCL.isProb]; split_ifs <;> simp_all
   | seq => simp_all [succsThen, Conf.isProb, wGCL.isProb]
-  | wchoice => simp_all [Conf.isProb, wGCL.isProb, Pi.le_def]
+  | wchoice C₁ C₂ p₁ p₂ ih₁ ih₁ σ =>
+    simp_all [Conf.isProb, wGCL.isProb]
+    convert_to ↑(p₁ σ) + ((1 : ENNReal) - ↑(p₁ σ)) ≤ 1
+    · split_ifs <;> simp_all [PReal.coe_sub]
+    · simp
   | _ => simp
 
--- theorem star_wp (C : wGCL Γ 𝒲 ℛ) (k : D) (h : Γ k = Bool) (X : Σ[Γ] → ℛ) :
---     (C.star k h).wp X = ω∑ (n : ℕ), C.wp^[n] X := by
---   simp [wp_eq_lp]
---   simp [lp]
---   simp [star, wp, star.flip]
---   rw [ωSum_nat_succ]
---   simp only [Function.iterate_succ', Function.comp_apply, Function.iterate_zero, id_eq]
---   congr! 1
---   · apply le_antisymm
---     · simp [ωSum_nat_eq_ωSup]
---     · simp [ωSum_nat_eq_ωSup]
---       intro i
---       induction i generalizing X with
---       | zero => simp
---       | succ i ih =>
---         simp_all [Finset.sum_range_succ']
---         rw [← map_lfp]
---         simp [-map_lfp, iver, not]
---         split_ifs <;> simp_all
---         swap
---         · grind
-
---   rw [← map_lfp]
---   ext σ
---   simp [-map_lfp, iver, not]
---   split_ifs <;> simp_all
---   · grind
---   sorry
-
 instance : SMulMono ENNReal ENNReal := ⟨fun a b c h ↦ by gcongr⟩
+instance : SMulMono PReal ENNReal := ⟨fun a b c h ↦ by gcongr⟩
 instance : ωScottContinuousSMul ENNReal ENNReal := by
   apply ωScottContinuousSMul.of_smul_continuous; simp [ENNReal.mul_iSup]
 instance : WDP.SMulContinuous ENNReal ENNReal where
   smul_iSup := by simp_all [ENNReal.mul_iSup]
-instance : WDP.SMulCocontinuous ENNReal ENNReal where
-  smul_iInf := by
-    intro ι _ a f; simp_all; rw [ENNReal.mul_iInf]
-    rintro ⟨_⟩
-    sorry
-instance : WDP.SMulBicontinuous ENNReal ENNReal where
+instance : WDP.SMulContinuous PReal ENNReal where
+  smul_iSup := by simp [ENNReal.mul_iSup]
+instance {S A : Type} [Nonempty A] {M : WDP PReal S A} : WDP.SMulCocontinuousOn PReal ENNReal M.Sched where
+  smul_iInf_on := by
+    letI : Nonempty M.Sched := ⟨⟨fun _ _ ↦ Classical.ofNonempty⟩⟩
+    rintro ⟨a, ha⟩ f; simp_all; rw [ENNReal.mul_iInf]
+    contrapose
+    intro
+    apply ne_top_of_le_ne_top ENNReal.one_ne_top ha
 instance : WDP.AddBicontinuous ENNReal where
   add_iInf := by simp [ENNReal.add_iInf]
   add_iSup := by simp_all [ENNReal.add_iSup]
   iInf_add := by simp [ENNReal.iInf_add]
   iSup_add := by simp_all [ENNReal.iSup_add]
+instance : ωScottContinuousSMul PReal ENNReal := by
+  apply ωScottContinuousSMul.of_smul_continuous
+  simp [ENNReal.mul_iSup]
 
 open scoped Classical in
-theorem wp_eq_op_of_isProb {C : wGCL Γ ENNReal ENNReal} (hC : C.isProb) :
+theorem wp_eq_op_of_isProb {C : wGCL Γ PReal ENNReal} (hC : C.isProb) :
     wp C = op C := by
   ext X σ
   rw [wp_eq_lp, lp_eq_lfp]
@@ -1340,6 +1306,9 @@ theorem wp_eq_op_of_isProb {C : wGCL Γ ENNReal ENNReal} (hC : C.isProb) :
   · rfl
   · simp [M', WDP.generateFrom]; use conf ⟨@C, σ⟩, hC; apply Relation.ReflTransGen.refl
   · simp [M']
+
+/-- info: 'wGCL.wp_eq_op_of_isProb' depends on axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs in #print axioms wp_eq_op_of_isProb
 
 end
 

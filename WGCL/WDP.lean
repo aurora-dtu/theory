@@ -1,12 +1,13 @@
-import Mathlib.Probability.ProductMeasure
-import STDX.Subst
-import MDP.Optimization
-import MDP.FinsetExt
 import Mathlib.Algebra.Order.IsBotOne
+import Mathlib.Data.PEquiv
+import Mathlib.Probability.ProductMeasure
+import Mathlib.SetTheory.Ordinal.FixedPointApproximants
 import Mathlib.Tactic.DeriveTraversable
 import Mathlib.Topology.Order.ScottTopology
-import Mathlib.SetTheory.Ordinal.FixedPointApproximants
-import Mathlib.Data.PEquiv
+import MDP.FinsetExt
+import MDP.Optimization
+import PGCL.PReal
+import STDX.Subst
 import WGCL.OmegaSum
 
 set_option linter.style.longLine false
@@ -638,8 +639,7 @@ variable {𝒲 ℛ : Type*} {S A : Type}
 variable_module 𝒲 ℛ
 variable {M : WDP 𝒲 S A}
 
-variable [ωScottContinuousSMul 𝒲 ℛ]
-
+variable [ωScottContinuousSMul 𝒲 ℛ] in
 theorem ωSum_of₀_succ_of_HSched [ωScottContinuousAdd ℛ] {𝔖 : M.HSched} {g : S → ℛ} {s : S} :
       ω∑ (π : Path.of₀ (k + 1) s 𝔖.toSched), π.val.Weight 𝔖.toSched • g π.val.head
     = ω∑ (s' : (M.P s (𝔖 s 0)).support), M.P s (𝔖 s 0) s'.val
@@ -688,6 +688,7 @@ theorem ωSum_of₀_succ_of_HSched [ωScottContinuousAdd ℛ] {𝔖 : M.HSched} 
   intro ⟨⟨s₀, hs₀⟩, π₀, hπ₀⟩ h₀
   simp_all
   simp_all [← smul_assoc, Path.of₀, Path.of]
+variable [ωScottContinuousSMul 𝒲 ℛ] in
 theorem ωSum_of₀_succ [ωScottContinuousAdd ℛ] {h : M.MSched} {j : S → _} {g : S → ℛ} {s : S} :
       ω∑ (π : Path.of₀ (k + 1) s (h.cmb j)), π.val.Weight (h.cmb j) • g π.val.head
     = ω∑ (s' : (M.P s (h s)).support), M.P s (h s) s'.val
@@ -767,10 +768,28 @@ theorem iSup_sum_eq_iSup_sum_of_support_subset {f : ι → α} (T : Set ι)
 
 end
 
+class SMulMonoRight (α β : Type*) [Preorder β] [SMul α β] where
+  smul_le_smul_left {m : α} {a b : β} (h : a ≤ b) : m • a ≤ m • b
+
+namespace SMulMonoRight
+
+variable {ι α β : Type*} [Preorder β] [SMul α β] [SMulMonoRight α β]
+
+attribute [gcongr] SMulMonoRight.smul_le_smul_left
+
+instance : SMulMonoRight (ι → α) (ι → β) where
+  smul_le_smul_left := by intro m a b h i; simp; gcongr; apply h
+instance : CovariantClass α β HSMul.hSMul LE.le where
+  elim _ _ _ := smul_le_smul_left
+
+end SMulMonoRight
+
 class SMulContinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β] where
   smul_iSup {ι : Type} {a : α} {f : ι → β} : a • iSup f = ⨆ i, a • f i
 class SMulCocontinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β] where
   smul_iInf {ι : Type} [Nonempty ι] {a : α} {f : ι → β} : a • iInf f = ⨅ i, a • f i
+class SMulCocontinuousOn (α β ι : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β] where
+  smul_iInf_on {a : α} {f : ι → β} : a • iInf f = ⨅ i, a • f i
 class SMulBicontinuous (α β : Type*) [Monoid α] [AddMonoid β] [SMul α β] [CompleteLattice β]
     extends SMulContinuous α β, SMulCocontinuous α β
 
@@ -923,10 +942,10 @@ theorem sum_iSup_mono {ι : Type} {γ α : Type*} [Nonempty ι] [AddCommMonoid �
     apply iSup_add_iSup fun i j ↦ ⟨i ⊔ j, ?_⟩
     gcongr <;> apply h <;> simp
 
-variable [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ]
 
 variable [Nontrivial 𝒲]
 
+variable [ωScottContinuousSMul 𝒲 ℛ] [SMulContinuous 𝒲 ℛ] [AddBicontinuous ℛ] [SMulCocontinuousOn 𝒲 ℛ M.Sched] in
 theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
   unfold T MinAr
   simp
@@ -935,7 +954,7 @@ theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
   letI : Nonempty M.Sched := ⟨𝔖⟩
   simp
   simp [ωSum_eq_iSup_sum]
-  simp [smul_iInf, smul_iSup]
+  simp [SMulCocontinuousOn.smul_iInf_on, smul_iSup]
   trans ⨅ α, g s + ⨆ (Z : Finset (M.P s α).support), ⨅ i, ∑ s' ∈ Z, ⨆ n, M.P s α s' • M.Ar g n i s'
   · gcongr with a Z
     simp
@@ -1009,7 +1028,7 @@ theorem T_MinAr_le_MinAr (g : S → ℛ) : M.T g (M.MinAr g) ≤ M.MinAr g := by
   apply le_iSup_of_le (i + 1)
   rfl
 
-omit [SMulBicontinuous 𝒲 ℛ] in
+variable [ωScottContinuousSMul 𝒲 ℛ] [AddBicontinuous ℛ] in
 theorem Ar_HSched {g : S → ℛ} {𝔖 : M.HSched} :
     M.Ar g n 𝔖.toSched = ((List.range (n + 1)).map (M.T' g ∘ 𝔖.toMSchedStream)).comp 0 := by
   have {m : ℕ} : Finset.Iic m = Finset.range (m + 1) := by ext; simp
@@ -1042,13 +1061,12 @@ theorem Ar_HSched {g : S → ℛ} {𝔖 : M.HSched} :
       congr with k
     simp
 
-omit [ωScottContinuousSMul 𝒲 ℛ] [SMulBicontinuous 𝒲 ℛ]
-     [AddBicontinuous ℛ] [Nontrivial 𝒲] in
+omit [Nontrivial 𝒲] in
 theorem T_le_T' {J g : S → ℛ} (𝔖 : M.MSched) : M.T g J ≤ M.T' g 𝔖 J := by
   intro s; simp [T, T']; apply iInf_le_of_le _; rfl
 
-omit [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ]
-     [Nontrivial 𝒲] in
+omit [Nontrivial 𝒲] in
+variable [ωScottContinuousSMul 𝒲 ℛ] in
 theorem T_comp_le_f_comp {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ)
     {𝔖 : hwb.X → M.MSched}
     (h : ∀ (x : hwb.X), M.T' g (𝔖 x) J ≤ hwb.f x J) (L : List hwb.X) :
@@ -1063,11 +1081,11 @@ theorem T_comp_le_f_comp {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBeh
 
 open OrderHom
 
-omit [ωScottContinuousSMul 𝒲 ℛ] [SMulBicontinuous 𝒲 ℛ] [AddBicontinuous ℛ] [Nontrivial 𝒲] in
+omit [Nontrivial 𝒲] in
 @[simp]
 theorem T''_MSched_apply {g J : S → ℛ} {𝔖 : M.MSched} : M.T'' g (𝔖 s) J s = M.T' g 𝔖 J s := by rfl
 
-omit [SMulBicontinuous 𝒲 ℛ] in
+variable [ωScottContinuousSMul 𝒲 ℛ] [AddBicontinuous ℛ] in
 theorem MinAr_of' [Fintype A] [Nonempty A] [Std.Total (· ≤ · : ℛ → ℛ → Prop)] {J g : S → ℛ} {hJ : M.T g J ≤ J} :
     M.MinAr g ≤ J := by
   simp [MinAr]
@@ -1110,7 +1128,7 @@ theorem MinAr_of' [Fintype A] [Nonempty A] [Std.Total (· ≤ · : ℛ → ℛ �
     apply Finset.inf'_le_of_le _ (Finset.mem_univ a)
     simp [T'']
 
-omit [SMulBicontinuous 𝒲 ℛ] in
+variable [ωScottContinuousSMul 𝒲 ℛ] [AddBicontinuous ℛ] in
 theorem MinAr_of {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ) :
     M.MinAr g ≤ J := by
   simp [MinAr]
@@ -1130,6 +1148,7 @@ theorem MinAr_of {J g : S → ℛ} {hJ : M.T g J ≤ J} (hwb : M.WellBehaved hJ)
 
 open OrderHom IsWellBehaved
 
+variable [ωScottContinuousSMul 𝒲 ℛ] [SMulContinuous 𝒲 ℛ] [AddBicontinuous ℛ] [SMulCocontinuousOn 𝒲 ℛ M.Sched] in
 theorem T_MinAr_eq_MinAr (g : S → ℛ) [M.IsWellBehaved ℛ] : M.T g (M.MinAr g) = M.MinAr g :=
   M.T_MinAr_le_MinAr g |>.antisymm<| M.MinAr_of (is_wellBehaved (M.T_mono (M.T_MinAr_le_MinAr g)))
 
@@ -1140,6 +1159,8 @@ theorem _root_.Subsintleton.ofMulActionWithZero
   have (a : ℛ) : (1 : 𝒲) • a = a := by simp
   replace {a : ℛ} : a = (0 : 𝒲) • a := by nth_rw 1 [← this a]; congr! 1
   simp_all
+
+variable [ωScottContinuousSMul 𝒲 ℛ] [SMulContinuous 𝒲 ℛ] [AddBicontinuous ℛ] [SMulCocontinuousOn 𝒲 ℛ M.Sched]
 
 omit [Nontrivial 𝒲] in
 variable [Fintype A] [Nonempty A] [Std.Total (· ≤ · : ℛ → ℛ → Prop)] in
@@ -1373,9 +1394,25 @@ theorem ashjdsa {ι : Type*} [Nonempty ι] (us : ι → ENNReal) (ε : ENNReal) 
   else
     simp_all
 
+instance : IsBotZeroClass PReal where
+  isBot_zero := by intro a; simp
+
+noncomputable instance : SMul PReal ENNReal where
+  smul p x := p * x
+@[simp]
+theorem _root_.PReal.smul_ennreal {p : PReal} {x : ENNReal} : p • x = p * x := rfl
+instance : SMulMonoRight PReal ENNReal := ⟨by simp_all [mul_le_mul_right]⟩
+
+noncomputable instance : WDP.DistribMulActionWithZero PReal ENNReal where
+  mul_smul := by simp [← mul_assoc]; intro x y b; rfl
+  smul_add := by simp [mul_add]
+  one_smul := by simp
+  smul_zero := by simp
+  zero_smul := by simp
+
 @[reducible]
-noncomputable def mdp_wellBehaved {S A : Type} [Nonempty A] {M : WDP ENNReal S A}
-    (h : ∀ s a, ω∑ (i : (M.P s a).support), M.P s a i ≤ 1) :
+noncomputable def mdp_wellBehaved {S A : Type} [Nonempty A] {M : WDP PReal S A}
+    (h : ∀ s a, ω∑ (i : (M.P s a).support), ↑(M.P s a i) ≤ (1 : ENNReal)) :
     M.IsWellBehaved ENNReal := by
   constructor
   intro J g hJ
@@ -1409,7 +1446,7 @@ noncomputable def mdp_wellBehaved {S A : Type} [Nonempty A] {M : WDP ENNReal S A
       simp [Pi.le_def]
       suffices ∃ 𝔖, ∀ (i : S), M.T' g 𝔖 J i ≤ M.T g J i + x by
         obtain ⟨𝔖, h⟩ := this; use 𝔖; intro s; grw [h, ← hJ s]
-      simp [T', smul_eq_mul, ENNReal.ωSum_eq_tsum, T, ENNReal.iInf_add, le_iInf_iff]
+      simp [T', ENNReal.ωSum_eq_tsum, T, ENNReal.iInf_add, le_iInf_iff]
       letI : Nonempty M.MSched := ⟨MSched.mk fun _ ↦ Classical.ofNonempty⟩
       let us : S → A → ENNReal := fun s a ↦ g s + ∑' (s' : ↑(Function.support (M.P s a))), M.P s a ↑s' * J ↑s'
       have (s : S) := ashjdsa (us s) _ hx
@@ -1418,7 +1455,7 @@ noncomputable def mdp_wellBehaved {S A : Type} [Nonempty A] {M : WDP ENNReal S A
       use 𝔖
     T'_f_comm := by
       intro J 𝔖 ⟨x, hx⟩ s
-      simp [T', mul_add, ωSum_add, add_assoc, ← ωSum_mul]
+      simp [T', ωSum_add, add_assoc, ← ωSum_mul]
       gcongr
       grw [h]
       simp
@@ -1842,11 +1879,13 @@ instance IsWellBehaved.of_toWDP [M.toWDP.IsWellBehaved ℛ] : M.IsWellBehaved �
 
 open OrderHom OmegaCompletePartialOrder
 variable [SMulMono 𝒲 ℛ]
-variable [WDP.SMulBicontinuous 𝒲 ℛ]
+variable [WDP.SMulContinuous 𝒲 ℛ]
 variable [WDP.AddBicontinuous ℛ]
 variable [ωScottContinuousSMul 𝒲 ℛ]
 
 open WDP
+
+variable [SMulCocontinuousOn 𝒲 ℛ M.toWDP.Sched]
 
 variable [Nonempty A] [Nonempty M.carrier]
 
@@ -1954,7 +1993,7 @@ open OrderHom OmegaCompletePartialOrder
 variable_module 𝒲 ℛ
 
 variable [SMulMono 𝒲 ℛ]
-variable [WDP.SMulBicontinuous 𝒲 ℛ]
+variable [WDP.SMulContinuous 𝒲 ℛ]
 variable [WDP.AddBicontinuous ℛ]
 variable [ωScottContinuousSMul 𝒲 ℛ]
 
@@ -1969,12 +2008,31 @@ theorem Sched.cast_apply : 𝔖.cast (M':=M') π = 𝔖 π := rfl
 
 end Sched.cast
 
-variable [Nonempty A]
+variable [Nonempty A] [∀ M : WDP 𝒲 S A, SMulCocontinuousOn 𝒲 ℛ M.Sched]
 
 theorem lfp_T_eq_MinAr_of_SubWDP (M : WDP 𝒲 S A) (g : S → ℛ) (s₀ : S)
     (M' : SubWDP 𝒲 S A) (hs₀ : s₀ ∈ M'.carrier) [M'.IsWellBehaved ℛ]
     (hM : ∀ s a s', s ∈ M'.carrier → M'.P s a s' = M.P s a s') :
     lfp ⟨M.T g, M.T_mono⟩ s₀ = M.MinAr g s₀ := by
+  letI : SMulCocontinuousOn 𝒲 ℛ M'.toWDP.Sched := by
+    constructor
+    intro a f
+    let f₁ (𝔖 : M.Sched) : M'.toWDP.Sched := ⟨fun s ss ↦ 𝔖 ⟨s.val, ss⟩⟩
+    classical
+    let f₂ (𝔖 : M'.toWDP.Sched) : M.Sched := ⟨fun s ss ↦ if h : s ∈ M'.carrier ∧ ∀ s' ∈ ss, s' ∈ M'.carrier then 𝔖 ⟨⟨s, h.left⟩, ss.attach.map (⟨·.val, h.right _ (Subtype.prop _)⟩)⟩ else Classical.ofNonempty⟩
+    have h₁₂ {𝔖} : f₁ (f₂ 𝔖) = 𝔖 := by
+      ext s ss
+      simp_all [f₁, f₂, DFunLike.coe]
+      congr
+      apply List.ext_getElem <;> simp
+    have := SMulCocontinuousOn.smul_iInf_on (α := 𝒲) (β := ℛ) (ι := M.Sched) (a:=a) (f:=fun 𝔖 ↦ f (f₁ 𝔖))
+    convert this
+    · symm; apply Function.Surjective.iInf_congr f₁
+      · intro 𝔖; use f₂ 𝔖, h₁₂
+      · simp
+    · symm; apply Function.Surjective.iInf_congr f₁
+      · intro 𝔖; use f₂ 𝔖, h₁₂
+      · simp
   have : Nonempty M'.carrier := ⟨⟨_, hs₀⟩⟩
   have {s₁} (h : s₁ ∈ M'.carrier) : M'.toWDP'.P s₁ = M.P s₁ := by ext a s₂; simp_all [SubWDP.toWDP']
   convert M'.lfp_T_eq_MinAr ℛ g hs₀ using 1

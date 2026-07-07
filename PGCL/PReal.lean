@@ -1,4 +1,7 @@
-import PGCL.Exp
+import Mathlib.Data.ENNReal.Inv
+import Mathlib.Data.ENNReal.Operations
+import Mathlib.Order.FixedPoints
+import Mathlib.Order.OmegaCompletePartialOrder
 
 def PReal : Type := {p : ENNReal // p ≤ 1}
 
@@ -91,12 +94,13 @@ noncomputable instance : Top PReal := ⟨1⟩
 noncomputable instance : CompleteLattice PReal where
   sup := lift₂ max
   inf := lift₂ min
-  bot_le := by simp
-  le_top := by simp
+  bot_le _ := zero_le
+  le_top _ := by show _ ≤ 1; simp
   le_inf := by
     intro a b c hab hac
     rw [lift₂, le_def]
-    simp [hab, hac]
+    simp
+    exact ⟨hab, hac⟩
   inf_le_left := by simp [lift₂, ofENNReal, le_def]
   inf_le_right := by simp [lift₂, ofENNReal, le_def]
   le_sup_left := by simp [lift₂, ofENNReal, le_def]
@@ -104,20 +108,30 @@ noncomputable instance : CompleteLattice PReal where
   sup_le := by
     intro a b c hab hac
     rw [lift₂, le_def]
-    simp [hab, hac]
+    simp
+    exact ⟨hab, hac⟩
   sSup s := ⟨sSup (coe '' s), by simp⟩
   sInf s := ⟨sInf (coe '' s) ⊓ 1, by simp⟩
-  le_sSup := by
-    simp [le_def]
-    intro s a h
-    exact le_sSup (s:=coe '' s) (a:=coe a) (by grind)
-  sSup_le := by intro s a h; simp [le_def]; exact h
-  sInf_le := by
-    simp [le_def]
-    intro s a h
-    left
-    exact sInf_le (s:=coe '' s) (a:=coe a) (by grind)
-  le_sInf := by intro s a h; simp [le_def]; exact h
+  isLUB_sSup := by
+    simp [IsLUB, IsLeast, upperBounds, lowerBounds, le_def]
+    intro s
+    constructor
+    · intro a _; exact le_sSup (s:=coe '' s) (a:=coe a) (by grind)
+    · intro a h
+      have := sSup_le (α := ENNReal) (s := coe '' s) (a := a)
+      simp only [Set.mem_image, forall_exists_index, and_imp, forall_apply_eq_imp_iff₂,
+        Subtype.coe_le_coe] at this
+      apply this
+      grind
+  isGLB_sInf := by
+    simp [IsGLB, IsGreatest, upperBounds, lowerBounds]
+    intro s
+    constructor
+    · intro ⟨a, ha⟩ h
+      simp [le_def]
+      left
+      apply sInf_le; grind
+    · intro a h; simp [le_def]; exact h
 
 @[simp]
 theorem add_le_add_one {p r : PReal} : p ≤ r + 1 := by
@@ -129,6 +143,10 @@ theorem mul_le_right {p r : PReal} : p * r ≤ r := mul_le_of_le_one_left' p.pro
 noncomputable instance : MulZeroClass PReal where
   zero_mul a := by simp [mul_def]
   mul_zero a := by simp [mul_def]
+noncomputable instance : NSMul PReal where
+  nsmul n a := ofENNReal (n * coe a)
+-- theorem nsmul_def {n : ℕ} {a : PReal} : NSMul.nsmul n a = ofENNReal (n * coe a) := rfl
+@[simp] theorem nsmul_def {n : ℕ} {a : PReal} : HSMul.hSMul n a = ofENNReal (n * coe a) := rfl
 noncomputable instance : AddCommMonoid PReal where
   add_assoc a b c := by
     simp [add_def, ofENNReal]
@@ -141,8 +159,7 @@ noncomputable instance : AddCommMonoid PReal where
     simp [add_comm]
   zero_add a := by simp [add_def, ofENNReal]
   add_zero a := by simp [add_def, ofENNReal]
-  nsmul n a := ofENNReal (n * coe a)
-  nsmul_zero := by simp [ofENNReal]
+  nsmul_zero := by simp [nsmul_def, ofENNReal]
   nsmul_succ n a := by
     ext
     simp [ofENNReal, right_distrib, add_def, min_add]
@@ -159,7 +176,10 @@ instance : ExistsAddOfLE PReal where
     intro a b h
     use b - a
     ext
-    simp [add_def, sub_def, ofENNReal, add_tsub_cancel_of_le, h]
+    simp [add_def, sub_def, ofENNReal]
+    rw [add_tsub_cancel_of_le]
+    · simp
+    · exact h
 
 instance : AddLeftMono PReal where
   elim a b c h := by
@@ -180,16 +200,16 @@ theorem coe_inf : ∀ {a b : PReal}, coe (a ⊓ b) = coe a ⊓ coe b := by
   rintro ⟨a, _⟩ ⟨b, _⟩
   conv => left; simp [min, SemilatticeInf.inf, lift₂, ofENNReal]
   rw [Lattice.inf]
-  simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
+  simp +instances [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
 @[grind =, simp]
 theorem coe_sup : ∀ {a b : PReal}, coe (a ⊔ b) = coe a ⊔ coe b := by
   rintro ⟨a, _⟩ ⟨b, _⟩
   conv => left; simp [max]
   rw [SemilatticeSup.sup]
-  simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
+  simp +instances [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
 @[simp]
 theorem coe_iInf {ι : Sort*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i) = ⨅ i, coe (f i) := by
-  simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
+  simp +instances [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
   apply le_antisymm
   · simp only [le_iInf_iff, Subtype.coe_le_coe]
     intro i
@@ -198,9 +218,10 @@ theorem coe_iInf {ι : Sort*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i
   · suffices ofENNReal (⨅ i, ↑(f i)) ≤ ⨅ i, f i by
       rw [le_def] at this
       convert this
-      simp [ofENNReal]
-      apply iInf_le_of_le Classical.ofNonempty
-      simp
+      · rfl
+      · simp [ofENNReal]
+        apply iInf_le_of_le Classical.ofNonempty
+        simp
     simp [ofENNReal]
     intro i
     rw [le_def]
@@ -209,12 +230,13 @@ theorem coe_iInf {ι : Sort*} [Nonempty ι] (f : ι → PReal) : coe (⨅ i, f i
     apply iInf_le_of_le i; rfl
 @[simp]
 theorem coe_iSup {ι : Sort*} (f : ι → PReal) : coe (⨆ i, f i) = ⨆ i, coe (f i) := by
-  simp [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
+  simp +instances [CompleteLattice.toConditionallyCompleteLattice, instCompleteLattice]
   apply le_antisymm
   · suffices ⨆ i, f i ≤ ofENNReal (⨆ i, ↑(f i)) by
       rw [le_def] at this
       convert this
-      simp [ofENNReal]
+      · rfl
+      · simp [ofENNReal]
     simp [ofENNReal]
     intro i
     rw [le_def]
@@ -242,9 +264,9 @@ noncomputable instance : CompletelyDistribLattice PReal where
         simp [le_def] at h'
         rcases h' with h' | h'
         · assumption
-        · simp_all
-  himp_bot a := by simp; simp [instCompleteLattice]
-  top_sdiff a := by simp; simp [instCompleteLattice]
+        · contradiction
+  himp_bot a := by simp; simp +instances [instCompleteLattice]
+  top_sdiff a := by simp; simp +instances [instCompleteLattice]
   sdiff_le_iff a b c := by
     split_ifs with h
     · simp; exact le_sup_of_le_left h
